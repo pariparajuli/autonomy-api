@@ -15,8 +15,8 @@ type Location struct {
 }
 
 type ActivityState struct {
-	LastActiveTime time.Time
-	LastLocation   *Location
+	LastActiveTime time.Time `json:"last_active_time"`
+	LastLocation   *Location `json:"location"`
 }
 
 func (u ActivityState) Value() (driver.Value, error) {
@@ -28,8 +28,7 @@ func (u *ActivityState) Scan(src interface{}) error {
 	if !ok {
 		return errors.New("Type assertion .([]byte) failed.")
 	}
-
-	return json.Unmarshal(source, &u)
+	return json.Unmarshal(source, u)
 }
 
 type AccountMetadata map[string]interface{}
@@ -48,20 +47,20 @@ func (u *AccountMetadata) Scan(src interface{}) error {
 }
 
 type Account struct {
-	AccountNumber string `gorm:"primary_key"`
-	EncPubKey     string
-	Profile       AccountProfile `gorm:"foreignkey:ProfileID"`
-	ProfileID     uuid.UUID
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	AccountNumber string         `json:"account_number" gorm:"primary_key"`
+	EncPubKey     string         `json:"enc_pub_key"`
+	Profile       AccountProfile `json:"profile" gorm:"foreignkey:ProfileID"`
+	ProfileID     uuid.UUID      `json:"-"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
 }
 
 type AccountProfile struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key" sql:"default:uuid_generate_v4()"`
-	AccountNumber string
-	Version       string
-	State         ActivityState   `gorm:"type:jsonb;not null;default '{}'"`
-	Metadata      AccountMetadata `gorm:"type:jsonb;not null;default '{}'"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID       `json:"id" gorm:"type:uuid;primary_key" sql:"default:uuid_generate_v4()"`
+	AccountNumber string          `json:"account_number"`
+	Version       string          `json:"-"`
+	State         ActivityState   `json:"state" gorm:"type:jsonb;not null;default '{}'"`
+	Metadata      AccountMetadata `json:"metadata" gorm:"type:jsonb;not null;default '{}'"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
 }
