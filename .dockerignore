@@ -1,0 +1,7 @@
+.git
+*.pem
+config.yaml
+
+# Binaries
+autonomy-api
+schema/command/migrate/migrate
