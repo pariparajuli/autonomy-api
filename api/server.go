@@ -204,7 +204,10 @@ func responseWithEncoding(c *gin.Context, code int, obj ErrorResponse) {
 	}
 }
 
-func abortWithEncoding(c *gin.Context, code int, obj ErrorResponse) {
+func abortWithEncoding(c *gin.Context, code int, obj ErrorResponse, errors ...error) {
+	for _, err := range errors {
+		c.Error(err)
+	}
 	responseWithEncoding(c, code, obj)
 	c.Abort()
 }

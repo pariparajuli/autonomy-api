@@ -10,7 +10,6 @@ import (
 
 // accountRegister is the API for register a new account
 func (s *Server) accountRegister(c *gin.Context) {
-	logger := log.WithField("api", "accountRegister")
 	accountNumber := c.GetString("requester")
 
 	var params struct {
@@ -19,14 +18,13 @@ func (s *Server) accountRegister(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&params); err != nil {
-		logger.WithError(err).Error(errorInvalidParameters.Message)
-		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
 
 	a, err := s.store.CreateAccount(accountNumber, params.EncPubKey, params.Metadata)
 	if err != nil {
-		abortWithEncoding(c, http.StatusForbidden, errorAccountTaken)
+		abortWithEncoding(c, http.StatusForbidden, errorAccountTaken, err)
 		return
 	}
 
@@ -58,14 +56,12 @@ func (s *Server) accountUpdateMetadata(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&params); err != nil {
-		c.Error(err)
-		abortWithEncoding(c, http.StatusBadRequest, errorCannotParseRequest)
+		abortWithEncoding(c, http.StatusBadRequest, errorCannotParseRequest, err)
 		return
 	}
 
 	if err := s.store.UpdateAccountMetadata(accountNumber, params.Metadata); err != nil {
-		c.Error(err)
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 
@@ -77,7 +73,7 @@ func (s *Server) accountDelete(c *gin.Context) {
 	accountNumber := c.GetString("requester")
 
 	if err := s.store.DeleteAccount(accountNumber); err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 

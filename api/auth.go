@@ -30,10 +30,9 @@ func (s *Server) requestJWT(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&req); err != nil {
-		c.Error(err)
-		responseWithEncoding(c, http.StatusBadRequest, ErrorResponse{
+		abortWithEncoding(c, http.StatusBadRequest, ErrorResponse{
 			Message: err.Error(),
-		})
+		}, err)
 		return
 	}
 
@@ -81,8 +80,7 @@ func (s *Server) requestJWT(c *gin.Context) {
 
 	tokenString, err := token.SignedString(s.jwtPrivateKey)
 	if err != nil {
-		c.Error(err)
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 
@@ -112,13 +110,12 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 		)
 
 		if err != nil {
-			c.Error(err)
-			abortWithEncoding(c, http.StatusBadRequest, errorInvalidAuthorizationFormat)
+			abortWithEncoding(c, http.StatusBadRequest, errorInvalidAuthorizationFormat, err)
 			return
 		}
 
 		if !token.Valid {
-			abortWithEncoding(c, http.StatusUnauthorized, errorInvalidAuthorizationFormat)
+			abortWithEncoding(c, http.StatusUnauthorized, errorInvalidToken)
 			return
 		}
 
