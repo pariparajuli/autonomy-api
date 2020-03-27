@@ -101,12 +101,17 @@ func (s *Server) setupRouter() *gin.Engine {
 	apiRoute := r.Group("/api")
 	apiRoute.Use(logmodule.Ginrus("API"))
 	apiRoute.GET("/information", s.information)
+
+	// api route other than `/information` will apply the following middleware
 	apiRoute.Use(s.clientVersionGateway())
 
 	apiRoute.POST("/auth", s.requestJWT)
 
+	// api route other than `/auth` will apply the following middleware
+	apiRoute.Use(s.authMiddleware())
+	apiRoute.Use(s.updateGeoPositionMiddleware)
+
 	accountRoute := apiRoute.Group("/accounts")
-	accountRoute.Use(s.authMiddleware())
 	{
 		accountRoute.POST("", s.accountRegister)
 	}

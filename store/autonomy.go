@@ -14,6 +14,7 @@ type AutonomyCore interface {
 	CreateAccount(string, string, map[string]interface{}) (*schema.Account, error)
 	GetAccount(string) (*schema.Account, error)
 	UpdateAccountMetadata(string, map[string]interface{}) error
+	UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error
 	DeleteAccount(string) error
 }
 

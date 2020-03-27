@@ -50,6 +50,21 @@ func (s *AutonomyStore) UpdateAccountMetadata(accountNumber string, metadata map
 	return s.ormDB.Save(&a.Profile).Error
 }
 
+// UpdateAccountMetadata is to update metadata for a specific account
+func (s *AutonomyStore) UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error {
+	var a schema.Account
+	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
+		return err
+	}
+
+	a.Profile.State.LastLocation = &schema.Location{
+		Latitude:  latitude,
+		Longitude: longitude,
+	}
+
+	return s.ormDB.Save(&a.Profile).Error
+}
+
 // DeleteAccount removes an account from our system permanently
 func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 	if err := s.ormDB.Delete(schema.Account{}, "account_number = ?", accountNumber).Error; err != nil {
