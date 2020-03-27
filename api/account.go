@@ -43,7 +43,7 @@ func (s *Server) accountDetail(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"result": account,
+		"result": account.Profile,
 	})
 }
 
