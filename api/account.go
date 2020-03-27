@@ -47,6 +47,28 @@ func (s *Server) accountDetail(c *gin.Context) {
 	})
 }
 
+func (s *Server) accountUpdateMetadata(c *gin.Context) {
+	accountNumber := c.GetString("requester")
+
+	var params struct {
+		Metadata map[string]interface{} `json:"metadata"`
+	}
+
+	if err := c.BindJSON(&params); err != nil {
+		c.Error(err)
+		abortWithEncoding(c, http.StatusBadRequest, errorCannotParseRequest)
+		return
+	}
+
+	if err := s.store.UpdateAccountMetadata(accountNumber, params.Metadata); err != nil {
+		c.Error(err)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "OK"})
+}
+
 func (s *Server) accountDelete(c *gin.Context) {
 	accountNumber := c.GetString("requester")
 

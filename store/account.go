@@ -13,6 +13,7 @@ type Autonomy interface {
 	Ping() error
 	CreateAccount(string, string, map[string]interface{}) (*schema.Account, error)
 	GetAccount(string) (*schema.Account, error)
+	UpdateAccountMetadata(string, map[string]interface{}) error
 	DeleteAccount(string) error
 }
 
@@ -56,6 +57,19 @@ func (s *ORMStore) GetAccount(accountNumber string) (*schema.Account, error) {
 		return nil, err
 	}
 	return &a, nil
+}
+
+func (s *ORMStore) UpdateAccountMetadata(accountNumber string, metadata map[string]interface{}) error {
+	var a schema.Account
+	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
+		return err
+	}
+
+	for k, v := range metadata {
+		a.Profile.Metadata[k] = v
+	}
+
+	return s.ormDB.Save(&a.Profile).Error
 }
 
 func (s *ORMStore) DeleteAccount(accountNumber string) error {
