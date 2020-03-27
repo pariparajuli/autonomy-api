@@ -33,7 +33,7 @@ type Server struct {
 	server *http.Server
 
 	// Stores
-	store store.Autonomy
+	store store.AutonomyCore
 
 	// JWT private key
 	jwtPrivateKey *rsa.PrivateKey
@@ -66,7 +66,7 @@ func NewServer(
 	}
 
 	return &Server{
-		store:           store.NewORMStore(ormDB),
+		store:           store.NewAutonomyStore(ormDB),
 		jwtPrivateKey:   jwtKey,
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,

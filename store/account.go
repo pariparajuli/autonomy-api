@@ -3,35 +3,10 @@ package store
 import (
 	"time"
 
-	"github.com/jinzhu/gorm"
-
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-// autonomy main datastore
-type Autonomy interface {
-	Ping() error
-	CreateAccount(string, string, map[string]interface{}) (*schema.Account, error)
-	GetAccount(string) (*schema.Account, error)
-	UpdateAccountMetadata(string, map[string]interface{}) error
-	DeleteAccount(string) error
-}
-
-type ORMStore struct {
-	ormDB *gorm.DB
-}
-
-func NewORMStore(ormDB *gorm.DB) *ORMStore {
-	return &ORMStore{
-		ormDB: ormDB,
-	}
-}
-
-func (s *ORMStore) Ping() error {
-	return s.ormDB.DB().Ping()
-}
-
-func (s *ORMStore) CreateAccount(accountNumber, encPubKey string, metadata map[string]interface{}) (*schema.Account, error) {
+func (s *AutonomyStore) CreateAccount(accountNumber, encPubKey string, metadata map[string]interface{}) (*schema.Account, error) {
 	a := schema.Account{
 		AccountNumber: accountNumber,
 		EncPubKey:     encPubKey,
@@ -51,7 +26,7 @@ func (s *ORMStore) CreateAccount(accountNumber, encPubKey string, metadata map[s
 	return &a, nil
 }
 
-func (s *ORMStore) GetAccount(accountNumber string) (*schema.Account, error) {
+func (s *AutonomyStore) GetAccount(accountNumber string) (*schema.Account, error) {
 	var a schema.Account
 	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
 		return nil, err
@@ -59,7 +34,7 @@ func (s *ORMStore) GetAccount(accountNumber string) (*schema.Account, error) {
 	return &a, nil
 }
 
-func (s *ORMStore) UpdateAccountMetadata(accountNumber string, metadata map[string]interface{}) error {
+func (s *AutonomyStore) UpdateAccountMetadata(accountNumber string, metadata map[string]interface{}) error {
 	var a schema.Account
 	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
 		return err
@@ -72,7 +47,7 @@ func (s *ORMStore) UpdateAccountMetadata(accountNumber string, metadata map[stri
 	return s.ormDB.Save(&a.Profile).Error
 }
 
-func (s *ORMStore) DeleteAccount(accountNumber string) error {
+func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 	if err := s.ormDB.Delete(schema.Account{}, "account_number = ?", accountNumber).Error; err != nil {
 		return err
 	}
