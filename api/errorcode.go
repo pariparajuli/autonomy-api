@@ -34,8 +34,8 @@ var (
 )
 
 type ErrorResponse struct {
-	Code    int64
-	Message string
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
 // errorJSON converts an error code to a standardized error object
