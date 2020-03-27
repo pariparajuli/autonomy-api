@@ -170,13 +170,13 @@ func (s *Server) clientVersionGateway() gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindHeader(&params); err != nil {
-			abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
+			abortWithEncoding(c, http.StatusBadRequest, errorInvalidClientVersion)
 			return
 		}
 
 		if (params.ClientType != "ios" && params.ClientType != "android") ||
 			params.ClientVersion <= 0 {
-			abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
+			abortWithEncoding(c, http.StatusBadRequest, errorInvalidClientVersion)
 			return
 		}
 
