@@ -8,6 +8,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
+// accountRegister is the API for register a new account
 func (s *Server) accountRegister(c *gin.Context) {
 	logger := log.WithField("api", "accountRegister")
 	accountNumber := c.GetString("requester")
@@ -34,6 +35,7 @@ func (s *Server) accountRegister(c *gin.Context) {
 	})
 }
 
+// accountDetail is the API to query an account
 func (s *Server) accountDetail(c *gin.Context) {
 	a := c.MustGet("account")
 	account, ok := a.(*schema.Account)
@@ -47,6 +49,7 @@ func (s *Server) accountDetail(c *gin.Context) {
 	})
 }
 
+// accountUpdateMetadata is the API to update metadata for a user
 func (s *Server) accountUpdateMetadata(c *gin.Context) {
 	accountNumber := c.GetString("requester")
 
@@ -69,6 +72,7 @@ func (s *Server) accountUpdateMetadata(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }
 
+// accountDelete is the API to remove an account from our service
 func (s *Server) accountDelete(c *gin.Context) {
 	accountNumber := c.GetString("requester")
 

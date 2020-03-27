@@ -138,6 +138,9 @@ func (s *Server) apikeyAuthentication(key string) gin.HandlerFunc {
 	}
 }
 
+// recognizeAccountMiddleware is a middleware to make sure the API user
+// has already register an account in our system. It attaches an "account"
+// key in gin's context.
 func (s *Server) recognizeAccountMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requester := c.GetString("requester")
@@ -160,6 +163,8 @@ func (s *Server) recognizeAccountMiddleware() gin.HandlerFunc {
 	}
 }
 
+// clientVersionGateway is a middleware to limit the access of the autonomy
+// api server for clients
 func (s *Server) clientVersionGateway() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var params struct {

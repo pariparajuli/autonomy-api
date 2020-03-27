@@ -6,6 +6,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
+// CreateAccount is to register an account into autonomy system
 func (s *AutonomyStore) CreateAccount(accountNumber, encPubKey string, metadata map[string]interface{}) (*schema.Account, error) {
 	a := schema.Account{
 		AccountNumber: accountNumber,
@@ -26,6 +27,7 @@ func (s *AutonomyStore) CreateAccount(accountNumber, encPubKey string, metadata 
 	return &a, nil
 }
 
+// GetAccount returns an account instance of a given account number
 func (s *AutonomyStore) GetAccount(accountNumber string) (*schema.Account, error) {
 	var a schema.Account
 	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
@@ -34,6 +36,7 @@ func (s *AutonomyStore) GetAccount(accountNumber string) (*schema.Account, error
 	return &a, nil
 }
 
+// UpdateAccountMetadata is to update metadata for a specific account
 func (s *AutonomyStore) UpdateAccountMetadata(accountNumber string, metadata map[string]interface{}) error {
 	var a schema.Account
 	if err := s.ormDB.Preload("Profile").Where("account_number = ?", accountNumber).First(&a).Error; err != nil {
@@ -47,6 +50,7 @@ func (s *AutonomyStore) UpdateAccountMetadata(accountNumber string, metadata map
 	return s.ormDB.Save(&a.Profile).Error
 }
 
+// DeleteAccount removes an account from our system permanently
 func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 	if err := s.ormDB.Delete(schema.Account{}, "account_number = ?", accountNumber).Error; err != nil {
 		return err

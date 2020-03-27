@@ -17,6 +17,7 @@ type AutonomyCore interface {
 	DeleteAccount(string) error
 }
 
+// AutonomyStore is an implementation of AutonomyCore
 type AutonomyStore struct {
 	ormDB *gorm.DB
 }
@@ -27,6 +28,7 @@ func NewAutonomyStore(ormDB *gorm.DB) *AutonomyStore {
 	}
 }
 
+// Ping is to check the storage health status
 func (s *AutonomyStore) Ping() error {
 	return s.ormDB.DB().Ping()
 }
