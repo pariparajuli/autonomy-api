@@ -1,5 +1,7 @@
 package api
 
+import "github.com/bitmark-inc/autonomy-api/store"
+
 var (
 	errorMessageMap = map[int64]string{
 		999:  "internal server error",
@@ -15,6 +17,8 @@ var (
 		1100: "his account has been registered or has been taken",
 		1101: "account not found",
 		1102: "the account is under deletion",
+
+		1200: store.ErrRequestNotExist.Error(),
 	}
 
 	errorInternalServer             = errorJSON(999)
@@ -31,6 +35,8 @@ var (
 	errorAccountTaken    = errorJSON(1100)
 	errorAccountNotFound = errorJSON(1101)
 	errorAccountDeleting = errorJSON(1102)
+
+	errorRequestNotExist = errorJSON(1200)
 )
 
 type ErrorResponse struct {

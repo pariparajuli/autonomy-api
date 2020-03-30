@@ -37,5 +37,6 @@ func main() {
 	db.AutoMigrate(
 		&schema.Account{},
 		&schema.AccountProfile{},
+		&schema.HelpRequest{},
 	)
 }

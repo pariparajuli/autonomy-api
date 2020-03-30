@@ -128,6 +128,12 @@ func (s *Server) setupRouter() *gin.Engine {
 		// accountRoute.GET("/me/export/download", s.accountDownloadExport)
 	}
 
+	helpRoute := apiRoute.Group("/helps")
+	{
+		helpRoute.POST("", s.askForHelp)
+		helpRoute.PATCH("/:helpID", s.answerHelp)
+	}
+
 	secretRoute := r.Group("/secret")
 	secretRoute.Use(logmodule.Ginrus("Secret"))
 	secretRoute.Use(s.apikeyAuthentication(viper.GetString("server.apikey.admin")))

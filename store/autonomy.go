@@ -16,6 +16,10 @@ type AutonomyCore interface {
 	UpdateAccountMetadata(string, map[string]interface{}) error
 	UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error
 	DeleteAccount(string) error
+
+	// Help
+	RequestHelp(accountNumber, subject, text string) (*schema.HelpRequest, error)
+	AnswerHelp(accountNumber string, helpID string) error
 }
 
 // AutonomyStore is an implementation of AutonomyCore
