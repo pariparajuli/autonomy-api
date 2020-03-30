@@ -135,6 +135,11 @@ func (s *Server) setupRouter() *gin.Engine {
 		// secretRoute.POST("/delete-accounts", s.adminAccountDelete)
 	}
 
+	symptomRoute := apiRoute.Group("/symptoms")
+	{
+		symptomRoute.GET("", s.getSymptoms)
+	}
+
 	metricRoute := r.Group("/metrics")
 	metricRoute.Use(logmodule.Ginrus("Metric"))
 	metricRoute.Use(cors.New(cors.Config{
