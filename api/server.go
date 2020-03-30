@@ -212,7 +212,7 @@ func (s *Server) information(c *gin.Context) {
 	})
 }
 
-func responseWithEncoding(c *gin.Context, code int, obj ErrorResponse) {
+func responseWithEncoding(c *gin.Context, code int, obj gin.H) {
 	acceptEncoding := c.GetHeader("Accept-Encoding")
 	switch acceptEncoding {
 	default:
@@ -224,6 +224,8 @@ func abortWithEncoding(c *gin.Context, code int, obj ErrorResponse, errors ...er
 	for _, err := range errors {
 		c.Error(err)
 	}
-	responseWithEncoding(c, code, obj)
+	responseWithEncoding(c, code, gin.H{
+		"error": obj,
+	})
 	c.Abort()
 }

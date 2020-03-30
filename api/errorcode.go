@@ -7,12 +7,14 @@ var (
 		999:  "internal server error",
 		1000: "invalid signature",
 		1001: "invalid authorization format",
-		1002: "authorization expired",
+		1002: "difference between the request time and the current time is too large",
 		1003: "invalid token",
-		1004: "invalid parameters",
-		1005: "cannot parse request",
+
 		1006: "invalid value of client version",
 		1007: "API for this client version has been discontinued",
+
+		1010: "invalid parameters",
+		1011: "cannot parse request",
 
 		1100: "his account has been registered or has been taken",
 		1101: "account not found",
@@ -24,13 +26,13 @@ var (
 	errorInternalServer             = errorJSON(999)
 	errorInvalidSignature           = errorJSON(1000)
 	errorInvalidAuthorizationFormat = errorJSON(1001)
-	errorAuthorizationExpired       = errorJSON(1002)
+	errorRequestTimeTooSkewed       = errorJSON(1002)
 	errorInvalidToken               = errorJSON(1003)
+	errorInvalidClientVersion       = errorJSON(1006)
+	errorUnsupportedClientVersion   = errorJSON(1007)
 
-	errorInvalidParameters        = errorJSON(1004)
-	errorCannotParseRequest       = errorJSON(1005)
-	errorInvalidClientVersion     = errorJSON(1006)
-	errorUnsupportedClientVersion = errorJSON(1007)
+	errorInvalidParameters  = errorJSON(1010)
+	errorCannotParseRequest = errorJSON(1011)
 
 	errorAccountTaken    = errorJSON(1100)
 	errorAccountNotFound = errorJSON(1101)

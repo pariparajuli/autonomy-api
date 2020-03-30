@@ -57,7 +57,7 @@ func (s *Server) requestJWT(c *gin.Context) {
 	now := time.Unix(0, time.Now().UnixNano())
 	duration := now.Sub(created)
 	if math.Abs(duration.Minutes()) > float64(5) {
-		abortWithEncoding(c, 401, errorAuthorizationExpired)
+		abortWithEncoding(c, 401, errorRequestTimeTooSkewed)
 		return
 	}
 
