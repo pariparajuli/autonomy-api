@@ -129,8 +129,10 @@ func (s *Server) setupRouter() *gin.Engine {
 	}
 
 	helpRoute := apiRoute.Group("/helps")
+	helpRoute.Use(s.recognizeAccountMiddleware())
 	{
 		helpRoute.POST("", s.askForHelp)
+		helpRoute.GET("/:helpID", s.queryHelps)
 		helpRoute.PATCH("/:helpID", s.answerHelp)
 	}
 

@@ -26,6 +26,16 @@ func (s *AutonomyStore) RequestHelp(accountNumber, subject, needs, meetingPlace,
 	return &help, nil
 }
 
+func (s *AutonomyStore) GetHelp(helpID string) (*schema.HelpRequest, error) {
+	var help schema.HelpRequest
+
+	if err := s.ormDB.Where("id = ?", helpID).First(&help).Error; err != nil {
+		return nil, err
+	}
+
+	return &help, nil
+}
+
 // AnswerHelp set a request to `RESPONDED`. A request could be updated only when
 // its state is `PENDING` and the helper is not the same as the requester.
 func (s *AutonomyStore) AnswerHelp(accountNumber string, helpID string) error {

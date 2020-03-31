@@ -34,6 +34,29 @@ func (s *Server) askForHelp(c *gin.Context) {
 	return
 }
 
+// queryHelps is the API for return a list of helps if a help id is not given.
+// It returns a specific help request if the help id is provided.
+func (s *Server) queryHelps(c *gin.Context) {
+	var result gin.H
+	helpID := c.Param("helpID")
+
+	if helpID != "" {
+		help, err := s.store.GetHelp(helpID)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+		result = gin.H{
+			"result": help,
+		}
+	} else {
+
+	}
+
+	c.JSON(http.StatusOK, result)
+	return
+}
+
 // answerHelp is the API for answer a help
 func (s *Server) answerHelp(c *gin.Context) {
 	id := c.Param("helpID")

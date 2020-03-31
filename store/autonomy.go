@@ -19,6 +19,7 @@ type AutonomyCore interface {
 
 	// Help
 	RequestHelp(accountNumber, subject, needs, meetingPlace, contactInfo string) (*schema.HelpRequest, error)
+	GetHelp(helpID string) (*schema.HelpRequest, error)
 	AnswerHelp(accountNumber string, helpID string) error
 }
 
