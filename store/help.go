@@ -11,11 +11,13 @@ var (
 )
 
 // RequestHelp create a help entry
-func (s *AutonomyStore) RequestHelp(accountNumber, subject, text string) (*schema.HelpRequest, error) {
+func (s *AutonomyStore) RequestHelp(accountNumber, subject, needs, meetingPlace, contactInfo string) (*schema.HelpRequest, error) {
 	help := schema.HelpRequest{
-		Requester: accountNumber,
-		Subject:   subject,
-		Text:      text,
+		Requester:    accountNumber,
+		Subject:      subject,
+		Needs:        needs,
+		MeetingPlace: meetingPlace,
+		ContactInfo:  contactInfo,
 	}
 
 	if err := s.ormDB.Create(&help).Error; err != nil {

@@ -18,7 +18,7 @@ type AutonomyCore interface {
 	DeleteAccount(string) error
 
 	// Help
-	RequestHelp(accountNumber, subject, text string) (*schema.HelpRequest, error)
+	RequestHelp(accountNumber, subject, needs, meetingPlace, contactInfo string) (*schema.HelpRequest, error)
 	AnswerHelp(accountNumber string, helpID string) error
 }
 

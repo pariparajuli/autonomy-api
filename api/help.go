@@ -12,8 +12,10 @@ func (s *Server) askForHelp(c *gin.Context) {
 	requester := c.GetString("requester")
 
 	var params struct {
-		Subject string `json:"subject"`
-		Text    string `json:"text"`
+		Subject      string `json:"subject"`
+		Needs        string `json:"exact_needs"`
+		MeetingPlace string `json:"meeting_location"`
+		ContactInfo  string `json:"contact_info"`
 	}
 
 	if err := c.BindJSON(&params); err != nil {
@@ -21,7 +23,7 @@ func (s *Server) askForHelp(c *gin.Context) {
 		return
 	}
 
-	req, err := s.store.RequestHelp(requester, params.Subject, params.Text)
+	req, err := s.store.RequestHelp(requester, params.Subject, params.Needs, params.MeetingPlace, params.ContactInfo)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
