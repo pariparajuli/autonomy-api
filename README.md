@@ -13,6 +13,8 @@ Configurate your database by setting environment variable:
 
 ```
 $ export AUTONOMY_ORM_CONN='user=user password= host=localhost port=5432 dbname=autonomy connect_timeout=10 sslmode=disable'
+  export AUTONOMY_MONGO_CONN='mongodb://user:password@localhost:27017'
+  export AUTONOMY_MONGO_DATABASE=autonomy
 ```
 
 Step into folder `schema/command/migrate` and run

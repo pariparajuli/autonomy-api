@@ -19,6 +19,7 @@ var (
 		1100: "his account has been registered or has been taken",
 		1101: "account not found",
 		1102: "the account is under deletion",
+		1103: "query score error",
 
 		1200: store.ErrRequestNotExist.Error(),
 	}
@@ -37,6 +38,7 @@ var (
 	errorAccountTaken    = errorJSON(1100)
 	errorAccountNotFound = errorJSON(1101)
 	errorAccountDeleting = errorJSON(1102)
+	errorScore           = errorJSON(1103)
 
 	errorRequestNotExist = errorJSON(1200)
 )

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -15,10 +17,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/bitmark-inc/bitmark-sdk-go/account"
+
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
 	"github.com/bitmark-inc/autonomy-api/store"
-	"github.com/bitmark-inc/bitmark-sdk-go/account"
 )
 
 var log *logrus.Entry
@@ -33,7 +36,8 @@ type Server struct {
 	server *http.Server
 
 	// Stores
-	store store.AutonomyCore
+	store      store.AutonomyCore
+	mongoStore store.MongoStore
 
 	// JWT private key
 	jwtPrivateKey *rsa.PrivateKey
@@ -54,6 +58,7 @@ type Server struct {
 // NewServer new instance of server
 func NewServer(
 	ormDB *gorm.DB,
+	mongoClient *mongo.Client,
 	jwtKey *rsa.PrivateKey,
 	bitmarkAccount *account.AccountV2) *Server {
 	tr := &http.Transport{
@@ -66,7 +71,11 @@ func NewServer(
 	}
 
 	return &Server{
-		store:           store.NewAutonomyStore(ormDB),
+		store: store.NewAutonomyStore(ormDB),
+		mongoStore: store.NewMongoStore(
+			mongoClient,
+			viper.GetString("mongo.database"),
+		),
 		jwtPrivateKey:   jwtKey,
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,
@@ -164,6 +173,13 @@ func (s *Server) setupRouter() *gin.Engine {
 		// metricRoute.GET("/total-users", s.metricAccountCreation)
 	}
 
+	// health score
+	scoreRoute := apiRoute.Group("/score")
+	scoreRoute.Use(s.recognizeAccountMiddleware())
+	{
+		scoreRoute.GET("", s.score)
+	}
+
 	r.GET("/healthz", s.healthz)
 
 	return r
@@ -171,6 +187,7 @@ func (s *Server) setupRouter() *gin.Engine {
 
 // Shutdown to shutdown the server
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.mongoStore.Close()
 	return s.server.Shutdown(ctx)
 }
 
@@ -188,6 +205,11 @@ func shouldInterupt(err error, c *gin.Context) bool {
 func (s *Server) healthz(c *gin.Context) {
 	// Ping db
 	err := s.store.Ping()
+	if shouldInterupt(err, c) {
+		return
+	}
+
+	err = s.mongoStore.Ping()
 	if shouldInterupt(err, c) {
 		return
 	}

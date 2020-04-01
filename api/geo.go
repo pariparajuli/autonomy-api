@@ -42,6 +42,10 @@ func (s *Server) updateGeoPositionMiddleware(c *gin.Context) {
 			if err := s.store.UpdateAccountGeoPosition(accountNumber, lat, long); err != nil {
 				c.Error(err)
 			}
+
+			if err := s.mongoStore.UpdateAccountGeoPosition(accountNumber, lat, long); err != nil {
+				c.Error(err)
+			}
 		} else {
 			c.Error(err)
 		}

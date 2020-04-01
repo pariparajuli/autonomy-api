@@ -13,6 +13,9 @@ import (
 	"syscall"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/getsentry/sentry-go"
 	"github.com/jinzhu/gorm"
@@ -21,9 +24,10 @@ import (
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
-	"github.com/bitmark-inc/autonomy-api/api"
 	bitmarksdk "github.com/bitmark-inc/bitmark-sdk-go"
 	"github.com/bitmark-inc/bitmark-sdk-go/account"
+
+	"github.com/bitmark-inc/autonomy-api/api"
 )
 
 var (
@@ -97,7 +101,7 @@ func main() {
 		}
 
 		if ormDB != nil {
-			log.Info("Shuting down db store")
+			log.Info("Shutting down db store")
 			if err := ormDB.Close(); err != nil {
 				log.Error(err)
 			}
@@ -126,7 +130,7 @@ func main() {
 	}); err != nil {
 		log.Error(err)
 	}
-	log.WithField("prefix", "init").Info("Initilized sentry")
+	log.WithField("prefix", "init").Info("Initialized sentry")
 
 	// Init Bitmark SDK
 	bitmarksdk.Init(&bitmarksdk.Config{
@@ -134,7 +138,7 @@ func main() {
 		APIToken:   viper.GetString("bitmarksdk.token"),
 		HTTPClient: httpClient,
 	})
-	log.WithField("prefix", "init").Info("Initilized bitmark sdk")
+	log.WithField("prefix", "init").Info("Initialized bitmark sdk")
 
 	// Load global bitmark account
 	a, err := account.FromSeed(viper.GetString("account.seed"))
@@ -172,12 +176,26 @@ func main() {
 		log.Panic(err)
 	}
 
+	// initialise mongodb connections
+	opts := options.Client().ApplyURI(viper.GetString("mongo.conn"))
+	opts.SetMaxPoolSize(viper.GetUint64("mongo.pool"))
+	mongoClient, err := mongo.NewClient(opts)
+	if nil != err {
+		log.Panicf("create mongo client with error: %s", err)
+	}
+
+	err = mongoClient.Connect(context.Background())
+	if nil != err {
+		log.Panicf("connect mongo database with error: %s", err)
+	}
+
 	// Init http server
 	server = api.NewServer(
 		ormDB,
+		mongoClient,
 		jwtPrivateKey,
 		globalAccount)
-	log.WithField("prefix", "init").Info("Initilized http server")
+	log.WithField("prefix", "init").Info("Initialized http server")
 
 	// Remove initial context
 	initialCtx = nil

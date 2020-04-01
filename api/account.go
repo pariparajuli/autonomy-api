@@ -28,6 +28,12 @@ func (s *Server) accountRegister(c *gin.Context) {
 		return
 	}
 
+	err = s.mongoStore.CreateAccount(a)
+	if err != nil {
+		abortWithEncoding(c, http.StatusForbidden, errorAccountTaken, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"result": a.Profile,
 	})

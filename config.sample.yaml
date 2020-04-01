@@ -13,6 +13,11 @@ bitmarksdk:
   network: testnet
 orm:
   conn: user=autonomy password= host= port= dbname=autonomy connect_timeout=10 pool_max_conns=10
+mongo:
+  conn: mongodb://user:password@localhost:27017
+  database: test
+  connect_timeout: 10
+  pool: 10
 sentry:
   dsn:
   dist: 0.1

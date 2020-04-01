@@ -1,7 +1,11 @@
 package store
 
 import (
+	"context"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
@@ -74,6 +78,62 @@ func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 	if err := s.ormDB.Delete(schema.AccountProfile{}, "account_number = ?", accountNumber).Error; err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (m *mongoDB) CreateAccount(a *schema.Account) error {
+	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	p := Profile{
+		ID:            a.ProfileID.String(),
+		AccountNumber: a.AccountNumber,
+		HealthScore:   0,
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debug("account profile")
+
+	result, err := c.InsertOne(ctx, p)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("create mongo account error: %s", err)
+		return err
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Infof("create mongo account result: %v", result)
+	return nil
+}
+
+func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error {
+	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("update account %s to new geolocation: long %f, lat %f", accountNumber, longitude, latitude)
+
+	query := bson.M{
+		"account_number": bson.M{
+			"$eq": accountNumber,
+		},
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"location": bson.M{
+				"latitude":  latitude,
+				"longitude": longitude,
+			},
+		},
+	}
+
+	result, err := c.UpdateMany(ctx, query, update)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("update account %s geolocation with error: %s", accountNumber, err)
+		return err
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("update mongo account geolocation result: %v", result)
 
 	return nil
 }
