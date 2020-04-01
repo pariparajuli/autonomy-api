@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/store"
 )
 
 func init() {
@@ -57,7 +56,7 @@ func migrateMongo() error {
 	opts.SetMaxPoolSize(1)
 	client, _ := mongo.NewClient(opts)
 	_ = client.Connect(context.Background())
-	c := client.Database(viper.GetString("mongo.database")).Collection(store.ProfileCollectionName)
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.ProfileCollectionName)
 
 	// here is reference from api/store/profile
 	// if bson key of location is changed, here should also be changed

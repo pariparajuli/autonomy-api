@@ -5,6 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 // Healthier - interface to get average health score by ids
@@ -14,7 +16,7 @@ type Healthier interface {
 
 // Health - average health score by uuid
 func (m *mongoDB) Health(ids []string) (float64, error) {
-	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 	cur, err := c.Find(context.Background(), healthQuery(ids))
 	if nil != err {
 		return float64(0), err
@@ -24,7 +26,7 @@ func (m *mongoDB) Health(ids []string) (float64, error) {
 
 	var sum float64
 	var count int
-	var p Profile
+	var p schema.Profile
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

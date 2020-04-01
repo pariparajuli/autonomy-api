@@ -83,11 +83,11 @@ func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 }
 
 func (m *mongoDB) CreateAccount(a *schema.Account) error {
-	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	p := Profile{
+	p := schema.Profile{
 		ID:            a.ProfileID.String(),
 		AccountNumber: a.AccountNumber,
 		HealthScore:   0,
@@ -106,7 +106,7 @@ func (m *mongoDB) CreateAccount(a *schema.Account) error {
 }
 
 func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error {
-	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

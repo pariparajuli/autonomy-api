@@ -24,9 +24,9 @@ type Group interface {
 // NearestCount - find nearest account number up to some number
 // return matches by id
 func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error) {
-	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 
-	var record Profile
+	var record schema.Profile
 	ids := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -61,7 +61,7 @@ func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error)
 // return matches by account number
 func (m *mongoDB) NearestDistance(distance int, cords schema.Location) ([]string, error) {
 	query := distanceQuery(distance, cords)
-	c := m.client.Database(m.database).Collection(ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -72,7 +72,7 @@ func (m *mongoDB) NearestDistance(distance int, cords schema.Location) ([]string
 	}
 
 	accountNumbers := make([]string, 0)
-	var record Profile
+	var record schema.Profile
 
 	// iterate
 	for cur.Next(ctx) {
