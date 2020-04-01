@@ -106,6 +106,21 @@ func (mr *MockAutonomyCoreMockRecorder) GetHelp(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHelp", reflect.TypeOf((*MockAutonomyCore)(nil).GetHelp), arg0)
 }
 
+// ListHelps mocks base method
+func (m *MockAutonomyCore) ListHelps(arg0 string, arg1, arg2 float64, arg3 int64) ([]schema.HelpRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListHelps", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]schema.HelpRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListHelps indicates an expected call of ListHelps
+func (mr *MockAutonomyCoreMockRecorder) ListHelps(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHelps", reflect.TypeOf((*MockAutonomyCore)(nil).ListHelps), arg0, arg1, arg2, arg3)
+}
+
 // Ping mocks base method
 func (m *MockAutonomyCore) Ping() error {
 	m.ctrl.T.Helper()

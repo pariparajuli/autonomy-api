@@ -139,3 +139,19 @@ func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longi
 
 	return nil
 }
+
+func (m *mongoDB) DeleteAccount(accountNumber string) error {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	result, err := c.DeleteOne(ctx, bson.M{"account_number": accountNumber})
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("delete mongo account %s with error: %s", accountNumber, err)
+		return err
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Infof("delete account number %s success with result: %v", accountNumber, result)
+
+	return nil
+}

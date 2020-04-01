@@ -83,5 +83,10 @@ func (s *Server) accountDelete(c *gin.Context) {
 		return
 	}
 
+	if err := s.mongoStore.DeleteAccount(accountNumber); err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }

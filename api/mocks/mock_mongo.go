@@ -59,6 +59,20 @@ func (mr *MockMongoStoreMockRecorder) CreateAccount(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccount", reflect.TypeOf((*MockMongoStore)(nil).CreateAccount), arg0)
 }
 
+// DeleteAccount mocks base method
+func (m *MockMongoStore) DeleteAccount(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAccount", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAccount indicates an expected call of DeleteAccount
+func (mr *MockMongoStoreMockRecorder) DeleteAccount(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccount", reflect.TypeOf((*MockMongoStore)(nil).DeleteAccount), arg0)
+}
+
 // Health mocks base method
 func (m *MockMongoStore) Health(arg0 []string) (float64, error) {
 	m.ctrl.T.Helper()

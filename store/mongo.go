@@ -23,10 +23,11 @@ type MongoStore interface {
 }
 
 // MongoAccount - account related operations
-// mongo version create account is different from postgresql
+// mongo version create account is different from postgres
 type MongoAccount interface {
 	CreateAccount(*schema.Account) error
 	UpdateAccountGeoPosition(string, float64, float64) error
+	DeleteAccount(string) error
 }
 
 // Closer - close db connection
