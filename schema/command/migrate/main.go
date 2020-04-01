@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
@@ -21,30 +23,30 @@ func init() {
 }
 
 func main() {
-	//db, err := gorm.Open("postgres", viper.GetString("orm.conn"))
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := db.Exec(`CREATE SCHEMA IF NOT EXISTS autonomy`).Error; err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := db.Exec("SET search_path TO autonomy").Error; err != nil {
-	//	panic(err)
-	//}
-	//
-	//if err := db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`).Error; err != nil {
-	//	panic(err)
-	//}
-	//
-	//db.AutoMigrate(
-	//	&schema.Account{},
-	//	&schema.AccountProfile{},
-	//	&schema.HelpRequest{},
-	//)
+	db, err := gorm.Open("postgres", viper.GetString("orm.conn"))
+	if err != nil {
+		panic(err)
+	}
 
-	err := migrateMongo()
+	if err := db.Exec(`CREATE SCHEMA IF NOT EXISTS autonomy`).Error; err != nil {
+		panic(err)
+	}
+
+	if err := db.Exec("SET search_path TO autonomy").Error; err != nil {
+		panic(err)
+	}
+
+	if err := db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`).Error; err != nil {
+		panic(err)
+	}
+
+	db.AutoMigrate(
+		&schema.Account{},
+		&schema.AccountProfile{},
+		&schema.HelpRequest{},
+	)
+
+	err = migrateMongo()
 	if nil != err {
 		panic(err)
 	}
@@ -59,16 +61,42 @@ func migrateMongo() error {
 
 	// here is reference from api/store/profile
 	// if bson key of location is changed, here should also be changed
-	idx := mongo.IndexModel{
+	geo := mongo.IndexModel{
 		Keys: bson.M{
 			"location": "2dsphere",
 		},
 		Options: nil,
 	}
 
-	_, err := c.Indexes().CreateOne(context.Background(), idx)
+	_, err := c.Indexes().CreateOne(context.Background(), geo)
 	if nil != err {
-		fmt.Println("mongodb create index with error: ", err)
+		fmt.Println("mongodb create geo index with error: ", err)
+		return err
+	}
+
+	id := mongo.IndexModel{
+		Keys: bson.M{
+			"id": 1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
+	_, err = c.Indexes().CreateOne(context.Background(), id)
+	if nil != err {
+		fmt.Println("mongodb create id index with error: ", err)
+		return err
+	}
+
+	accountNumber := mongo.IndexModel{
+		Keys: bson.M{
+			"account_number": 1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
+	_, err = c.Indexes().CreateOne(context.Background(), accountNumber)
+	if nil != err {
+		fmt.Println("mongodb create account_number index with error: ", err)
 		return err
 	}
 
