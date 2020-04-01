@@ -3,11 +3,14 @@ package store
 import (
 	"fmt"
 
+	"github.com/lib/pq"
+
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 var (
-	ErrRequestNotExist = fmt.Errorf("the request is either solved or not open for you")
+	ErrRequestNotExist     = fmt.Errorf("the request is either solved or not open for you")
+	ErrMultipleRequestMade = fmt.Errorf("making multiple requests is not allowed")
 )
 
 // RequestHelp create a help entry
@@ -21,9 +24,42 @@ func (s *AutonomyStore) RequestHelp(accountNumber, subject, needs, meetingPlace,
 	}
 
 	if err := s.ormDB.Create(&help).Error; err != nil {
+		pqErr := err.(*pq.Error)
+		if pqErr.Code == "23505" {
+			return nil, ErrMultipleRequestMade
+		}
 		return nil, err
 	}
 	return &help, nil
+}
+
+// ListHelps first queries accounts within 50KM and returns lists of help
+// requests by those accounts
+func (s *AutonomyStore) ListHelps(accountNumber string, latitude, longitude float64, count int64) ([]schema.HelpRequest, error) {
+	helps := []schema.HelpRequest{}
+
+	// HARDCODED 50KM
+	accounts, err := s.mongo.NearestDistance(50000, schema.Location{
+		Latitude:  latitude,
+		Longitude: longitude,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ormDB.Raw(
+		`SELECT * FROM help_requests
+		JOIN unnest(?::text[]) WITH ORDINALITY account(requester, index) USING (requester)
+		WHERE (requester = ? OR state = ?) AND created_at > now() - INTERVAL '12 hours'
+		ORDER BY account.index;`, // HARDCODED: 12 hours of expiration
+		pq.Array(accounts),
+		accountNumber,
+		schema.HELP_PENDING,
+	).Scan(&helps).Error; err != nil {
+		return nil, err
+	}
+
+	return helps, nil
 }
 
 func (s *AutonomyStore) GetHelp(helpID string) (*schema.HelpRequest, error) {

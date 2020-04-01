@@ -70,12 +70,14 @@ func NewServer(
 		Transport: tr,
 	}
 
+	mongoStore := store.NewMongoStore(
+		mongoClient,
+		viper.GetString("mongo.database"),
+	)
+
 	return &Server{
-		store: store.NewAutonomyStore(ormDB),
-		mongoStore: store.NewMongoStore(
-			mongoClient,
-			viper.GetString("mongo.database"),
-		),
+		store:           store.NewAutonomyStore(ormDB, mongoStore),
+		mongoStore:      mongoStore,
 		jwtPrivateKey:   jwtKey,
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,
@@ -141,6 +143,7 @@ func (s *Server) setupRouter() *gin.Engine {
 	helpRoute.Use(s.recognizeAccountMiddleware())
 	{
 		helpRoute.POST("", s.askForHelp)
+		helpRoute.GET("", s.queryHelps)
 		helpRoute.GET("/:helpID", s.queryHelps)
 		helpRoute.PATCH("/:helpID", s.answerHelp)
 	}

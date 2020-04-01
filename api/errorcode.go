@@ -20,8 +20,10 @@ var (
 		1101: "account not found",
 		1102: "the account is under deletion",
 		1103: "query score error",
+		1104: "unknown account location",
 
 		1200: store.ErrRequestNotExist.Error(),
+		1201: store.ErrMultipleRequestMade.Error(),
 	}
 
 	errorInternalServer             = errorJSON(999)
@@ -35,12 +37,14 @@ var (
 	errorInvalidParameters  = errorJSON(1010)
 	errorCannotParseRequest = errorJSON(1011)
 
-	errorAccountTaken    = errorJSON(1100)
-	errorAccountNotFound = errorJSON(1101)
-	errorAccountDeleting = errorJSON(1102)
-	errorScore           = errorJSON(1103)
+	errorAccountTaken           = errorJSON(1100)
+	errorAccountNotFound        = errorJSON(1101)
+	errorAccountDeleting        = errorJSON(1102)
+	errorScore                  = errorJSON(1103)
+	errorUnknownAccountLocation = errorJSON(1104)
 
-	errorRequestNotExist = errorJSON(1200)
+	errorRequestNotExist     = errorJSON(1200)
+	errorMultipleRequestMade = errorJSON(1201)
 )
 
 type ErrorResponse struct {

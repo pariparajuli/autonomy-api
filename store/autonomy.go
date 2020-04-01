@@ -20,17 +20,20 @@ type AutonomyCore interface {
 	// Help
 	RequestHelp(accountNumber, subject, needs, meetingPlace, contactInfo string) (*schema.HelpRequest, error)
 	GetHelp(helpID string) (*schema.HelpRequest, error)
+	ListHelps(accountNumber string, latitude, longitude float64, count int64) ([]schema.HelpRequest, error)
 	AnswerHelp(accountNumber string, helpID string) error
 }
 
 // AutonomyStore is an implementation of AutonomyCore
 type AutonomyStore struct {
 	ormDB *gorm.DB
+	mongo MongoStore
 }
 
-func NewAutonomyStore(ormDB *gorm.DB) *AutonomyStore {
+func NewAutonomyStore(ormDB *gorm.DB, mongo MongoStore) *AutonomyStore {
 	return &AutonomyStore{
 		ormDB: ormDB,
+		mongo: mongo,
 	}
 }
 

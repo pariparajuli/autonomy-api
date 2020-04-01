@@ -39,11 +39,18 @@ func main() {
 		panic(err)
 	}
 
-	db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&schema.Account{},
 		&schema.AccountProfile{},
 		&schema.HelpRequest{},
-	)
+	).Error; err != nil {
+		panic(err)
+	}
+
+	if err := db.Model(schema.HelpRequest{}).Where(fmt.Sprintf("state = '%s'", "PENDING")).
+		AddUniqueIndex("help_request_unique_if_not_done", "requester").Error; err != nil {
+		panic(err)
+	}
 
 	err = migrateMongo()
 	if nil != err {

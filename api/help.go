@@ -3,8 +3,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/bitmark-inc/autonomy-api/store"
 	"github.com/gin-gonic/gin"
+
+	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/store"
 )
 
 // askForHelp is the API for asking help from others
@@ -25,8 +27,13 @@ func (s *Server) askForHelp(c *gin.Context) {
 
 	req, err := s.store.RequestHelp(requester, params.Subject, params.Needs, params.MeetingPlace, params.ContactInfo)
 	if err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
-		return
+		if err == store.ErrMultipleRequestMade {
+			abortWithEncoding(c, http.StatusInternalServerError, errorMultipleRequestMade, err)
+			return
+		} else {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
 	}
 
 	// TODO: broadcast a notification to surrounding users
@@ -50,7 +57,28 @@ func (s *Server) queryHelps(c *gin.Context) {
 			"result": help,
 		}
 	} else {
+		a := c.MustGet("account")
+		account, ok := a.(*schema.Account)
+		if !ok {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+			return
+		}
 
+		p := account.Profile
+		if p.State.LastLocation == nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorUnknownAccountLocation)
+			return
+		}
+
+		helps, err := s.store.ListHelps(p.AccountNumber, p.State.LastLocation.Latitude, p.State.LastLocation.Longitude, 10)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+
+		result = gin.H{
+			"result": helps,
+		}
 	}
 
 	c.JSON(http.StatusOK, result)
