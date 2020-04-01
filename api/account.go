@@ -29,7 +29,7 @@ func (s *Server) accountRegister(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"result": a,
+		"result": a.Profile,
 	})
 }
 
