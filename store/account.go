@@ -121,8 +121,10 @@ func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longi
 	update := bson.M{
 		"$set": bson.M{
 			"location": bson.M{
-				"latitude":  latitude,
-				"longitude": longitude,
+				"type": "Point",
+				"coordinates": bson.A{
+					longitude, latitude,
+				},
 			},
 		},
 	}
