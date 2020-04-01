@@ -25,11 +25,13 @@ func (s *Server) score(c *gin.Context) {
 
 	if nil != err {
 		abortWithEncoding(c, http.StatusInternalServerError, errorScore, err)
+		return
 	}
 
 	score, err := s.mongoStore.Health(ids)
 	if nil != err {
 		abortWithEncoding(c, http.StatusInternalServerError, errorScore, err)
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
