@@ -50,9 +50,10 @@ func (s *AutonomyStore) ListHelps(accountNumber string, latitude, longitude floa
 	if err := s.ormDB.Raw(
 		`SELECT * FROM help_requests
 		JOIN unnest(?::text[]) WITH ORDINALITY account(requester, index) USING (requester)
-		WHERE (requester = ? OR state = ?) AND created_at > now() - INTERVAL '12 hours'
-		ORDER BY account.index;`, // HARDCODED: 12 hours of expiration
+		WHERE (requester = ? OR helper = ? OR state = ?) AND created_at > now() - INTERVAL '12 hours'
+		ORDER BY account.index, state;`, // HARDCODED: 12 hours of expiration
 		pq.Array(accounts),
+		accountNumber,
 		accountNumber,
 		schema.HELP_PENDING,
 	).Scan(&helps).Error; err != nil {
