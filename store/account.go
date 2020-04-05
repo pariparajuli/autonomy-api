@@ -155,3 +155,28 @@ func (m *mongoDB) DeleteAccount(accountNumber string) error {
 
 	return nil
 }
+
+// UpdateAccountScore update a score of an account
+func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("update  account %s  with a new score %f", accountNumber, score)
+
+	query := bson.M{
+		"account_number": bson.M{
+			"$eq": accountNumber,
+		},
+	}
+	update := bson.M{"$set": bson.M{"health_score": score}}
+	result, err := c.UpdateMany(ctx, query, update)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("update score of acount:%s  error: %s", accountNumber, err)
+		return err
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("update score of an acount:%s result: %v", accountNumber, result)
+
+	return nil
+}

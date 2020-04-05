@@ -18,6 +18,7 @@ type MongoStore interface {
 	Group
 	Healthier
 	MongoAccount
+	CitizenReport
 	Closer
 	Pinger
 }
@@ -28,6 +29,7 @@ type MongoAccount interface {
 	CreateAccount(*schema.Account) error
 	UpdateAccountGeoPosition(string, float64, float64) error
 	DeleteAccount(string) error
+	UpdateAccountScore(string, float64) error
 }
 
 // Closer - close db connection

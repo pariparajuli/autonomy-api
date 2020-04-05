@@ -21,6 +21,7 @@ var (
 		1102: "the account is under deletion",
 		1103: "query score error",
 		1104: "unknown account location",
+		1105: "update score error",
 
 		1200: store.ErrRequestNotExist.Error(),
 		1201: store.ErrMultipleRequestMade.Error(),
@@ -42,6 +43,7 @@ var (
 	errorAccountDeleting        = errorJSON(1102)
 	errorScore                  = errorJSON(1103)
 	errorUnknownAccountLocation = errorJSON(1104)
+	errorUpdateScore            = errorJSON(1105)
 
 	errorRequestNotExist     = errorJSON(1200)
 	errorMultipleRequestMade = errorJSON(1201)
