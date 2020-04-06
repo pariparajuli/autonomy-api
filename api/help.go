@@ -3,8 +3,10 @@ package api
 import (
 	"net/http"
 
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/gin-gonic/gin"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
@@ -12,6 +14,12 @@ import (
 // askForHelp is the API for asking help from others
 func (s *Server) askForHelp(c *gin.Context) {
 	requester := c.GetString("requester")
+	a := c.MustGet("account")
+	account, ok := a.(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
 
 	var params struct {
 		Subject      string `json:"subject"`
@@ -34,6 +42,34 @@ func (s *Server) askForHelp(c *gin.Context) {
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 			return
 		}
+	}
+	lastLocation := account.Profile.State.LastLocation
+	if lastLocation == nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorUnknownAccountLocation)
+		return
+	}
+
+
+	accountNumbers, err := s.mongoStore.NearestDistance(consts.CORHORT_DISTANCE_RANGE, *lastLocation)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	if _, err := s.background.SendTask(&tasks.Signature{
+		Name: "broadcast_help",
+		Args: []tasks.Arg{
+			{
+				Type:  "string",
+				Value: req.ID.String(),
+			},
+			{
+				Type:  "[]string",
+				Value: accountNumbers,
+			},
+		},
+	}); err != nil {
+		c.Error(err)
 	}
 
 	// TODO: broadcast a notification to surrounding users
@@ -98,6 +134,22 @@ func (s *Server) answerHelp(c *gin.Context) {
 		}
 
 		return
+	}
+
+	if _, err := s.background.SendTask(&tasks.Signature{
+		Name: "notify_help_accepted",
+		Args: []tasks.Arg{
+			{
+				Type:  "string",
+				Value: id,
+			},
+			{
+				Type:  "string",
+				Value: requester,
+			},
+		},
+	}); err != nil {
+		c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})

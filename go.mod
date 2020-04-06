@@ -3,6 +3,7 @@ module github.com/bitmark-inc/autonomy-api
 go 1.14
 
 require (
+	github.com/RichardKnop/machinery v1.7.4
 	github.com/bitmark-inc/bitmark-sdk-go v0.2.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/getsentry/sentry-go v0.5.1

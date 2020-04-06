@@ -5,6 +5,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -38,8 +39,7 @@ func (s *AutonomyStore) RequestHelp(accountNumber, subject, needs, meetingPlace,
 func (s *AutonomyStore) ListHelps(accountNumber string, latitude, longitude float64, count int64) ([]schema.HelpRequest, error) {
 	helps := []schema.HelpRequest{}
 
-	// HARDCODED 50KM
-	accounts, err := s.mongo.NearestDistance(50000, schema.Location{
+	accounts, err := s.mongo.NearestDistance(consts.CORHORT_DISTANCE_RANGE, schema.Location{
 		Latitude:  latitude,
 		Longitude: longitude,
 	})
@@ -91,4 +91,11 @@ func (s *AutonomyStore) AnswerHelp(accountNumber string, helpID string) error {
 	}
 
 	return nil
+}
+
+// ExpireHelps expires help requests that is older than 12 hours
+func (s *AutonomyStore) ExpireHelps() error {
+	return s.ormDB.Model(schema.HelpRequest{}).Set("gorm:query_option", "FOR UPDATE").
+		Where("state = ? AND created_at <= now() - interval '12 hours'", schema.HELP_PENDING).
+		Update("state", schema.HELP_EXPIRED).Error
 }

@@ -22,6 +22,7 @@ type AutonomyCore interface {
 	GetHelp(helpID string) (*schema.HelpRequest, error)
 	ListHelps(accountNumber string, latitude, longitude float64, count int64) ([]schema.HelpRequest, error)
 	AnswerHelp(accountNumber string, helpID string) error
+	ExpireHelps() error
 }
 
 // AutonomyStore is an implementation of AutonomyCore

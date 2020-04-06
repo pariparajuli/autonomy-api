@@ -4,4 +4,5 @@ config.yaml
 
 # Binaries
 autonomy-api
+background/background/background
 schema/command/migrate/migrate

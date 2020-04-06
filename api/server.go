@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/RichardKnop/machinery/v1"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -52,13 +53,14 @@ type Server struct {
 	httpClient *http.Client
 
 	// job pool enqueuer
-	// backgroundEnqueuer *machinery.Server
+	background *machinery.Server
 }
 
 // NewServer new instance of server
 func NewServer(
 	ormDB *gorm.DB,
 	mongoClient *mongo.Client,
+	machineryServer *machinery.Server,
 	jwtKey *rsa.PrivateKey,
 	bitmarkAccount *account.AccountV2) *Server {
 	tr := &http.Transport{
@@ -78,6 +80,7 @@ func NewServer(
 	return &Server{
 		store:           store.NewAutonomyStore(ormDB, mongoStore),
 		mongoStore:      mongoStore,
+		background:      machineryServer,
 		jwtPrivateKey:   jwtKey,
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,
@@ -153,6 +156,8 @@ func (s *Server) setupRouter() *gin.Engine {
 	secretRoute.Use(s.apikeyAuthentication(viper.GetString("server.apikey.admin")))
 	{
 		// secretRoute.POST("/delete-accounts", s.adminAccountDelete)
+		secretRoute.POST("/expire-reqeusts", s.adminExpireRequests)
+
 	}
 
 	symptomRoute := apiRoute.Group("/symptoms")

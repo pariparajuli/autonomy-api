@@ -92,20 +92,9 @@ func (os *OneSignalClient) createRequest(ctx context.Context, method, path strin
 	return req, nil
 }
 
-func (os *OneSignalClient) NotifyFBArchiveAvailable(ctx context.Context, userID string) error {
-	body := &NotificationRequest{
-		AppID:      viper.GetString("onesignal.appid"),
-		TemplateID: viper.GetString("onesignal.fbarchivetemplate"),
-		Filters: []map[string]string{
-			map[string]string{
-				"field": "tag",
-				"key":   "account_id",
-				"value": userID,
-			},
-		},
-	}
+func (os *OneSignalClient) SendNotification(ctx context.Context, reqBody *NotificationRequest) error {
+	req, err := os.createRequest(ctx, "POST", "/api/v1/notifications", reqBody)
 
-	req, err := os.createRequest(ctx, "POST", "/api/v1/notifications", body)
 	if err != nil {
 		return err
 	}
@@ -115,7 +104,7 @@ func (os *OneSignalClient) NotifyFBArchiveAvailable(ctx context.Context, userID 
 		log.WithField("prefix", "onesignal").Error(err)
 	}
 
-	log.WithField("prefix", "onesignal").WithField("req", string(dumpBytes)).Info("request to onesignal")
+	log.WithField("prefix", "onesignal").WithField("req", string(dumpBytes)).Debug("request to onesignal")
 
 	resp, err := os.httpClient.Do(req)
 	if err != nil {
@@ -128,7 +117,7 @@ func (os *OneSignalClient) NotifyFBArchiveAvailable(ctx context.Context, userID 
 		log.WithField("prefix", "onesignal").Error(err)
 	}
 
-	log.WithContext(ctx).WithField("prefix", "onesignal").WithField("resp", string(dumpBytes)).Info("response from onesignal")
+	log.WithContext(ctx).WithField("prefix", "onesignal").WithField("resp", string(dumpBytes)).Debug("response from onesignal")
 
 	// Decode response body to see what actually happened
 	decoder := json.NewDecoder(resp.Body)

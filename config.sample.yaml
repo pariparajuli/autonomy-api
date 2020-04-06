@@ -18,6 +18,8 @@ mongo:
   database: test
   connect_timeout: 10
   pool: 10
+redis:
+  conn: redis://127.0.0.1:6379
 sentry:
   dsn:
   dist: 0.1

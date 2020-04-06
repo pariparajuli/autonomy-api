@@ -16,6 +16,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/RichardKnop/machinery/v1"
+	machineryconf "github.com/RichardKnop/machinery/v1/config"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/getsentry/sentry-go"
 	"github.com/jinzhu/gorm"
@@ -24,10 +26,9 @@ import (
 	"github.com/spf13/viper"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
+	"github.com/bitmark-inc/autonomy-api/api"
 	bitmarksdk "github.com/bitmark-inc/bitmark-sdk-go"
 	"github.com/bitmark-inc/bitmark-sdk-go/account"
-
-	"github.com/bitmark-inc/autonomy-api/api"
 )
 
 var (
@@ -161,15 +162,15 @@ func main() {
 	log.WithField("prefix", "init").Info("Loaded global jwt key")
 
 	// Init redis
-	// var cnf = &machinerycnf.Config{
-	// 	Broker:        viper.GetString("redis.conn"),
-	// 	DefaultQueue:  "autonomy_background",
-	// 	ResultBackend: viper.GetString("redis.conn"),
-	// }
-	// machineryServer, err := machinery.NewServer(cnf)
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
+	var conf = &machineryconf.Config{
+		Broker:        viper.GetString("redis.conn"),
+		DefaultQueue:  "autonomy_background",
+		ResultBackend: viper.GetString("redis.conn"),
+	}
+	machineryServer, err := machinery.NewServer(conf)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	ormDB, err = gorm.Open("postgres", viper.GetString("orm.conn"))
 	if err != nil {
@@ -193,6 +194,7 @@ func main() {
 	server = api.NewServer(
 		ormDB,
 		mongoClient,
+		machineryServer,
 		jwtPrivateKey,
 		globalAccount)
 	log.WithField("prefix", "init").Info("Initialized http server")

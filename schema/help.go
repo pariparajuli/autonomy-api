@@ -9,6 +9,7 @@ import (
 const (
 	HELP_PENDING   = "PENDING"
 	HELP_RESPONDED = "RESPONDED"
+	HELP_EXPIRED   = "EXPIRED"
 )
 
 type HelpRequest struct {
