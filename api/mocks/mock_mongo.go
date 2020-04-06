@@ -33,6 +33,20 @@ func (m *MockMongoStore) EXPECT() *MockMongoStoreMockRecorder {
 	return m.recorder
 }
 
+// CitizenReportSave mocks base method
+func (m *MockMongoStore) CitizenReportSave(arg0 *schema.CitizenReportData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CitizenReportSave", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CitizenReportSave indicates an expected call of CitizenReportSave
+func (mr *MockMongoStoreMockRecorder) CitizenReportSave(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CitizenReportSave", reflect.TypeOf((*MockMongoStore)(nil).CitizenReportSave), arg0)
+}
+
 // Close mocks base method
 func (m *MockMongoStore) Close() {
 	m.ctrl.T.Helper()
@@ -144,4 +158,18 @@ func (m *MockMongoStore) UpdateAccountGeoPosition(arg0 string, arg1, arg2 float6
 func (mr *MockMongoStoreMockRecorder) UpdateAccountGeoPosition(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAccountGeoPosition", reflect.TypeOf((*MockMongoStore)(nil).UpdateAccountGeoPosition), arg0, arg1, arg2)
+}
+
+// UpdateAccountScore mocks base method
+func (m *MockMongoStore) UpdateAccountScore(arg0 string, arg1 float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAccountScore", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAccountScore indicates an expected call of UpdateAccountScore
+func (mr *MockMongoStoreMockRecorder) UpdateAccountScore(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAccountScore", reflect.TypeOf((*MockMongoStore)(nil).UpdateAccountScore), arg0, arg1)
 }
