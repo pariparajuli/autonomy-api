@@ -75,22 +75,38 @@ func (s *AutonomyStore) GetHelp(helpID string) (*schema.HelpRequest, error) {
 
 // AnswerHelp set a request to `RESPONDED`. A request could be updated only when
 // its state is `PENDING` and the helper is not the same as the requester.
-func (s *AutonomyStore) AnswerHelp(accountNumber string, helpID string) error {
-	result := s.ormDB.Model(schema.HelpRequest{}).
+func (s *AutonomyStore) AnswerHelp(accountNumber string, helpID string) (*schema.HelpRequest, error) {
+	var help schema.HelpRequest
+
+	tx := s.ormDB.Begin()
+	result := tx.Model(schema.HelpRequest{}).Set("gorm:query_option", "FOR UPDATE").
 		Where("id = ? AND requester != ? AND state = ?", helpID, accountNumber, schema.HELP_PENDING).
+		Scan(&help).
 		Updates(map[string]interface{}{
 			"state":  schema.HELP_RESPONDED,
 			"helper": accountNumber,
 		})
+
+	if help.Requester == "" {
+		tx.Rollback()
+		return nil, ErrRequestNotExist
+	}
+
 	if result.Error != nil {
-		return result.Error
+		tx.Rollback()
+		return nil, result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrRequestNotExist
+		tx.Rollback()
+		return nil, ErrRequestNotExist
 	}
 
-	return nil
+	if err := tx.Commit().Error; err != nil {
+		return nil, err
+	}
+
+	return &help, nil
 }
 
 // ExpireHelps expires help requests that is older than 12 hours

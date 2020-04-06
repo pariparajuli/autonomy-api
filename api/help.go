@@ -49,7 +49,6 @@ func (s *Server) askForHelp(c *gin.Context) {
 		return
 	}
 
-
 	accountNumbers, err := s.mongoStore.NearestDistance(consts.CORHORT_DISTANCE_RANGE, *lastLocation)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
@@ -124,9 +123,10 @@ func (s *Server) queryHelps(c *gin.Context) {
 // answerHelp is the API for answer a help
 func (s *Server) answerHelp(c *gin.Context) {
 	id := c.Param("helpID")
-	requester := c.GetString("requester")
+	helper := c.GetString("requester")
 
-	if err := s.store.AnswerHelp(requester, id); err != nil {
+	help, err := s.store.AnswerHelp(helper, id)
+	if err != nil {
 		if err == store.ErrRequestNotExist {
 			abortWithEncoding(c, http.StatusNotFound, errorRequestNotExist, err)
 		} else {
@@ -145,7 +145,7 @@ func (s *Server) answerHelp(c *gin.Context) {
 			},
 			{
 				Type:  "string",
-				Value: requester,
+				Value: help.Requester,
 			},
 		},
 	}); err != nil {
