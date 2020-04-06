@@ -10,7 +10,8 @@ const (
 // a user who just creates a new help request
 func (m *BackgroundManager) BroadcastNewHelp(helpID string, accountNumbers []string) error {
 	return m.notifyAccountsByTemplate(accountNumbers, BROADCAST_NEW_HELP, map[string]interface{}{
-		"help_id": helpID,
+		"notification_type": "BROADCAST_NEW_HELP",
+		"help_id":           helpID,
 	})
 }
 
@@ -19,7 +20,8 @@ func (m *BackgroundManager) BroadcastNewHelp(helpID string, accountNumbers []str
 func (m *BackgroundManager) NotifyHelpAccepted(helpID string, accountNumber string) error {
 	accountNumbers := []string{accountNumber}
 	return m.notifyAccountsByTemplate(accountNumbers, NOTIFY_HELP_ACCEPTED, map[string]interface{}{
-		"help_id": helpID,
+		"notification_type": "NOTIFY_HELP_ACCEPTED",
+		"help_id":           helpID,
 	})
 }
 
