@@ -90,7 +90,7 @@ func (m *mongoDB) CreateAccount(a *schema.Account) error {
 	p := schema.Profile{
 		ID:            a.ProfileID.String(),
 		AccountNumber: a.AccountNumber,
-		HealthScore:   0,
+		HealthScore:   100,
 	}
 
 	log.WithField("prefix", mongoLogPrefix).Debug("account profile")
