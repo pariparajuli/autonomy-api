@@ -51,7 +51,7 @@ func (s *AutonomyStore) ListHelps(accountNumber string, latitude, longitude floa
 		`SELECT * FROM help_requests
 		JOIN unnest(?::text[]) WITH ORDINALITY account(requester, index) USING (requester)
 		WHERE (requester = ? OR helper = ? OR state = ?) AND created_at > now() - INTERVAL '12 hours'
-		ORDER BY account.index, state;`, // HARDCODED: 12 hours of expiration
+		ORDER BY state, account.index;`, // HARDCODED: 12 hours of expiration
 		pq.Array(accounts),
 		accountNumber,
 		accountNumber,
