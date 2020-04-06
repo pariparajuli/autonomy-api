@@ -90,45 +90,31 @@ func (m *mongoDB) NearestDistance(distance int, cords schema.Location) ([]string
 	return accountNumbers, nil
 }
 
-func distanceQuery(distance int, cords schema.Location) bson.D {
-	return bson.D{{
-		"location",
-		bson.D{{
-			"$nearSphere",
-			bson.D{{
-				"$geometry",
-				bson.D{{
-					"type",
-					"point",
-				}, {
-					"coordinates",
-					bson.A{cords.Longitude, cords.Latitude},
-				}, {
-					"$maxDistance",
-					distance,
-				}},
-			}},
-		}},
-	}}
+func distanceQuery(distance int, cords schema.Location) bson.M {
+	return bson.M{
+		"location": bson.M{
+			"$nearSphere": bson.M{
+				"$geometry": bson.M{
+					"type":        "Point",
+					"coordinates": []float64{cords.Longitude, cords.Latitude},
+				},
+				"$maxDistance": distance,
+			},
+		},
+	}
 }
 
 // $hearSphere provides documents from nearest to farthest
 // reference: https://docs.mongodb.com/manual/reference/operator/query/nearSphere/#op._S_nearSphere
-func nearQuery(cords schema.Location) bson.D {
-	return bson.D{{
-		"location",
-		bson.D{{
-			"$nearSphere",
-			bson.D{{
-				"$geometry",
-				bson.D{{
-					"type",
-					"point",
-				}, {
-					"coordinates",
-					bson.A{cords.Longitude, cords.Latitude},
-				}},
-			}},
-		}},
-	}}
+func nearQuery(cords schema.Location) bson.M {
+	return bson.M{
+		"location": bson.M{
+			"$nearSphere": bson.M{
+				"$geometry": bson.M{
+					"type":        "Point",
+					"coordinates": []float64{cords.Longitude, cords.Latitude},
+				},
+			},
+		},
+	}
 }
