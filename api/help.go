@@ -55,6 +55,13 @@ func (s *Server) askForHelp(c *gin.Context) {
 		return
 	}
 
+	for i, a := range accountNumbers {
+		if a == requester {
+			accountNumbers = append(accountNumbers[0:i], accountNumbers[i+1:]...)
+			break
+		}
+	}
+
 	if _, err := s.background.SendTask(&tasks.Signature{
 		Name: "broadcast_help",
 		Args: []tasks.Arg{
