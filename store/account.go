@@ -66,7 +66,23 @@ func (s *AutonomyStore) UpdateAccountGeoPosition(accountNumber string, latitude,
 		Longitude: longitude,
 	}
 
-	return s.ormDB.Save(&a.Profile).Error
+	err := s.ormDB.Save(&a.Profile).Error
+	if nil != err {
+		return err
+	}
+
+	// if mongo db has no record, create new account with geolocation data
+	exist, err := s.mongo.IsAccountExist(a.AccountNumber)
+	if nil != err {
+		return err
+	}
+
+	if exist {
+		err = s.mongo.UpdateAccountGeoPosition(a.AccountNumber, latitude, longitude)
+		return err
+	}
+
+	return s.mongo.CreateAccountWithGeoPosition(&a, latitude, longitude)
 }
 
 // DeleteAccount removes an account from our system permanently
@@ -94,6 +110,33 @@ func (m *mongoDB) CreateAccount(a *schema.Account) error {
 	}
 
 	log.WithField("prefix", mongoLogPrefix).Debug("account profile")
+
+	result, err := c.InsertOne(ctx, p)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("create mongo account error: %s", err)
+		return err
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Infof("create mongo account result: %v", result)
+	return nil
+}
+
+func (m *mongoDB) CreateAccountWithGeoPosition(a *schema.Account, latitude, longitude float64) error {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	p := schema.Profile{
+		ID:            a.ProfileID.String(),
+		AccountNumber: a.AccountNumber,
+		HealthScore:   100,
+		Location: &schema.GeoJSON{
+			Type:        "Point",
+			Coordinates: []float64{longitude, latitude},
+		},
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("create account profile: %v", p)
 
 	result, err := c.InsertOne(ctx, p)
 	if nil != err {
@@ -156,13 +199,27 @@ func (m *mongoDB) DeleteAccount(accountNumber string) error {
 	return nil
 }
 
+// IsAccountExist check if account number exist in mongo db
+func (m *mongoDB) IsAccountExist(accountNumber string) (bool, error) {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	count, err := c.CountDocuments(ctx, bson.M{"account_number": accountNumber})
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("query account number %s with error: ", accountNumber, err)
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // UpdateAccountScore update a score of an account
 func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error {
 	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	log.WithField("prefix", mongoLogPrefix).Debugf("update  account %s  with a new score %f", accountNumber, score)
+	log.WithField("prefix", mongoLogPrefix).Debugf("update account %s with new score %f", accountNumber, score)
 
 	query := bson.M{
 		"account_number": bson.M{

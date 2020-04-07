@@ -73,6 +73,20 @@ func (mr *MockMongoStoreMockRecorder) CreateAccount(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccount", reflect.TypeOf((*MockMongoStore)(nil).CreateAccount), arg0)
 }
 
+// CreateAccountWithGeoPosition mocks base method
+func (m *MockMongoStore) CreateAccountWithGeoPosition(arg0 *schema.Account, arg1, arg2 float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAccountWithGeoPosition", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAccountWithGeoPosition indicates an expected call of CreateAccountWithGeoPosition
+func (mr *MockMongoStoreMockRecorder) CreateAccountWithGeoPosition(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAccountWithGeoPosition", reflect.TypeOf((*MockMongoStore)(nil).CreateAccountWithGeoPosition), arg0, arg1, arg2)
+}
+
 // DeleteAccount mocks base method
 func (m *MockMongoStore) DeleteAccount(arg0 string) error {
 	m.ctrl.T.Helper()
@@ -100,6 +114,21 @@ func (m *MockMongoStore) Health(arg0 []string) (float64, error) {
 func (mr *MockMongoStoreMockRecorder) Health(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Health", reflect.TypeOf((*MockMongoStore)(nil).Health), arg0)
+}
+
+// IsAccountExist mocks base method
+func (m *MockMongoStore) IsAccountExist(arg0 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsAccountExist", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsAccountExist indicates an expected call of IsAccountExist
+func (mr *MockMongoStoreMockRecorder) IsAccountExist(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAccountExist", reflect.TypeOf((*MockMongoStore)(nil).IsAccountExist), arg0)
 }
 
 // NearestCount mocks base method

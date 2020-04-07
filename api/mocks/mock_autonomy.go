@@ -34,11 +34,12 @@ func (m *MockAutonomyCore) EXPECT() *MockAutonomyCoreMockRecorder {
 }
 
 // AnswerHelp mocks base method
-func (m *MockAutonomyCore) AnswerHelp(arg0, arg1 string) error {
+func (m *MockAutonomyCore) AnswerHelp(arg0, arg1 string) (*schema.HelpRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AnswerHelp", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*schema.HelpRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AnswerHelp indicates an expected call of AnswerHelp
@@ -74,6 +75,20 @@ func (m *MockAutonomyCore) DeleteAccount(arg0 string) error {
 func (mr *MockAutonomyCoreMockRecorder) DeleteAccount(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccount", reflect.TypeOf((*MockAutonomyCore)(nil).DeleteAccount), arg0)
+}
+
+// ExpireHelps mocks base method
+func (m *MockAutonomyCore) ExpireHelps() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireHelps")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExpireHelps indicates an expected call of ExpireHelps
+func (mr *MockAutonomyCoreMockRecorder) ExpireHelps() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireHelps", reflect.TypeOf((*MockAutonomyCore)(nil).ExpireHelps))
 }
 
 // GetAccount mocks base method
