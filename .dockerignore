@@ -1,8 +1,10 @@
 .git
 *.pem
 config.yaml
+Makefile
 
 # Binaries
+bin
 autonomy-api
 background/background/background
 schema/command/migrate/migrate

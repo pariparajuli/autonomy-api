@@ -2,6 +2,7 @@
 config.yaml
 
 # Binaries
+bin
 autonomy-api
 background/background/background
 schema/command/migrate/migrate
