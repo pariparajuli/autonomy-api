@@ -111,6 +111,12 @@ func migrateMongo() error {
 		return err
 	}
 
+	behaviorC := client.Database(viper.GetString("mongo.database")).Collection(schema.GoodBehaviorCollectionName)
+	_, err = behaviorC.Indexes().CreateOne(context.Background(), geo)
+	if nil != err {
+		fmt.Println("mongodb create geo index of good behavior collection with error: ", err)
+		return err
+	}
 	return nil
 }
 

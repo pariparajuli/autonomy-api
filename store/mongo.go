@@ -20,6 +20,7 @@ type MongoStore interface {
 	MongoAccount
 	CitizenReport
 	POI
+	GoodBehaviorReport
 	Closer
 	Pinger
 	ConfirmOperator

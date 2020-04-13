@@ -211,6 +211,13 @@ func (s *Server) setupRouter() *gin.Engine {
 		reportRoute.POST("", s.report)
 	}
 
+	behaviorRoute := apiRoute.Group("/behaviors")
+	behaviorRoute.Use(s.recognizeAccountMiddleware())
+	{
+		behaviorRoute.GET("", s.goodBehaviors)
+		behaviorRoute.POST("", s.reportBehaviors)
+	}
+
 	return r
 }
 
