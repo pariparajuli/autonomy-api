@@ -21,7 +21,7 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 		respBehavior := BehaviorResp{ID: behavior.ID, Name: behavior.Name, Desc: behavior.Desc}
 		resp = append(resp, respBehavior)
 	}
-	c.JSON(http.StatusOK, gin.H{"symptoms": resp})
+	c.JSON(http.StatusOK, gin.H{"good_behaviors": resp})
 }
 
 func (s *Server) reportBehaviors(c *gin.Context) {
@@ -39,7 +39,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	}
 
 	var params struct {
-		GoodBehaviors []string `json:"behaviros"`
+		GoodBehaviors []string `json:"good_behaviors"`
 	}
 
 	if err := c.BindJSON(&params); err != nil {
@@ -47,10 +47,13 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		return
 	}
 	schemaBehaviors := convertBehavior(params.GoodBehaviors)
+	bTypeCollect := covertToGoodBehaviorType(schemaBehaviors)
 	behaviorScore := behaviorScore(schemaBehaviors)
+
 	data := schema.GoodBehaviorData{
+		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
-		GoodBehaviors: schemaBehaviors,
+		GoodBehaviors: bTypeCollect,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Latitude, loc.Longitude}},
 		BehaviorScore: behaviorScore,
 		Timestamp:     time.Now().Unix(),
@@ -73,12 +76,21 @@ func convertBehavior(ids []string) []schema.GoodBehavior {
 	for _, s := range schema.GoodBehaviors {
 		m[s.ID] = s
 	}
+
 	for _, id := range ids {
 		st := schema.GoodBehaviorType(id)
 		sy, ok := m[st]
 		if ok {
 			ret = append(ret, sy)
 		}
+	}
+	return ret
+}
+
+func covertToGoodBehaviorType(behaviors []schema.GoodBehavior) []schema.GoodBehaviorType {
+	var ret []schema.GoodBehaviorType
+	for _, behavior := range behaviors {
+		ret = append(ret, behavior.ID)
 	}
 	return ret
 }

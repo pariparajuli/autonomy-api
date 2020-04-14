@@ -35,9 +35,10 @@ var GoodBehaviors = []GoodBehavior{
 
 // GoodBehaviorData the struct to store citizen data and score
 type GoodBehaviorData struct {
-	AccountNumber string         `json:"account_number" bson:"account_number"`
-	GoodBehaviors []GoodBehavior `json:"symptoms" bson:"symptoms"`
-	Location      GeoJSON        `json:"location" bson:"location"`
-	BehaviorScore float64        `json:"health_score" bson:"health_score"`
-	Timestamp     int64          `json:"ts" bson:"ts"`
+	ProfileID     string             `json:"profile_id" bson:"profile_id"`
+	AccountNumber string             `json:"account_number" bson:"account_number"`
+	GoodBehaviors []GoodBehaviorType `json:"good_behaviors" bson:"good_behaviors"`
+	Location      GeoJSON            `json:"location" bson:"location"`
+	BehaviorScore float64            `json:"behavior_score" bson:"behavior_score"`
+	Timestamp     int64              `json:"ts" bson:"ts"`
 }

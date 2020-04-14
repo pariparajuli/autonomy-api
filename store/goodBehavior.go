@@ -32,7 +32,7 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.GoodBehaviorData) error {
 	}
 
 	if updateRes.MatchedCount == 0 {
-		_, err := c.Collection(CitizenReportCollection).InsertOne(ctx, *data)
+		_, err := c.Collection(GoodBehaviorCollection).InsertOne(ctx, *data)
 		if err != nil {
 			return err
 		}
