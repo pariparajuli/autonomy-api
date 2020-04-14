@@ -237,3 +237,40 @@ func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error 
 
 	return nil
 }
+
+// AddPOI appends a POI to the end of the POI list of an account
+func (m *mongoDB) AppendPOIForAccount(accountNumber string, desc *schema.POIDesc) error {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	prefixedLog := log.WithField("prefix", mongoLogPrefix).WithField("account", accountNumber).WithField("poi_id", desc.ID)
+
+	// don't do anything if the POI was added before
+	query := bson.M{
+		"account_number":        bson.M{"$eq": accountNumber},
+		"points_of_interest.id": desc.ID,
+	}
+	count, err := c.CountDocuments(ctx, query)
+	if err != nil {
+		prefixedLog.WithError(err).Error("unable to query POI for this account")
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	// add the POI if not added before
+	query = bson.M{"account_number": bson.M{"$eq": accountNumber}}
+	update := bson.M{"$push": bson.M{"points_of_interest": bson.M{
+		"id":      desc.ID,
+		"alias":   desc.Alias,
+		"address": desc.Address,
+	}}}
+	if _, err := c.UpdateOne(ctx, query, update); nil != err {
+		prefixedLog.WithError(err).Error("unable to add POI for this account")
+		return err
+	}
+
+	return nil
+}

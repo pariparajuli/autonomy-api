@@ -189,6 +189,13 @@ func (s *Server) setupRouter() *gin.Engine {
 		scoreRoute.GET("", s.score)
 	}
 
+	// points of interest
+	poiRoute := apiRoute.Group("/points-of-interest")
+	poiRoute.Use(s.recognizeAccountMiddleware())
+	{
+		poiRoute.POST("", s.addPOI)
+	}
+
 	r.GET("/healthz", s.healthz)
 
 	reportRoute := apiRoute.Group("/report")
