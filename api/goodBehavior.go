@@ -31,11 +31,19 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
+	var loc *schema.Location
+	gp := c.GetHeader("Geo-Position")
 
-	loc := account.Profile.State.LastLocation
-	if nil == loc {
-		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
-		return
+	if "" == gp {
+		loc = account.Profile.State.LastLocation
+		if nil == loc {
+			abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+			return
+		}
+	}
+
+	if lat, long, err := parseGeoPosition(gp); err == nil {
+		loc = &schema.Location{Latitude: lat, Longitude: long}
 	}
 
 	var params struct {
