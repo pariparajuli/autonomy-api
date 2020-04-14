@@ -106,5 +106,24 @@ func migrateMongo() error {
 		return err
 	}
 
+	if err := setupCollectionPOI(client); err != nil {
+		fmt.Println("failed to set up collection `poi`: ", err)
+		return err
+	}
+
 	return nil
+}
+
+func setupCollectionPOI(client *mongo.Client) error {
+	// add indices for collection poi
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.POICollection)
+	locationIndex := mongo.IndexModel{
+		Keys: bson.M{
+			"location": "2dsphere",
+		},
+		Options: nil,
+	}
+
+	_, err := c.Indexes().CreateOne(context.Background(), locationIndex)
+	return err
 }

@@ -11,10 +11,6 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-const (
-	poiScoreCollection = "poi_score"
-)
-
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
 }
@@ -24,7 +20,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	c := m.client.Database(m.database).Collection(poiScoreCollection)
+	c := m.client.Database(m.database).Collection(schema.POICollection)
 
 	var poi schema.POI
 	query := bson.M{

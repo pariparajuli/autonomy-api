@@ -4,6 +4,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	POICollection = "poi"
+)
+
 type POI struct {
 	ID       primitive.ObjectID `bson:"_id"`
 	Location *GeoJSON           `bson:"location"`
