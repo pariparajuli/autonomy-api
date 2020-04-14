@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -244,11 +245,15 @@ func (m *mongoDB) AppendPOIForAccount(accountNumber string, desc *schema.POIDesc
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	if desc == nil {
+		return fmt.Errorf("poi desc not available")
+	}
+
 	prefixedLog := log.WithField("prefix", mongoLogPrefix).WithField("account", accountNumber).WithField("poi_id", desc.ID)
 
 	// don't do anything if the POI was added before
 	query := bson.M{
-		"account_number":        bson.M{"$eq": accountNumber},
+		"account_number":        accountNumber,
 		"points_of_interest.id": desc.ID,
 	}
 	count, err := c.CountDocuments(ctx, query)

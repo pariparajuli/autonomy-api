@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,11 @@ func (s *Server) addPOI(c *gin.Context) {
 	var body userPOI
 	if err := c.BindJSON(&body); err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	if body.Location == nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("location not provided"))
 		return
 	}
 
