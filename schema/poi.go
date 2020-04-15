@@ -11,7 +11,7 @@ const (
 type POI struct {
 	ID       primitive.ObjectID `bson:"_id"`
 	Location *GeoJSON           `bson:"location"`
-	Score    int                `bson:"score"`
+	Score    float64            `bson:"score"`
 }
 
 type POIDesc struct {
