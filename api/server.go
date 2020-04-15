@@ -23,6 +23,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
+	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
@@ -210,7 +211,7 @@ func (s *Server) setupRouter() *gin.Engine {
 	{
 		reportRoute.POST("", s.report)
 	}
-
+	schema.InitGoodBehaviorFromID()
 	behaviorRoute := apiRoute.Group("/behaviors")
 	behaviorRoute.Use(s.recognizeAccountMiddleware())
 	{

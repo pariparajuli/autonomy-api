@@ -112,9 +112,21 @@ func migrateMongo() error {
 	}
 
 	behaviorC := client.Database(viper.GetString("mongo.database")).Collection(schema.GoodBehaviorCollectionName)
+	idAndTs := mongo.IndexModel{
+		Keys: bson.M{
+			"profile_id": 1,
+			"ts":         1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = behaviorC.Indexes().CreateOne(context.Background(), idAndTs)
+	if nil != err {
+		fmt.Println("mongodb create id & ts combined index with error: ", err)
+		return err
+	}
 	_, err = behaviorC.Indexes().CreateOne(context.Background(), geo)
 	if nil != err {
-		fmt.Println("mongodb create geo index of good behavior collection with error: ", err)
+		fmt.Println("mongodb create geo  index with error: ", err)
 		return err
 	}
 	return nil

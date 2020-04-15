@@ -9,20 +9,8 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-// BehaviorResp  respons struct of a good behavior
-type BehaviorResp struct {
-	ID   schema.GoodBehaviorType `json:"id"`
-	Name string                  `json:"name"`
-	Desc string                  `json:"desc"`
-}
-
 func (s *Server) goodBehaviors(c *gin.Context) {
-	resp := []BehaviorResp{}
-	for _, behavior := range schema.GoodBehaviors {
-		respBehavior := BehaviorResp{ID: behavior.ID, Name: behavior.Name, Desc: behavior.Desc}
-		resp = append(resp, respBehavior)
-	}
-	c.JSON(http.StatusOK, gin.H{"good_behaviors": resp})
+	c.JSON(http.StatusOK, gin.H{"good_behaviors": schema.GoodBehaviors})
 }
 
 func (s *Server) reportBehaviors(c *gin.Context) {
@@ -55,15 +43,15 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	schemaBehaviors := convertBehavior(params.GoodBehaviors)
-	bTypeCollect := covertToGoodBehaviorType(schemaBehaviors)
+	schemaBehaviors := getGoodBehavior(params.GoodBehaviors)
+	bTypeCollect := getGoodBehaviorType(schemaBehaviors)
 	behaviorScore := behaviorScore(schemaBehaviors)
 
 	data := schema.GoodBehaviorData{
 		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
 		GoodBehaviors: bTypeCollect,
-		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Latitude, loc.Longitude}},
+		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		BehaviorScore: behaviorScore,
 		Timestamp:     time.Now().Unix(),
 	}
@@ -79,27 +67,22 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	return
 }
 
-func convertBehavior(ids []string) []schema.GoodBehavior {
-	m := make(map[schema.GoodBehaviorType]schema.GoodBehavior)
+func getGoodBehavior(behaviors []string) []schema.GoodBehavior {
 	var ret []schema.GoodBehavior
-	for _, s := range schema.GoodBehaviors {
-		m[s.ID] = s
-	}
-
-	for _, id := range ids {
-		st := schema.GoodBehaviorType(id)
-		sy, ok := m[st]
+	for _, behavior := range behaviors {
+		st := schema.GoodBehaviorType(behavior)
+		v, ok := schema.GoodBehavirorFromID[st]
 		if ok {
-			ret = append(ret, sy)
+			ret = append(ret, v)
 		}
 	}
 	return ret
 }
 
-func covertToGoodBehaviorType(behaviors []schema.GoodBehavior) []schema.GoodBehaviorType {
-	var ret []schema.GoodBehaviorType
+func getGoodBehaviorType(behaviors []schema.GoodBehavior) []string {
+	var ret []string
 	for _, behavior := range behaviors {
-		ret = append(ret, behavior.ID)
+		ret = append(ret, string(behavior.ID))
 	}
 	return ret
 }
@@ -109,8 +92,5 @@ func behaviorScore(behaviors []schema.GoodBehavior) float64 {
 	for _, behavior := range behaviors {
 		sum = sum + float64(behavior.Weight)
 	}
-	if len(behaviors) < 3 {
-		return sum
-	}
-	return 2 * sum
+	return sum
 }
