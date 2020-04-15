@@ -25,5 +25,5 @@ type POIDetail struct {
 	Alias    string             `json:"alias"`
 	Address  string             `json:"address"`
 	Location Location           `json:"location"`
-	Score    int                `json:"score"`
+	Score    float64            `json:"score"`
 }
