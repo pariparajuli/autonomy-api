@@ -46,3 +46,19 @@ func (s *Server) addPOI(c *gin.Context) {
 	body.Score = poi.Score
 	c.JSON(http.StatusOK, body)
 }
+
+func (s *Server) getPOI(c *gin.Context) {
+	account, ok := c.MustGet("account").(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	pois, err := s.mongoStore.GetPOI(account.AccountNumber)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, pois)
+}

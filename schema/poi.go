@@ -19,3 +19,11 @@ type POIDesc struct {
 	Alias   string             `bson:"alias"`
 	Address string             `bson:"address"`
 }
+
+type POIDetail struct {
+	ID       primitive.ObjectID `json:"id"`
+	Alias    string             `json:"alias"`
+	Address  string             `json:"address"`
+	Location Location           `json:"location"`
+	Score    int                `json:"score"`
+}
