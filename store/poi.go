@@ -59,7 +59,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 	return &poi, nil
 }
 
-// GetPOI finds the POI list an account along with customied alias and address for
+// GetPOI finds the POI list of an account along with customied alias and address
 func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -68,7 +68,6 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 
 	// find user's POI list
 	var result struct {
-		ID     primitive.ObjectID  `bson:"_id"`
 		Points []*schema.POIDetail `bson:"points_of_interest"`
 	}
 	query := bson.M{"account_number": accountNumber}
@@ -83,7 +82,7 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	}
 
 	// $in query doesn't guarantee order
-	// use aggregation to sort the nested docs in the query order
+	// use aggregation to sort the nested docs according to the query order
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": bson.M{"$in": poiIDs}}},
 		{"$addFields": bson.M{"__order": bson.M{"$indexOfArray": bson.A{poiIDs, "$_id"}}}},
