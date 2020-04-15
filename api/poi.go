@@ -5,8 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/store"
 )
 
 type userPOI struct {
@@ -61,4 +63,57 @@ func (s *Server) getPOI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, pois)
+}
+
+func (s *Server) updatePOIAlias(c *gin.Context) {
+	account, ok := c.MustGet("account").(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	var body userPOI
+	if err := c.BindJSON(&body); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	poiID, err := primitive.ObjectIDFromHex(c.Param("poiID"))
+	if err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("invalid POI ID"))
+		return
+	}
+
+	if err := s.mongoStore.UpdatePOIAlias(account.AccountNumber, body.Alias, poiID); err != nil {
+		switch err {
+		case store.ErrPOINotFound:
+			abortWithEncoding(c, http.StatusBadRequest, errorUnknownPOI)
+		default:
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "OK"})
+}
+
+func (s *Server) deletePOI(c *gin.Context) {
+	account, ok := c.MustGet("account").(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	poiID, err := primitive.ObjectIDFromHex(c.Param("poiID"))
+	if err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("invalid POI ID"))
+		return
+	}
+
+	if err := s.mongoStore.DeletePOI(account.AccountNumber, poiID); err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }
