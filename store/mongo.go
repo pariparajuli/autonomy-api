@@ -22,6 +22,7 @@ type MongoStore interface {
 	POI
 	Closer
 	Pinger
+	ConfirmOperator
 }
 
 // MongoAccount - account related operations

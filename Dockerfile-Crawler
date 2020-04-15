@@ -1,0 +1,23 @@
+FROM golang:1.13-alpine as build
+
+WORKDIR $GOPATH/github.com/bitmark-inc/autonomy-api
+
+ADD go.mod .
+
+RUN go mod download
+
+ADD . .
+
+RUN go install github.com/bitmark-inc/autonomy-api/crawler
+
+
+# ---
+
+FROM alpine:3.10.3
+ARG dist=0.0
+COPY --from=build /go/bin/crawler /
+
+ENV AUTONOMY_LOG_LEVEL=INFO
+ENV AUTONOMY_SERVER_VERSION=$dist
+
+CMD ["/crawler"]
