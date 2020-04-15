@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
@@ -104,5 +105,12 @@ func covertToGoodBehaviorType(behaviors []schema.GoodBehavior) []schema.GoodBeha
 }
 
 func behaviorScore(behaviors []schema.GoodBehavior) float64 {
-	return 0
+	var sum float64
+	for _, behavior := range behaviors {
+		sum = sum + float64(behavior.Weight)
+	}
+	if len(behaviors) < 3 {
+		return sum
+	}
+	return 2 * sum
 }
