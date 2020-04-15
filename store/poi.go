@@ -12,9 +12,15 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
+var (
+	ErrPOINotFound = fmt.Errorf("poi not found")
+)
+
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
 	GetPOI(accountNumber string) ([]*schema.POIDetail, error)
+	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
+	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
@@ -109,4 +115,43 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	}
 
 	return result.Points, nil
+}
+
+// UpdatePOIAlias updates the alias of a POI for the specified account
+func (m *mongoDB) UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	query := bson.M{
+		"account_number":        accountNumber,
+		"points_of_interest.id": poiID,
+	}
+	update := bson.M{"$set": bson.M{"points_of_interest.$.alias": alias}}
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return ErrPOINotFound
+	}
+
+	return nil
+}
+
+func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	query := bson.M{
+		"account_number":        accountNumber,
+		"points_of_interest.id": poiID,
+	}
+	update := bson.M{"$pull": bson.M{"points_of_interest": bson.M{"id": poiID}}}
+	if _, err := c.UpdateOne(ctx, query, update); err != nil {
+		return err
+	}
+
+	return nil
 }
