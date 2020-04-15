@@ -194,6 +194,7 @@ func (s *Server) setupRouter() *gin.Engine {
 	poiRoute.Use(s.recognizeAccountMiddleware())
 	{
 		poiRoute.POST("", s.addPOI)
+		poiRoute.GET("", s.getPOI)
 	}
 
 	r.GET("/healthz", s.healthz)
