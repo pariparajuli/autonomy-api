@@ -19,6 +19,7 @@ type MongoStore interface {
 	Healthier
 	MongoAccount
 	CitizenReport
+	POI
 	Closer
 	Pinger
 }
@@ -32,6 +33,7 @@ type MongoAccount interface {
 	DeleteAccount(string) error
 	UpdateAccountScore(string, float64) error
 	IsAccountExist(string) (bool, error)
+	AppendPOIForAccount(accountNumber string, desc *schema.POIDesc) error
 }
 
 // Closer - close db connection
