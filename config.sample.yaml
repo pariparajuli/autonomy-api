@@ -35,3 +35,5 @@ clients:
     minimum_client_version: 1
   ios:
     minimum_client_version: 1
+map:
+  key:

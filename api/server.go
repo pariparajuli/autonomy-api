@@ -20,6 +20,7 @@ import (
 
 	"github.com/bitmark-inc/bitmark-sdk-go/account"
 
+	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
 	"github.com/bitmark-inc/autonomy-api/store"
@@ -45,6 +46,7 @@ type Server struct {
 
 	// External services
 	oneSignalClient *onesignal.OneSignalClient
+	geoClient       geoinfo.GeoInfo
 
 	// account
 	bitmarkAccount *account.AccountV2
@@ -62,7 +64,8 @@ func NewServer(
 	mongoClient *mongo.Client,
 	machineryServer *machinery.Server,
 	jwtKey *rsa.PrivateKey,
-	bitmarkAccount *account.AccountV2) *Server {
+	bitmarkAccount *account.AccountV2,
+	geoClient geoinfo.GeoInfo) *Server {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -85,6 +88,7 @@ func NewServer(
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,
 		oneSignalClient: onesignal.NewClient(httpClient),
+		geoClient:       geoClient,
 	}
 }
 
