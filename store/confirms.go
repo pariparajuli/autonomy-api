@@ -64,6 +64,7 @@ func (m mongoDB) UpdateOrInsertConfirm(confirms ConfirmCountyCount, country stri
 				"profile": ConfirmCollection,
 				"error":   err,
 			}).Error("retrieve confirm count")
+			continue
 		}
 
 		var prev schema.Confirm
