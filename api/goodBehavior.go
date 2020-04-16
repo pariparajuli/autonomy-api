@@ -43,7 +43,6 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	log.Info(params.GoodBehaviors)
 	behaviors, IDs := getGoodBehavior(params.GoodBehaviors)
 	behaviorScore := behaviorScore(behaviors)
 
