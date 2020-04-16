@@ -29,7 +29,7 @@ func (c twCDC) Run() {
 		"data":    confirmCounts,
 	}).Debug("data from CDC")
 
-	c.mongoStore.UpdateConfirm(confirmCounts, c.country)
+	c.mongoStore.UpdateOrInsertConfirm(confirmCounts, c.country)
 }
 
 // newCrawler - new cron job for daily crawler
