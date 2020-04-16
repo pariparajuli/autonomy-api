@@ -1,10 +1,5 @@
 package consts
 
-import (
-	"fmt"
-	"strings"
-)
-
 var TwCountyEnglish map[string]string
 
 func init() {
@@ -32,13 +27,4 @@ func init() {
 	TwCountyEnglish["台東縣"] = "Taitung County"
 	TwCountyEnglish["金門縣"] = "Kinmen County"
 	TwCountyEnglish["連江縣"] = "Lianjiang County"
-}
-
-// TwCountyKey - convert chinese tw county name into key
-func TwCountyKey(county string) (string, error) {
-	if zh, ok := TwCountyEnglish[county]; !ok {
-		return "", fmt.Errorf("%s not exist", county)
-	} else {
-		return strings.Replace(strings.ToLower(zh), " ", "_", -1), nil
-	}
 }

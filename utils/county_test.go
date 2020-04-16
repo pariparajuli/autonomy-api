@@ -1,11 +1,11 @@
-package consts_test
+package utils_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bitmark-inc/autonomy-api/consts"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 func TestTwCountyKey(t *testing.T) {
@@ -35,7 +35,7 @@ func TestTwCountyKey(t *testing.T) {
 	}
 
 	for key, value := range mapping {
-		actual, _ := consts.TwCountyKey(key)
+		actual, _ := utils.TwCountyKey(key)
 		assert.Equal(t, value, actual, "wrong key")
 	}
 }
