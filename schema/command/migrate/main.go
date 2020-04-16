@@ -111,24 +111,11 @@ func migrateMongo() error {
 		return err
 	}
 
-	behaviorC := client.Database(viper.GetString("mongo.database")).Collection(schema.GoodBehaviorCollectionName)
-	idAndTs := mongo.IndexModel{
-		Keys: bson.M{
-			"profile_id": 1,
-			"ts":         1,
-		},
-		Options: options.Index().SetUnique(true),
-	}
-	_, err = behaviorC.Indexes().CreateOne(context.Background(), idAndTs)
-	if nil != err {
-		fmt.Println("mongodb create id & ts combined index with error: ", err)
+	if err := setupCollectionBehavior(client); err != nil {
+		fmt.Println("failed to set up collection `poi`: ", err)
 		return err
 	}
-	_, err = behaviorC.Indexes().CreateOne(context.Background(), geo)
-	if nil != err {
-		fmt.Println("mongodb create geo  index with error: ", err)
-		return err
-	}
+
 	return nil
 }
 
@@ -144,4 +131,62 @@ func setupCollectionPOI(client *mongo.Client) error {
 
 	_, err := c.Indexes().CreateOne(context.Background(), locationIndex)
 	return err
+}
+
+func setupCollectionBehavior(client *mongo.Client) error {
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.GoodBehaviorCollection)
+	idAndTs := mongo.IndexModel{
+		Keys: bson.M{
+			"profile_id": 1,
+			"ts":         1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err := c.Indexes().CreateOne(context.Background(), idAndTs)
+	if nil != err {
+		fmt.Println("mongodb create id & ts combined index with error: ", err)
+		return err
+	}
+
+	locationIndex := mongo.IndexModel{
+		Keys: bson.M{
+			"location": "2dsphere",
+		},
+		Options: nil,
+	}
+	_, err = c.Indexes().CreateOne(context.Background(), locationIndex)
+	if nil != err {
+		fmt.Println("mongodb create locationIndex with error: ", err)
+		return err
+	}
+	return nil
+}
+
+func setupCollectionSymptom(client *mongo.Client) error {
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomReportCollection)
+	idAndTs := mongo.IndexModel{
+		Keys: bson.M{
+			"profile_id": 1,
+			"ts":         1,
+		},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err := c.Indexes().CreateOne(context.Background(), idAndTs)
+	if nil != err {
+		fmt.Println("mongodb create id & ts combined index with error: ", err)
+		return err
+	}
+
+	locationIndex := mongo.IndexModel{
+		Keys: bson.M{
+			"location": "2dsphere",
+		},
+		Options: nil,
+	}
+	_, err = c.Indexes().CreateOne(context.Background(), locationIndex)
+	if nil != err {
+		fmt.Println("mongodb create locationIndex with error: ", err)
+		return err
+	}
+	return nil
 }

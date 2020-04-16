@@ -2,8 +2,18 @@ package schema
 
 type GoodBehaviorType string
 
+// GoodBehaviorFromID is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
+var GoodBehaviorFromID = map[GoodBehaviorType]GoodBehavior{
+	GoodBehaviorType(CleanHand):        GoodBehaviors[0],
+	GoodBehaviorType(SocialDistancing): GoodBehaviors[1],
+	GoodBehaviorType(TouchFace):        GoodBehaviors[2],
+	GoodBehaviorType(WearMask):         GoodBehaviors[3],
+	GoodBehaviorType(CoveringCough):    GoodBehaviors[4],
+	GoodBehaviorType(CleanSurface):     GoodBehaviors[5],
+}
+
 const (
-	GoodBehaviorCollectionName = "goodBehavior"
+	GoodBehaviorCollection = "goodBehavior"
 )
 
 const (
@@ -15,8 +25,6 @@ const (
 	CleanSurface     GoodBehaviorType = "clean_surface"
 )
 
-// GoodBehavirorFromID is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
-var GoodBehavirorFromID map[GoodBehaviorType]GoodBehavior
 var TotalGoodBehaviorWeight float64
 
 // GoodBehavior a struct to define a good behavior
@@ -45,14 +53,4 @@ type GoodBehaviorData struct {
 	Location      GeoJSON  `json:"location" bson:"location"`
 	BehaviorScore float64  `json:"behavior_score" bson:"behavior_score"`
 	Timestamp     int64    `json:"ts" bson:"ts"`
-}
-
-// InitGoodBehaviorFromID after run this function user can use GoodBehavirorFromID to get the object of GoodBehavior of  corresponding ID
-func InitGoodBehaviorFromID() {
-	GoodBehavirorFromID = make(map[GoodBehaviorType]GoodBehavior)
-	TotalGoodBehaviorWeight = 0
-	for _, s := range GoodBehaviors {
-		GoodBehavirorFromID[s.ID] = s
-		TotalGoodBehaviorWeight = TotalGoodBehaviorWeight + s.Weight
-	}
 }

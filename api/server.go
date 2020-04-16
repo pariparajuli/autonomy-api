@@ -23,7 +23,6 @@ import (
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
-	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
@@ -165,11 +164,6 @@ func (s *Server) setupRouter() *gin.Engine {
 
 	}
 
-	symptomRoute := apiRoute.Group("/symptoms")
-	{
-		symptomRoute.GET("", s.getSymptoms)
-
-	}
 
 	metricRoute := r.Group("/metrics")
 	metricRoute.Use(logmodule.Ginrus("Metric"))
@@ -206,12 +200,13 @@ func (s *Server) setupRouter() *gin.Engine {
 
 	r.GET("/healthz", s.healthz)
 
-	reportRoute := apiRoute.Group("/report")
-	reportRoute.Use(s.recognizeAccountMiddleware())
+	symptomRoute := apiRoute.Group("/symptoms")
+	symptomRoute.Use(s.recognizeAccountMiddleware())
 	{
-		reportRoute.POST("", s.report)
+		symptomRoute.GET("", s.getSymptoms)
+		symptomRoute.POST("", s.reportSymptoms)
 	}
-	schema.InitGoodBehaviorFromID()
+	
 	behaviorRoute := apiRoute.Group("/behaviors")
 	behaviorRoute.Use(s.recognizeAccountMiddleware())
 	{

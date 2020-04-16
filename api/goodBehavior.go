@@ -43,14 +43,14 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	schemaBehaviors := getGoodBehavior(params.GoodBehaviors)
-	bTypeCollect := getGoodBehaviorType(schemaBehaviors)
-	behaviorScore := behaviorScore(schemaBehaviors)
+	log.Info(params.GoodBehaviors)
+	behaviors, IDs := getGoodBehavior(params.GoodBehaviors)
+	behaviorScore := behaviorScore(behaviors)
 
 	data := schema.GoodBehaviorData{
 		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
-		GoodBehaviors: bTypeCollect,
+		GoodBehaviors: IDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		BehaviorScore: behaviorScore,
 		Timestamp:     time.Now().Unix(),
@@ -67,24 +67,19 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	return
 }
 
-func getGoodBehavior(behaviors []string) []schema.GoodBehavior {
-	var ret []schema.GoodBehavior
+func getGoodBehavior(behaviors []string) ([]schema.GoodBehavior, []string) {
+	var retBehaviors []schema.GoodBehavior
+	var reBehaviorsID []string
 	for _, behavior := range behaviors {
 		st := schema.GoodBehaviorType(behavior)
-		v, ok := schema.GoodBehavirorFromID[st]
+		v, ok := schema.GoodBehaviorFromID[st]
 		if ok {
-			ret = append(ret, v)
+			retBehaviors = append(retBehaviors, v)
+			reBehaviorsID = append(reBehaviorsID, string(v.ID))
+
 		}
 	}
-	return ret
-}
-
-func getGoodBehaviorType(behaviors []schema.GoodBehavior) []string {
-	var ret []string
-	for _, behavior := range behaviors {
-		ret = append(ret, string(behavior.ID))
-	}
-	return ret
+	return retBehaviors, reBehaviorsID
 }
 
 func behaviorScore(behaviors []schema.GoodBehavior) float64 {
