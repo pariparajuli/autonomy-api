@@ -2,9 +2,10 @@ package store
 
 import (
 	"context"
+	"time"
+
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 const (
@@ -19,7 +20,7 @@ type GoodBehaviorReport interface {
 }
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
-func (m *mongoDB) GoodBehaviorData(data *schema.GoodBehaviorData) error {
+func (m *mongoDB) GoodBehaviorSave(data *schema.GoodBehaviorData) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)
