@@ -39,6 +39,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 
 	symptomScore := score(symptoms)
 	data := schema.SymptomReportData{
+		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
 		Symptoms:      symptomIDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},

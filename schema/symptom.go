@@ -49,6 +49,7 @@ var Symptoms = []Symptom{
 
 // SymptomReportData the struct to store symptom data and score
 type SymptomReportData struct {
+	ProfileID     string   `json:"profile_id" bson:"profile_id"`
 	AccountNumber string   `json:"account_number" bson:"account_number"`
 	Symptoms      []string `json:"symptoms" bson:"symptoms"`
 	Location      GeoJSON  `json:"location" bson:"location"`
