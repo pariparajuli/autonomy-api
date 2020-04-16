@@ -80,6 +80,9 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	if err := c.FindOne(ctx, query).Decode(&result); err != nil {
 		return nil, err
 	}
+	if result.Points == nil { // user hasn't tracked any location yet
+		return []*schema.POIDetail{}, nil
+	}
 
 	// find scores
 	poiIDs := make([]primitive.ObjectID, 0)
