@@ -7,6 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
@@ -22,6 +24,8 @@ type MongoAccount interface {
 	UpdateAccountScore(string, float64) error
 	IsAccountExist(string) (bool, error)
 	AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error
+	RefreshAccountState(accountNumber string) (bool, error)
+	GetAccountsByPOI(id string) ([]string, error)
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
@@ -326,4 +330,49 @@ func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric
 	}
 
 	return nil
+}
+
+func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
+	log.WithField("prefix", mongoLogPrefix).Debugf("get accounts by POI id: %s", id)
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	poiID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.WithField("prefix", mongoLogPrefix).Errorf("incorrect POI id:%s  error: %s", id, err.Error())
+		return nil, err
+	}
+
+	query := bson.M{"points_of_interest.id": poiID}
+
+	filter := bson.M{
+		"account_number": 1,
+	}
+
+	cursor, err := c.Find(ctx, query, options.Find().SetProjection(filter))
+
+	accounts := []string{}
+
+	for cursor.Next(ctx) {
+		// Declare a result BSON object
+		var profile struct {
+			AccountNumber string `bson:"account_number"`
+		}
+		if err := cursor.Decode(&profile); err != nil {
+			log.WithField("prefix", mongoLogPrefix).Errorf("fail to query accounts include POI id:%s  error: %s", id, err.Error())
+			return nil, err
+		}
+
+		accounts = append(accounts, profile.AccountNumber)
+	}
+
+	return accounts, nil
+}
+
+// RefreshAccountState checks current states of a specific account
+// and return true if the score has changed
+func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
+	return true, nil
 }

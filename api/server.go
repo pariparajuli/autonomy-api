@@ -18,12 +18,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"github.com/bitmark-inc/bitmark-sdk-go/account"
-
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
 	"github.com/bitmark-inc/autonomy-api/store"
+	"github.com/bitmark-inc/bitmark-sdk-go/account"
 )
 
 var log *logrus.Entry
@@ -47,6 +47,8 @@ type Server struct {
 	// External services
 	oneSignalClient *onesignal.OneSignalClient
 	geoClient       geoinfo.GeoInfo
+
+	cadenceClient *cadence.CadenceClient
 
 	// account
 	bitmarkAccount *account.AccountV2
@@ -89,6 +91,7 @@ func NewServer(
 		bitmarkAccount:  bitmarkAccount,
 		oneSignalClient: onesignal.NewClient(httpClient),
 		geoClient:       geoClient,
+		cadenceClient:   cadence.NewClient(),
 	}
 }
 
@@ -164,7 +167,6 @@ func (s *Server) setupRouter() *gin.Engine {
 
 	}
 
-
 	metricRoute := r.Group("/metrics")
 	metricRoute.Use(logmodule.Ginrus("Metric"))
 	metricRoute.Use(cors.New(cors.Config{
@@ -213,7 +215,7 @@ func (s *Server) setupRouter() *gin.Engine {
 		symptomRoute.GET("", s.getSymptoms)
 		symptomRoute.POST("", s.reportSymptoms)
 	}
-	
+
 	behaviorRoute := apiRoute.Group("/behaviors")
 	behaviorRoute.Use(s.recognizeAccountMiddleware())
 	{

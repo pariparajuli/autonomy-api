@@ -1,10 +1,14 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	cadenceClient "go.uber.org/cadence/client"
 
+	scoreWorker "github.com/bitmark-inc/autonomy-api/background/score"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -32,6 +36,15 @@ func (s *Server) accountRegister(c *gin.Context) {
 	if err != nil {
 		abortWithEncoding(c, http.StatusForbidden, errorAccountTaken, err)
 		return
+	}
+
+	if _, err := s.cadenceClient.StartWorkflow(c, cadenceClient.StartWorkflowOptions{
+		ID:                           fmt.Sprintf("account-state-%s", accountNumber),
+		TaskList:                     scoreWorker.TaskListName,
+		ExecutionStartToCloseTimeout: time.Hour,
+		WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+	}, "AccountStateUpdateWorkflow", accountNumber); err != nil {
+		c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

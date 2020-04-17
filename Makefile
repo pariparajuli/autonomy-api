@@ -7,16 +7,16 @@ default: build
 api:
 	go build -o bin/api main.go
 
-background:
-	go build -o bin/background background/background/main.go
+score-worker:
+	go build -o bin/score-worker background/command/score-worker/main.go
 
 run-api: api
 	./bin/api -c config.yaml
 
-run-background: background
-	./bin/background -c config.yaml
+run-score-worker: score-worker
+	./bin/score-worker -c config.yaml
 
-all: api background
+bin: api score-worker
 
 build-api-image:
 ifndef dist

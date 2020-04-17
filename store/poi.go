@@ -30,6 +30,7 @@ type POI interface {
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
+	RefreshPOIState(id string) (bool, error)
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
@@ -279,6 +280,12 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 	}
 
 	return nil
+}
+
+// RefreshPOIState checks current states of a specific POI and return true
+// if the score has changed.
+func (m mongoDB) RefreshPOIState(id string) (bool, error) {
+	return true, nil
 }
 
 func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error {
