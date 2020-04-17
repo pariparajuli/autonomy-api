@@ -199,7 +199,7 @@ func (m *mongoDB) UpdatePOIOrder(accountNumber string, poiOrder []string) error 
 	if err != nil {
 		switch e := err.(type) {
 		case mongo.CommandError:
-			if e.Code == 40066 {
+			if e.Code == 40066 { // $switch has no default and an input matched no case
 				return ErrPOIListMismatch
 			}
 		default:
