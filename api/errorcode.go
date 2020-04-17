@@ -26,6 +26,9 @@ var (
 
 		1200: store.ErrRequestNotExist.Error(),
 		1201: store.ErrMultipleRequestMade.Error(),
+
+		1300: store.ErrPOIListNotFound.Error(),
+		1301: store.ErrPOIListMismatch.Error(),
 	}
 
 	errorInternalServer             = errorJSON(999)
@@ -49,6 +52,9 @@ var (
 
 	errorRequestNotExist     = errorJSON(1200)
 	errorMultipleRequestMade = errorJSON(1201)
+
+	errorPOIListNotFound  = errorJSON(1300)
+	errorPOIListMissmatch = errorJSON(1301)
 )
 
 type ErrorResponse struct {

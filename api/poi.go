@@ -97,6 +97,40 @@ func (s *Server) updatePOIAlias(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }
 
+func (s *Server) updatePOIOrder(c *gin.Context) {
+
+	account, ok := c.MustGet("account").(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	var params struct {
+		Order []string `json:"order"`
+	}
+
+	if err := c.BindJSON((&params)); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	if err := s.mongoStore.UpdatePOIOrder(account.AccountNumber, params.Order); err != nil {
+		switch err {
+		case store.ErrPOIListNotFound:
+			abortWithEncoding(c, http.StatusInternalServerError, errorPOIListNotFound, err)
+			return
+		case store.ErrPOIListMismatch:
+			abortWithEncoding(c, http.StatusInternalServerError, errorPOIListMissmatch, err)
+			return
+		default:
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "OK"})
+}
+
 func (s *Server) deletePOI(c *gin.Context) {
 	account, ok := c.MustGet("account").(*schema.Account)
 	if !ok {

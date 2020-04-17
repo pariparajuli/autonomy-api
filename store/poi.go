@@ -13,13 +13,17 @@ import (
 )
 
 var (
-	ErrPOINotFound = fmt.Errorf("poi not found")
+	ErrPOINotFound      = fmt.Errorf("poi not found")
+	ErrPOIListNotFound  = fmt.Errorf("poi list not found")
+	ErrPOIListMismatch  = fmt.Errorf("poi list mismatch")
+	ErrProfileNotUpdate = fmt.Errorf("poi not update")
 )
 
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
 	GetPOI(accountNumber string) ([]*schema.POIDetail, error)
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
+	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
 }
 
@@ -137,6 +141,102 @@ func (m *mongoDB) UpdatePOIAlias(accountNumber, alias string, poiID primitive.Ob
 	}
 	if result.MatchedCount == 0 {
 		return ErrPOINotFound
+	}
+
+	return nil
+}
+
+// UpdatePOIOrder updates the order of the POIs for the specified account
+func (m *mongoDB) UpdatePOIOrder(accountNumber string, poiOrder []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+
+	// construct mongodb aggregation $switch branches
+	poiCondition := bson.A{}
+	for i, id := range poiOrder {
+		poiID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return err
+		}
+
+		poiCondition = append(poiCondition,
+			bson.M{"case": bson.M{"$eq": bson.A{"$points_of_interest.id", poiID}}, "then": i})
+	}
+
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{
+		bson.D{
+			{"$match", bson.D{
+				{"account_number", accountNumber},
+			}},
+		},
+
+		bson.D{
+			{"$unwind", "$points_of_interest"},
+		},
+
+		bson.D{
+			{"$addFields", bson.D{
+				{"points_of_interest.order", bson.D{
+					{"$switch", bson.D{{
+						"branches", poiCondition},
+					}},
+				}},
+			}},
+		},
+
+		bson.D{
+			{"$sort", bson.M{
+				"points_of_interest.order": 1}},
+		},
+
+		bson.D{
+			{"$group", bson.D{
+				{"_id", "$_id"},
+				{"points_of_interest", bson.D{{"$push", "$points_of_interest"}}},
+			}},
+		},
+	})
+
+	if err != nil {
+		switch e := err.(type) {
+		case mongo.CommandError:
+			if e.Code == 40066 { // $switch has no default and an input matched no case
+				return ErrPOIListMismatch
+			}
+		default:
+			return err
+		}
+
+	}
+
+	var profiles []bson.M
+
+	if err := cur.All(ctx, &profiles); nil != err {
+		return err
+	}
+
+	if len(profiles) < 1 {
+		return ErrPOIListNotFound
+	}
+
+	poi, ok := profiles[0]["points_of_interest"]
+	if !ok {
+		return ErrPOIListNotFound
+	}
+
+	query := bson.M{
+		"account_number": accountNumber,
+	}
+	update := bson.M{"$set": bson.M{"points_of_interest": poi}}
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return ErrProfileNotUpdate
 	}
 
 	return nil
