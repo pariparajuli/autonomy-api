@@ -164,11 +164,6 @@ func (s *Server) setupRouter() *gin.Engine {
 
 	}
 
-	symptomRoute := apiRoute.Group("/symptoms")
-	{
-		symptomRoute.GET("", s.getSymptoms)
-
-	}
 
 	metricRoute := r.Group("/metrics")
 	metricRoute.Use(logmodule.Ginrus("Metric"))
@@ -206,10 +201,18 @@ func (s *Server) setupRouter() *gin.Engine {
 
 	r.GET("/healthz", s.healthz)
 
-	reportRoute := apiRoute.Group("/report")
-	reportRoute.Use(s.recognizeAccountMiddleware())
+	symptomRoute := apiRoute.Group("/symptoms")
+	symptomRoute.Use(s.recognizeAccountMiddleware())
 	{
-		reportRoute.POST("", s.report)
+		symptomRoute.GET("", s.getSymptoms)
+		symptomRoute.POST("", s.reportSymptoms)
+	}
+	
+	behaviorRoute := apiRoute.Group("/behaviors")
+	behaviorRoute.Use(s.recognizeAccountMiddleware())
+	{
+		behaviorRoute.GET("", s.goodBehaviors)
+		behaviorRoute.POST("", s.reportBehaviors)
 	}
 
 	return r

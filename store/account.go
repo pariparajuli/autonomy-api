@@ -208,7 +208,8 @@ func (m *mongoDB) IsAccountExist(accountNumber string) (bool, error) {
 
 	count, err := c.CountDocuments(ctx, bson.M{"account_number": accountNumber})
 	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("query account number %s with error: ", accountNumber, err)
+		log.WithField("prefix", mongoLogPrefix).Errorf("query account number %s with error: %v", accountNumber, err)
+
 		return false, err
 	}
 	return count > 0, nil

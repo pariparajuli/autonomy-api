@@ -18,8 +18,9 @@ type MongoStore interface {
 	Group
 	Healthier
 	MongoAccount
-	CitizenReport
+	SymptomReport
 	POI
+	GoodBehaviorReport
 	Closer
 	Pinger
 	ConfirmOperator
