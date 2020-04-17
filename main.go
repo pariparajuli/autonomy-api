@@ -27,6 +27,8 @@ import (
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/bitmark-inc/autonomy-api/api"
+	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
+
 	bitmarksdk "github.com/bitmark-inc/bitmark-sdk-go"
 	"github.com/bitmark-inc/bitmark-sdk-go/account"
 )
@@ -190,13 +192,19 @@ func main() {
 		log.Panicf("connect mongo database with error: %s", err)
 	}
 
+	geoClient, err := geoinfo.New(viper.GetString("map.key"))
+	if nil != err {
+		log.Panicf("get geo client with error: %s", err)
+	}
+
 	// Init http server
 	server = api.NewServer(
 		ormDB,
 		mongoClient,
 		machineryServer,
 		jwtPrivateKey,
-		globalAccount)
+		globalAccount,
+		geoClient)
 	log.WithField("prefix", "init").Info("Initialized http server")
 
 	// Remove initial context

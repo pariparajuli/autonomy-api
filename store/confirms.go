@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 type ConfirmCountyCount map[string]int
 
 type ConfirmUpdater interface {
-	UpdateConfirm(confirms ConfirmCountyCount, country string)
+	UpdateOrInsertConfirm(confirms ConfirmCountyCount, country string)
 }
 
 type ConfirmGetter interface {
@@ -37,13 +38,23 @@ type ConfirmOperator interface {
 }
 
 // country code should comes from https://countrycode.org/, with lower case
-func (m mongoDB) UpdateConfirm(confirms ConfirmCountyCount, country string) {
+func (m mongoDB) UpdateOrInsertConfirm(confirms ConfirmCountyCount, country string) {
 	c := m.client.Database(m.database).Collection(ConfirmCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	now := time.Now().Unix()
 	for county, count := range confirms {
+		county, err := utils.TwCountyKey(county)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"prefix": mongoLogPrefix,
+				"county": county,
+				"error":  err,
+			}).Error("convert county name")
+			continue
+		}
+
 		query := countyCountryQuery(county, country)
 		cur, err := c.Find(ctx, query)
 		if nil != err {
@@ -53,6 +64,7 @@ func (m mongoDB) UpdateConfirm(confirms ConfirmCountyCount, country string) {
 				"profile": ConfirmCollection,
 				"error":   err,
 			}).Error("retrieve confirm count")
+			continue
 		}
 
 		var prev schema.Confirm
