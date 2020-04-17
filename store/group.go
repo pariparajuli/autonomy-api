@@ -3,16 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-)
-
-const (
-	defaultTimeout = 10 * time.Second
 )
 
 // Group - interface for finding group of people
@@ -24,7 +19,7 @@ type Group interface {
 // NearestCount - find nearest account number up to some number
 // return matches by id
 func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error) {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 
 	var record schema.Profile
 	ids := make([]string, 0)
@@ -61,7 +56,7 @@ func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error)
 // return matches by account number
 func (m *mongoDB) NearestDistance(distance int, cords schema.Location) ([]string, error) {
 	query := distanceQuery(distance, cords)
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

@@ -2,15 +2,15 @@ package store
 
 import (
 	"context"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 const (
 	mongoLogPrefix = "mongo"
+	defaultTimeout = 5 * time.Second
 )
 
 // MongoStore - interface for mongodb operations
@@ -24,18 +24,6 @@ type MongoStore interface {
 	Closer
 	Pinger
 	ConfirmOperator
-}
-
-// MongoAccount - account related operations
-// mongo version create account is different from postgres
-type MongoAccount interface {
-	CreateAccount(*schema.Account) error
-	CreateAccountWithGeoPosition(*schema.Account, float64, float64) error
-	UpdateAccountGeoPosition(string, float64, float64) error
-	DeleteAccount(string) error
-	UpdateAccountScore(string, float64) error
-	IsAccountExist(string) (bool, error)
-	AppendPOIForAccount(accountNumber string, desc *schema.POIDesc) error
 }
 
 // Closer - close db connection

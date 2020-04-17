@@ -12,6 +12,7 @@ type POI struct {
 	ID       primitive.ObjectID `bson:"_id"`
 	Location *GeoJSON           `bson:"location"`
 	Score    float64            `bson:"score"`
+	Metric   Metric             `bson:"metric"`
 }
 
 type POIDesc struct {
@@ -20,6 +21,8 @@ type POIDesc struct {
 	Address string             `bson:"address"`
 }
 
+// This structure will not store into database, it's only for client response.
+// Data comes from schema Profile.PointsOfInterest & POI
 type POIDetail struct {
 	ID       primitive.ObjectID `json:"id"`
 	Alias    string             `json:"alias"`

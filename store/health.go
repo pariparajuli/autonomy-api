@@ -16,7 +16,7 @@ type Healthier interface {
 
 // Health - average health score by uuid
 func (m *mongoDB) Health(ids []string) (float64, error) {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	cur, err := c.Find(context.Background(), healthQuery(ids))
 	if nil != err {
 		return float64(0), err

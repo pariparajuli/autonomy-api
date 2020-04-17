@@ -6,7 +6,9 @@ package mocks
 
 import (
 	schema "github.com/bitmark-inc/autonomy-api/schema"
+	store "github.com/bitmark-inc/autonomy-api/store"
 	gomock "github.com/golang/mock/gomock"
+	primitive "go.mongodb.org/mongo-driver/bson/primitive"
 	reflect "reflect"
 )
 
@@ -31,6 +33,35 @@ func NewMockMongoStore(ctrl *gomock.Controller) *MockMongoStore {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockMongoStore) EXPECT() *MockMongoStoreMockRecorder {
 	return m.recorder
+}
+
+// AddPOI mocks base method
+func (m *MockMongoStore) AddPOI(arg0, arg1, arg2 string, arg3, arg4 float64) (*schema.POI, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPOI", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*schema.POI)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddPOI indicates an expected call of AddPOI
+func (mr *MockMongoStoreMockRecorder) AddPOI(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPOI", reflect.TypeOf((*MockMongoStore)(nil).AddPOI), arg0, arg1, arg2, arg3, arg4)
+}
+
+// AppendPOIToAccountProfile mocks base method
+func (m *MockMongoStore) AppendPOIToAccountProfile(arg0 string, arg1 *schema.POIDesc) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AppendPOIToAccountProfile", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AppendPOIToAccountProfile indicates an expected call of AppendPOIToAccountProfile
+func (mr *MockMongoStoreMockRecorder) AppendPOIToAccountProfile(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendPOIToAccountProfile", reflect.TypeOf((*MockMongoStore)(nil).AppendPOIToAccountProfile), arg0, arg1)
 }
 
 // CitizenReportSave mocks base method
@@ -99,6 +130,66 @@ func (m *MockMongoStore) DeleteAccount(arg0 string) error {
 func (mr *MockMongoStoreMockRecorder) DeleteAccount(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccount", reflect.TypeOf((*MockMongoStore)(nil).DeleteAccount), arg0)
+}
+
+// DeletePOI mocks base method
+func (m *MockMongoStore) DeletePOI(arg0 string, arg1 primitive.ObjectID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePOI", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePOI indicates an expected call of DeletePOI
+func (mr *MockMongoStoreMockRecorder) DeletePOI(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePOI", reflect.TypeOf((*MockMongoStore)(nil).DeletePOI), arg0, arg1)
+}
+
+// GetConfirm mocks base method
+func (m *MockMongoStore) GetConfirm(arg0, arg1 string) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfirm", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetConfirm indicates an expected call of GetConfirm
+func (mr *MockMongoStoreMockRecorder) GetConfirm(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfirm", reflect.TypeOf((*MockMongoStore)(nil).GetConfirm), arg0, arg1)
+}
+
+// GetPOI mocks base method
+func (m *MockMongoStore) GetPOI(arg0 string) ([]*schema.POIDetail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPOI", arg0)
+	ret0, _ := ret[0].([]*schema.POIDetail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPOI indicates an expected call of GetPOI
+func (mr *MockMongoStoreMockRecorder) GetPOI(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPOI", reflect.TypeOf((*MockMongoStore)(nil).GetPOI), arg0)
+}
+
+// GetPOIMetrics mocks base method
+func (m *MockMongoStore) GetPOIMetrics(arg0 primitive.ObjectID) (*schema.Metric, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPOIMetrics", arg0)
+	ret0, _ := ret[0].(*schema.Metric)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPOIMetrics indicates an expected call of GetPOIMetrics
+func (mr *MockMongoStoreMockRecorder) GetPOIMetrics(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPOIMetrics", reflect.TypeOf((*MockMongoStore)(nil).GetPOIMetrics), arg0)
 }
 
 // Health mocks base method
@@ -175,6 +266,37 @@ func (mr *MockMongoStoreMockRecorder) Ping() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockMongoStore)(nil).Ping))
 }
 
+// ProfileMetric mocks base method
+func (m *MockMongoStore) ProfileMetric(arg0 string) (*schema.Metric, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProfileMetric", arg0)
+	ret0, _ := ret[0].(*schema.Metric)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ProfileMetric indicates an expected call of ProfileMetric
+func (mr *MockMongoStoreMockRecorder) ProfileMetric(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProfileMetric", reflect.TypeOf((*MockMongoStore)(nil).ProfileMetric), arg0)
+}
+
+// TotalConfirm mocks base method
+func (m *MockMongoStore) TotalConfirm(arg0 string) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TotalConfirm", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// TotalConfirm indicates an expected call of TotalConfirm
+func (mr *MockMongoStoreMockRecorder) TotalConfirm(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TotalConfirm", reflect.TypeOf((*MockMongoStore)(nil).TotalConfirm), arg0)
+}
+
 // UpdateAccountGeoPosition mocks base method
 func (m *MockMongoStore) UpdateAccountGeoPosition(arg0 string, arg1, arg2 float64) error {
 	m.ctrl.T.Helper()
@@ -201,4 +323,58 @@ func (m *MockMongoStore) UpdateAccountScore(arg0 string, arg1 float64) error {
 func (mr *MockMongoStoreMockRecorder) UpdateAccountScore(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAccountScore", reflect.TypeOf((*MockMongoStore)(nil).UpdateAccountScore), arg0, arg1)
+}
+
+// UpdateOrInsertConfirm mocks base method
+func (m *MockMongoStore) UpdateOrInsertConfirm(arg0 store.ConfirmCountyCount, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateOrInsertConfirm", arg0, arg1)
+}
+
+// UpdateOrInsertConfirm indicates an expected call of UpdateOrInsertConfirm
+func (mr *MockMongoStoreMockRecorder) UpdateOrInsertConfirm(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInsertConfirm", reflect.TypeOf((*MockMongoStore)(nil).UpdateOrInsertConfirm), arg0, arg1)
+}
+
+// UpdatePOIAlias mocks base method
+func (m *MockMongoStore) UpdatePOIAlias(arg0, arg1 string, arg2 primitive.ObjectID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePOIAlias", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePOIAlias indicates an expected call of UpdatePOIAlias
+func (mr *MockMongoStoreMockRecorder) UpdatePOIAlias(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePOIAlias", reflect.TypeOf((*MockMongoStore)(nil).UpdatePOIAlias), arg0, arg1, arg2)
+}
+
+// UpdatePOIMetric mocks base method
+func (m *MockMongoStore) UpdatePOIMetric(arg0 primitive.ObjectID, arg1 schema.Metric) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePOIMetric", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePOIMetric indicates an expected call of UpdatePOIMetric
+func (mr *MockMongoStoreMockRecorder) UpdatePOIMetric(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePOIMetric", reflect.TypeOf((*MockMongoStore)(nil).UpdatePOIMetric), arg0, arg1)
+}
+
+// UpdateProfileMetric mocks base method
+func (m *MockMongoStore) UpdateProfileMetric(arg0 string, arg1 schema.Metric) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProfileMetric", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProfileMetric indicates an expected call of UpdateProfileMetric
+func (mr *MockMongoStoreMockRecorder) UpdateProfileMetric(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfileMetric", reflect.TypeOf((*MockMongoStore)(nil).UpdateProfileMetric), arg0, arg1)
 }

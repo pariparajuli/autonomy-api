@@ -199,6 +199,12 @@ func (s *Server) setupRouter() *gin.Engine {
 		poiRoute.DELETE("/:poiID", s.deletePOI)
 	}
 
+	areaProfile := apiRoute.Group("/area_profile")
+	areaProfile.Use(s.recognizeAccountMiddleware())
+	{
+		areaProfile.GET("/:poiID", s.areaProfile)
+	}
+
 	r.GET("/healthz", s.healthz)
 
 	symptomRoute := apiRoute.Group("/symptoms")

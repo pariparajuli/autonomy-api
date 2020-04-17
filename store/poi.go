@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,6 +23,10 @@ var (
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
 	GetPOI(accountNumber string) ([]*schema.POIDetail, error)
+
+	GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error)
+	UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error
+
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
@@ -29,7 +34,7 @@ type POI interface {
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
 func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	c := m.client.Database(m.database).Collection(schema.POICollection)
@@ -62,7 +67,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		Alias:   alias,
 		Address: address,
 	}
-	if err := m.AppendPOIForAccount(accountNumber, poiDesc); err != nil {
+	if err := m.AppendPOIToAccountProfile(accountNumber, poiDesc); err != nil {
 		return nil, err
 	}
 
@@ -71,10 +76,10 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 
 // GetPOI finds the POI list of an account along with customied alias and address
 func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 
 	// find user's POI list
 	var result struct {
@@ -116,7 +121,7 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	}
 
 	for i, p := range result.Points {
-		p.Score = pois[i].Score
+		p.Score = pois[i].Metric.Score
 		p.Location.Longitude = pois[i].Location.Coordinates[0]
 		p.Location.Latitude = pois[i].Location.Coordinates[1]
 	}
@@ -124,12 +129,29 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	return result.Points, nil
 }
 
-// UpdatePOIAlias updates the alias of a POI for the specified account
-func (m *mongoDB) UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+// GetPOIMetrics finds POI by poi ID
+func (m *mongoDB) GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.POICollection)
+
+	// find user's POI
+	var poi schema.POI
+	query := bson.M{"_id": poiID}
+	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
+		return nil, err
+	}
+
+	return &poi.Metric, nil
+}
+
+// UpdatePOIAlias updates the alias of a POI for the specified account
+func (m *mongoDB) UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	query := bson.M{
 		"account_number":        accountNumber,
 		"points_of_interest.id": poiID,
@@ -246,7 +268,7 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	query := bson.M{
 		"account_number":        accountNumber,
 		"points_of_interest.id": poiID,
@@ -254,6 +276,43 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 	update := bson.M{"$pull": bson.M{"points_of_interest": bson.M{"id": poiID}}}
 	if _, err := c.UpdateOne(ctx, query, update); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.POICollection)
+	query := bson.M{
+		"_id": poiID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"metric": metric,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	pid := poiID.String()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"poi ID": pid,
+			"error":  err,
+		}).Error("update poi metric")
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"poi ID": pid,
+			"error":  ErrPOINotFound.Error(),
+		}).Error("update poi metric")
+		return ErrPOINotFound
 	}
 
 	return nil

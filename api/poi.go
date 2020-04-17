@@ -45,7 +45,7 @@ func (s *Server) addPOI(c *gin.Context) {
 	}
 
 	body.ID = poi.ID.Hex()
-	body.Score = poi.Score
+	body.Score = poi.Metric.Score
 	c.JSON(http.StatusOK, body)
 }
 

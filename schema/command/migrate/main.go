@@ -63,7 +63,7 @@ func migrateMongo() error {
 	opts.SetMaxPoolSize(1)
 	client, _ := mongo.NewClient(opts)
 	_ = client.Connect(context.Background())
-	c := client.Database(viper.GetString("mongo.database")).Collection(schema.ProfileCollectionName)
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.ProfileCollection)
 
 	// here is reference from api/store/profile
 	// if bson key of location is changed, here should also be changed

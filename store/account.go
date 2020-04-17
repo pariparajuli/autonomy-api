@@ -11,6 +11,26 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
+// MongoAccount - account related operations
+// mongo version create account is different from postgres
+type MongoAccount interface {
+	CreateAccount(*schema.Account) error
+	CreateAccountWithGeoPosition(*schema.Account, float64, float64) error
+	UpdateAccountGeoPosition(string, float64, float64) error
+
+	DeleteAccount(string) error
+	UpdateAccountScore(string, float64) error
+	IsAccountExist(string) (bool, error)
+	AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error
+
+	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
+	ProfileMetric(accountNumber string) (*schema.Metric, error)
+}
+
+var (
+	errAccountNotFound = fmt.Errorf("account not found")
+)
+
 // CreateAccount is to register an account into autonomy system
 func (s *AutonomyStore) CreateAccount(accountNumber, encPubKey string, metadata map[string]interface{}) (*schema.Account, error) {
 	a := schema.Account{
@@ -100,7 +120,7 @@ func (s *AutonomyStore) DeleteAccount(accountNumber string) error {
 }
 
 func (m *mongoDB) CreateAccount(a *schema.Account) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -123,7 +143,7 @@ func (m *mongoDB) CreateAccount(a *schema.Account) error {
 }
 
 func (m *mongoDB) CreateAccountWithGeoPosition(a *schema.Account, latitude, longitude float64) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -150,7 +170,7 @@ func (m *mongoDB) CreateAccountWithGeoPosition(a *schema.Account, latitude, long
 }
 
 func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longitude float64) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -185,7 +205,7 @@ func (m *mongoDB) UpdateAccountGeoPosition(accountNumber string, latitude, longi
 }
 
 func (m *mongoDB) DeleteAccount(accountNumber string) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -202,7 +222,7 @@ func (m *mongoDB) DeleteAccount(accountNumber string) error {
 
 // IsAccountExist check if account number exist in mongo db
 func (m *mongoDB) IsAccountExist(accountNumber string) (bool, error) {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -217,7 +237,7 @@ func (m *mongoDB) IsAccountExist(accountNumber string) (bool, error) {
 
 // UpdateAccountScore update a score of an account
 func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -231,18 +251,18 @@ func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error 
 	update := bson.M{"$set": bson.M{"health_score": score}}
 	result, err := c.UpdateMany(ctx, query, update)
 	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("update score of acount:%s  error: %s", accountNumber, err)
+		log.WithField("prefix", mongoLogPrefix).Errorf("update score of account:%s  error: %s", accountNumber, err)
 		return err
 	}
 
-	log.WithField("prefix", mongoLogPrefix).Debugf("update score of an acount:%s result: %v", accountNumber, result)
+	log.WithField("prefix", mongoLogPrefix).Debugf("update score of an account:%s result: %v", accountNumber, result)
 
 	return nil
 }
 
-// AddPOI appends a POI to the end of the POI list of an account
-func (m *mongoDB) AppendPOIForAccount(accountNumber string, desc *schema.POIDesc) error {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollectionName)
+// AppendPOIToAccountProfile appends a POI to end of the POI list of an account
+func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -276,6 +296,33 @@ func (m *mongoDB) AppendPOIForAccount(accountNumber string, desc *schema.POIDesc
 	if _, err := c.UpdateOne(ctx, query, update); nil != err {
 		prefixedLog.WithError(err).Error("unable to add POI for this account")
 		return err
+	}
+
+	return nil
+}
+
+func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number": bson.M{
+			"$eq": accountNumber,
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"metric": metric,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errAccountNotFound
 	}
 
 	return nil
