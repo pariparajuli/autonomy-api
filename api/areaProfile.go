@@ -13,9 +13,9 @@ import (
 func (s *Server) areaProfile(c *gin.Context) {
 	p := c.Param("poiID")
 	if p == "" {
-		s.singleAreaProfile(c)
-	} else {
 		s.currentAreaProfile(c)
+	} else {
+		s.singleAreaProfile(c)
 	}
 }
 
