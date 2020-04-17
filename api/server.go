@@ -204,7 +204,8 @@ func (s *Server) setupRouter() *gin.Engine {
 	areaProfile := apiRoute.Group("/area_profile")
 	areaProfile.Use(s.recognizeAccountMiddleware())
 	{
-		areaProfile.GET("/:poiID", s.areaProfile)
+		areaProfile.GET("/", s.currentAreaProfile)
+		areaProfile.GET("/:poiID", s.singleAreaProfile)
 	}
 
 	r.GET("/healthz", s.healthz)

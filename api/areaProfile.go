@@ -10,15 +10,6 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-func (s *Server) areaProfile(c *gin.Context) {
-	p := c.Param("poiID")
-	if p == "" {
-		s.currentAreaProfile(c)
-	} else {
-		s.singleAreaProfile(c)
-	}
-}
-
 func (s *Server) singleAreaProfile(c *gin.Context) {
 	poiID, err := primitive.ObjectIDFromHex(c.Param("poiID"))
 	if err != nil {
