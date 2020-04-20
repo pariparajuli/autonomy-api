@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -22,15 +23,16 @@ var (
 
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
-	GetPOI(accountNumber string) ([]*schema.POIDetail, error)
+	ListPOI(accountNumber string) ([]*schema.POIDetail, error)
 
+	GetPOI(poiID primitive.ObjectID) (*schema.POI, error)
 	GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error)
 	UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error
 
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
-	RefreshPOIState(id string) (bool, error)
+	RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error)
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
@@ -75,8 +77,8 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 	return &poi, nil
 }
 
-// GetPOI finds the POI list of an account along with customied alias and address
-func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
+// ListPOI finds the POI list of an account along with customied alias and address
+func (m *mongoDB) ListPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -128,6 +130,23 @@ func (m *mongoDB) GetPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	}
 
 	return result.Points, nil
+}
+
+// GetPOI finds POI by poi ID
+func (m *mongoDB) GetPOI(poiID primitive.ObjectID) (*schema.POI, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.POICollection)
+
+	// find user's POI
+	var poi *schema.POI
+	query := bson.M{"_id": poiID}
+	if err := c.FindOne(ctx, query).Decode(poi); err != nil {
+		return nil, err
+	}
+
+	return poi, nil
 }
 
 // GetPOIMetrics finds POI by poi ID
@@ -284,24 +303,23 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 
 // RefreshPOIState checks current states of a specific POI and return true
 // if the score has changed.
-func (m mongoDB) RefreshPOIState(id string) (bool, error) {
-	poiID, err := primitive.ObjectIDFromHex(id)
+func (m mongoDB) RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error) {
+	poi, err := m.GetPOI(poiID)
 	if err != nil {
 		return false, err
 	}
-	currentMetric, err := m.GetPOIMetrics(poiID)
-	if err != nil {
-		return false, err
-	}
+
+	metric := poi.Metric
+	changed := math.Abs(metric.Score-score) > 33
 
 	// User current metric as new metric
-	newMetric := currentMetric
+	metric.Score = score
 
-	if err := m.UpdatePOIMetric(poiID, *newMetric); err != nil {
+	if err := m.UpdatePOIMetric(poiID, metric); err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return changed, nil
 }
 
 func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error {

@@ -3,11 +3,34 @@ package score
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id string) (bool, error) {
-	return s.mongo.RefreshPOIState(id)
+	poiID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return false, err
+	}
+	poi, err := s.mongo.GetPOI(poiID)
+	if err != nil {
+		return false, err
+	}
+
+	confirmedScore, err := s.mongo.ConfirmScore(schema.Location{
+		Latitude:  poi.Location.Coordinates[1],
+		Longitude: poi.Location.Coordinates[0],
+	})
+	if err != nil {
+		return false, err
+	}
+
+	totalScore := score.TotalScore(0, 0, confirmedScore)
+
+	return s.mongo.RefreshPOIState(poiID, totalScore)
 }
 
 func (s *ScoreUpdateWorker) SendPOINotificationActivity(ctx context.Context, id string) error {
