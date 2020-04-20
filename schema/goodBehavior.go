@@ -37,11 +37,11 @@ type GoodBehavior struct {
 // GoodBehaviors return a slice that contains all GoodBehavior
 var GoodBehaviors = []GoodBehavior{
 	{CleanHand, "Frequent hand cleaning", "Washing hands thoroughly with soap and water for at least 20 seconds or applying an alcohol-based hand sanitizer", 1},
-	{SocialDistancing, "Social & physical distancing", "Washing hands thoroughly with soap and water for at least 20 seconds or applying an alcohol-based hand sanitizer.", 1},
-	{TouchFace, "Avoiding touching face", "Avoiding crowds, working from home, and maintaining at least 6 feet of distance from others whenever possible.", 1},
+	{SocialDistancing, "Social & physical distancing", "Avoiding crowds, working from home, and maintaining at least 6 feet of distance from others whenever possibl", 1},
+	{TouchFace, "Avoiding touching face", "Restraining from touching your eyes, nose, or mouth, especially with unwashed hands.", 1},
 	{WearMask, "Wearing a face mask or covering", "Covering your nose and mouth when in public or whenever social distancing measures are difficult to maintain.", 1},
 	{CoveringCough, "Covering coughs and sneezes", "Covering your mouth with the inside of your elbow or a tissue whenever you cough or sneeze.", 1},
-	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaing and disinfecting surfaces", 1},
+	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards.", 1},
 }
 
 // GoodBehaviorData the struct to store citizen data and score
