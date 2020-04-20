@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -88,19 +87,4 @@ func behaviorScore(behaviors []schema.GoodBehavior) float64 {
 		sum = sum + float64(behavior.Weight)
 	}
 	return sum
-}
-
-func (s *Server) nearestBehvaviorScore(location schema.Location) (float64, error) {
-	totalweight, count, err := s.mongoStore.NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, location)
-	if err != nil {
-		return 0, err
-	}
-	score := 100 * (totalweight / float64(count) * schema.TotalGoodBehaviorWeight)
-	return score, nil
-}
-
-func (s *Server) reportGoodBehaviorBackgroundTask() {
-	// Update total score of a user
-	// Update nearest poi score
-
 }
