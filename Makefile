@@ -1,4 +1,4 @@
-.PHONY: api background
+.PHONY: api
 
 dist =
 
@@ -25,12 +25,12 @@ endif
 	docker build --build-arg dist=$(dist) -t autonomy:api-$(dist) .
 	docker tag autonomy:api-$(dist)  083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:api-$(dist)
 
-build-background-image:
+build-score-worker-image:
 ifndef dist
 	$(error dist is undefined)
 endif
-	docker build --build-arg dist=$(dist) -t autonomy:background-$(dist) . -f Dockerfile-Job
-	docker tag autonomy:background-$(dist)  083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:background-$(dist)
+	docker build --build-arg dist=$(dist) -t autonomy:score-worker-$(dist) . -f Dockerfile-ScoreWorker
+	docker tag autonomy:score-worker-$(dist)  083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:score-worker-$(dist)
 
 build-crawler-image:
 ifndef dist
@@ -52,9 +52,9 @@ ifndef dist
 endif
 	aws ecr get-login-password | docker login --username AWS --password-stdin 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com
 	docker push 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:api-$(dist)
-	docker push 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:background-$(dist)
+	docker push 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:score-worker-$(dist)
 
-build: build-api-image build-background-image
+build: build-api-image build-score-worker-image
 
 clean:
 	rm -rf bin

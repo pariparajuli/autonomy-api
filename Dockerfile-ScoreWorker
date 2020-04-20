@@ -7,17 +7,16 @@ ADD go.mod .
 RUN go mod download
 
 ADD . .
-
-RUN go install github.com/bitmark-inc/autonomy-api/background/background
+RUN go install github.com/bitmark-inc/autonomy-api/background/command/score-worker
 
 
 # ---
 
 FROM alpine:3.10.3
 ARG dist=0.0
-COPY --from=build /go/bin/background /
+COPY --from=build /go/bin/score-worker /
 
 ENV AUTONOMY_LOG_LEVEL=INFO
 ENV AUTONOMY_SERVER_VERSION=$dist
 
-CMD ["/background"]
+CMD ["/score-worker"]
