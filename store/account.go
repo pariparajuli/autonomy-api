@@ -384,12 +384,18 @@ func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	symptomScore, symptomDelta, err := m.NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, loc)
+	if err != nil {
+		return false, err
+	}
 	// User current metric as new metric
 	newMetric := &p.Metric
 	newMetric.Behavior = behaviorScore
 	newMetric.BehaviorDelta = behaviorDelta
 	newMetric.LastUpdate = time.Now().UTC().Unix()
 
+	newMetric.Symptoms = symptomScore
+	newMetric.SymptomsDelta = symptomDelta
 	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
 		return false, err
 	}
