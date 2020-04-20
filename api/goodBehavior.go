@@ -72,6 +72,13 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	defer cancel()
 	utils.TriggerAccountUpdate(*s.cadenceClient, ctx, accts)
 
+	pois, err := s.mongoStore.NearestPOI(consts.CORHORT_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	utils.TriggerPOIUpdate(*s.cadenceClient, ctx, pois)
+
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 	return
 }
@@ -85,7 +92,6 @@ func getGoodBehavior(behaviors []string) ([]schema.GoodBehavior, []string) {
 		if ok {
 			retBehaviors = append(retBehaviors, v)
 			reBehaviorsID = append(reBehaviorsID, string(v.ID))
-
 		}
 	}
 	return retBehaviors, reBehaviorsID
