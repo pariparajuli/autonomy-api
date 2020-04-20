@@ -6,6 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"googlemaps.github.io/maps"
+
+	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 
 // GeoInfo - interface to operate google maps
 type GeoInfo interface {
-	Get(string) ([]maps.GeocodingResult, error)
+	Get(schema.Location) ([]maps.GeocodingResult, error)
 }
 
 type geoInfo struct {
@@ -23,26 +25,20 @@ type geoInfo struct {
 }
 
 // latLng - a string representation of a Lat,Lng pair, e.g. 1.23,4.56
-func (g geoInfo) Get(latLngStr string) ([]maps.GeocodingResult, error) {
+func (g geoInfo) Get(loc schema.Location) ([]maps.GeocodingResult, error) {
 	log.WithFields(log.Fields{
-		"prefix":         logPrefix,
-		"lat lng string": latLngStr,
-	}).Debug("query geo information")
-
-	latlng, err := maps.ParseLatLng(latLngStr)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"prefix":         logPrefix,
-			"lat lng string": latLngStr,
-			"error":          err,
-		}).Error("parse lat lng string")
-		return []maps.GeocodingResult{}, err
-	}
+		"prefix": logPrefix,
+		"lat":    loc.Latitude,
+		"lng":    loc.Longitude,
+	}).Debug("query geo info")
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	return g.client.Geocode(ctx, &maps.GeocodingRequest{LatLng: &latlng})
+	return g.client.Geocode(ctx, &maps.GeocodingRequest{LatLng: &maps.LatLng{
+		Lat: loc.Latitude,
+		Lng: loc.Longitude,
+	}})
 }
 
 // New - new GeoInfo interface

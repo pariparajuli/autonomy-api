@@ -12,12 +12,12 @@ func TwCountyKey(county string) (string, error) {
 	if zh, ok := consts.TwCountyEnglish[county]; !ok {
 		return county, fmt.Errorf("%s not exist", county)
 	} else {
-		return CountyNameToKey(zh), nil
+		return EnNameToKey(zh), nil
 	}
 }
 
-// CountyNameToKey - normalize *english* county name into all small case with
+// EnNameToKey - normalize *english* county name into all small case with
 // underscore
-func CountyNameToKey(str string) string {
+func EnNameToKey(str string) string {
 	return strings.Replace(strings.ToLower(str), " ", "_", -1)
 }

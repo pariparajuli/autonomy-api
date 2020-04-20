@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -15,6 +16,11 @@ import (
 const (
 	ConfirmCollection  = "confirm"
 	RecordNotExistCode = -1
+	confirmCriteria    = 10
+)
+
+var (
+	ErrEmptyGeo = fmt.Errorf("empty geo info")
 )
 
 type ConfirmCountyCount map[string]int
@@ -30,6 +36,9 @@ type ConfirmGetter interface {
 
 	// total confirm of a country, return with latest total, previous day total, error
 	TotalConfirm(country string) (int, int, error)
+
+	// score of confirm cases
+	ConfirmScore(schema.Location) (float64, error)
 }
 
 type ConfirmOperator interface {
@@ -151,6 +160,10 @@ func (m mongoDB) GetConfirm(country, county string) (int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	// normalize key
+	country = utils.EnNameToKey(country)
+	county = utils.EnNameToKey(county)
+
 	var latest schema.Confirm
 	err := c.FindOne(ctx, countyCountryQuery(county, country)).Decode(&latest)
 
@@ -158,6 +171,7 @@ func (m mongoDB) GetConfirm(country, county string) (int, int, error) {
 		log.WithFields(log.Fields{
 			"prefix":  mongoLogPrefix,
 			"country": country,
+			"county":  county,
 			"error":   err,
 		}).Error("get confirm count")
 		return RecordNotExistCode, RecordNotExistCode, err
@@ -220,4 +234,74 @@ func (m mongoDB) TotalConfirm(country string) (int, int, error) {
 	}).Info("total confirm")
 
 	return total, prev, nil
+}
+
+func (m mongoDB) ConfirmScore(loc schema.Location) (float64, error) {
+	geos, err := m.geoClient.Get(loc)
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("get geo info")
+
+		return 0, err
+	}
+
+	if len(geos) == 0 {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"lat":    loc.Latitude,
+			"loc":    loc.Longitude,
+		}).Warn("find empty geo info")
+
+		return 0, ErrEmptyGeo
+	}
+
+	info := geos[0]
+	log.WithFields(log.Fields{
+		"prefix": mongoLogPrefix,
+		"info":   info,
+	}).Debug("geo info")
+
+	var county, country string
+	for _, a := range info.AddressComponents {
+		if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_1" {
+			county = a.LongName
+		} else if len(a.Types) > 0 && a.Types[0] == "country" {
+			country = utils.EnNameToKey(a.ShortName)
+			break
+		}
+	}
+
+	current, delta, err := m.GetConfirm(country, county)
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":  mongoLogPrefix,
+			"country": country,
+			"county":  county,
+			"error":   err,
+		}).Error("get confirm count")
+
+		return 0, err
+	}
+
+	log.WithFields(log.Fields{
+		"prefix":            mongoLogPrefix,
+		"country":           country,
+		"county":            county,
+		"current_confirmed": current,
+		"prev_confirmed":    delta,
+	}).Debug("get confirm count")
+
+	return confirmScore(delta), nil
+}
+
+func confirmScore(delta int) float64 {
+	// equal or more than that criteria get 0 score
+	if delta >= confirmCriteria {
+		return 0
+	}
+
+	// in between 0 - 10 people, each increased confirm case deduct 5 points
+	return float64(100 - 5*delta)
 }

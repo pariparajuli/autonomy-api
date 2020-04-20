@@ -75,6 +75,7 @@ func NewServer(
 	mongoStore := store.NewMongoStore(
 		mongoClient,
 		viper.GetString("mongo.database"),
+		geoClient,
 	)
 
 	return &Server{

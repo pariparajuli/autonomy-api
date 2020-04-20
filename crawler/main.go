@@ -101,6 +101,7 @@ func main() {
 	mStore := store.NewMongoStore(
 		mongoClient,
 		viper.GetString("mongo.database"),
+		nil,
 	)
 
 	crawler := newCrawler("tw", mStore, cdc.NewTw(twURL))
