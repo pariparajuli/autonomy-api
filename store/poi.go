@@ -285,6 +285,22 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 // RefreshPOIState checks current states of a specific POI and return true
 // if the score has changed.
 func (m mongoDB) RefreshPOIState(id string) (bool, error) {
+	poiID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return false, err
+	}
+	currentMetric, err := m.GetPOIMetrics(poiID)
+	if err != nil {
+		return false, err
+	}
+
+	// User current metric as new metric
+	newMetric := currentMetric
+
+	if err := m.UpdatePOIMetric(poiID, *newMetric); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 

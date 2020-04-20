@@ -374,5 +374,17 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 // RefreshAccountState checks current states of a specific account
 // and return true if the score has changed
 func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
+	currentMetric, err := m.ProfileMetric(accountNumber)
+	if err != nil {
+		return false, err
+	}
+
+	// User current metric as new metric
+	newMetric := currentMetric
+
+	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
