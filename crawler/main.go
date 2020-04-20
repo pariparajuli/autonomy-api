@@ -28,6 +28,12 @@ type Cron interface {
 	Run()
 }
 
+func init() {
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("autonomy")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+}
+
 func initLog() {
 	logLevel, err := log.ParseLevel(viper.GetString("log.level"))
 	if err != nil {
