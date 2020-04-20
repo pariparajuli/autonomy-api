@@ -13,7 +13,8 @@ var GoodBehaviorFromID = map[GoodBehaviorType]GoodBehavior{
 }
 
 const (
-	GoodBehaviorCollection = "goodBehavior"
+	GoodBehaviorCollection  = "goodBehavior"
+	TotalGoodBehaviorWeight = 6
 )
 
 const (
@@ -24,8 +25,6 @@ const (
 	CoveringCough    GoodBehaviorType = "covering_coughs"
 	CleanSurface     GoodBehaviorType = "clean_surface"
 )
-
-var TotalGoodBehaviorWeight float64
 
 // GoodBehavior a struct to define a good behavior
 type GoodBehavior struct {
