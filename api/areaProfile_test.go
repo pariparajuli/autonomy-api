@@ -40,7 +40,6 @@ func TestCurrentAreaProfile(t *testing.T) {
 		Behavior:      5,
 		BehaviorDelta: 6,
 		Score:         7,
-		Guidance:      "hello world",
 	}
 
 	m.EXPECT().ProfileMetric("1").Return(&metric, nil).Times(1)
@@ -90,7 +89,6 @@ func TestSingleAreaProfile(t *testing.T) {
 		Behavior:      5,
 		BehaviorDelta: 4,
 		Score:         3,
-		Guidance:      "hello world",
 	}
 
 	m.EXPECT().GetPOIMetrics(poiID).Return(&metric, nil).Times(1)

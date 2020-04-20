@@ -64,20 +64,6 @@ func (mr *MockMongoStoreMockRecorder) AppendPOIToAccountProfile(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendPOIToAccountProfile", reflect.TypeOf((*MockMongoStore)(nil).AppendPOIToAccountProfile), arg0, arg1)
 }
 
-// CitizenReportSave mocks base method
-func (m *MockMongoStore) CitizenReportSave(arg0 *schema.CitizenReportData) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CitizenReportSave", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CitizenReportSave indicates an expected call of CitizenReportSave
-func (mr *MockMongoStoreMockRecorder) CitizenReportSave(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CitizenReportSave", reflect.TypeOf((*MockMongoStore)(nil).CitizenReportSave), arg0)
-}
-
 // Close mocks base method
 func (m *MockMongoStore) Close() {
 	m.ctrl.T.Helper()
@@ -88,6 +74,21 @@ func (m *MockMongoStore) Close() {
 func (mr *MockMongoStoreMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockMongoStore)(nil).Close))
+}
+
+// ConfirmScore mocks base method
+func (m *MockMongoStore) ConfirmScore(arg0 schema.Location) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfirmScore", arg0)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConfirmScore indicates an expected call of ConfirmScore
+func (mr *MockMongoStoreMockRecorder) ConfirmScore(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmScore", reflect.TypeOf((*MockMongoStore)(nil).ConfirmScore), arg0)
 }
 
 // CreateAccount mocks base method
@@ -146,10 +147,25 @@ func (mr *MockMongoStoreMockRecorder) DeletePOI(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePOI", reflect.TypeOf((*MockMongoStore)(nil).DeletePOI), arg0, arg1)
 }
 
-// GetConfirm mocks base method
-func (m *MockMongoStore) GetConfirm(arg0, arg1 string) (int, int, error) {
+// GetAccountsByPOI mocks base method
+func (m *MockMongoStore) GetAccountsByPOI(arg0 string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfirm", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetAccountsByPOI", arg0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAccountsByPOI indicates an expected call of GetAccountsByPOI
+func (mr *MockMongoStoreMockRecorder) GetAccountsByPOI(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsByPOI", reflect.TypeOf((*MockMongoStore)(nil).GetAccountsByPOI), arg0)
+}
+
+// GetConfirm mocks base method
+func (m *MockMongoStore) GetConfirm(arg0 schema.Location) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfirm", arg0)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
@@ -157,9 +173,9 @@ func (m *MockMongoStore) GetConfirm(arg0, arg1 string) (int, int, error) {
 }
 
 // GetConfirm indicates an expected call of GetConfirm
-func (mr *MockMongoStoreMockRecorder) GetConfirm(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockMongoStoreMockRecorder) GetConfirm(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfirm", reflect.TypeOf((*MockMongoStore)(nil).GetConfirm), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfirm", reflect.TypeOf((*MockMongoStore)(nil).GetConfirm), arg0)
 }
 
 // GetPOI mocks base method
@@ -190,6 +206,20 @@ func (m *MockMongoStore) GetPOIMetrics(arg0 primitive.ObjectID) (*schema.Metric,
 func (mr *MockMongoStoreMockRecorder) GetPOIMetrics(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPOIMetrics", reflect.TypeOf((*MockMongoStore)(nil).GetPOIMetrics), arg0)
+}
+
+// GoodBehaviorSave mocks base method
+func (m *MockMongoStore) GoodBehaviorSave(arg0 *schema.GoodBehaviorData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GoodBehaviorSave", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GoodBehaviorSave indicates an expected call of GoodBehaviorSave
+func (mr *MockMongoStoreMockRecorder) GoodBehaviorSave(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GoodBehaviorSave", reflect.TypeOf((*MockMongoStore)(nil).GoodBehaviorSave), arg0)
 }
 
 // Health mocks base method
@@ -281,8 +311,52 @@ func (mr *MockMongoStoreMockRecorder) ProfileMetric(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProfileMetric", reflect.TypeOf((*MockMongoStore)(nil).ProfileMetric), arg0)
 }
 
+// RefreshAccountState mocks base method
+func (m *MockMongoStore) RefreshAccountState(arg0 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshAccountState", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshAccountState indicates an expected call of RefreshAccountState
+func (mr *MockMongoStoreMockRecorder) RefreshAccountState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshAccountState", reflect.TypeOf((*MockMongoStore)(nil).RefreshAccountState), arg0)
+}
+
+// RefreshPOIState mocks base method
+func (m *MockMongoStore) RefreshPOIState(arg0 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshPOIState", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshPOIState indicates an expected call of RefreshPOIState
+func (mr *MockMongoStoreMockRecorder) RefreshPOIState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshPOIState", reflect.TypeOf((*MockMongoStore)(nil).RefreshPOIState), arg0)
+}
+
+// SymptomReportSave mocks base method
+func (m *MockMongoStore) SymptomReportSave(arg0 *schema.SymptomReportData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SymptomReportSave", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SymptomReportSave indicates an expected call of SymptomReportSave
+func (mr *MockMongoStoreMockRecorder) SymptomReportSave(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SymptomReportSave", reflect.TypeOf((*MockMongoStore)(nil).SymptomReportSave), arg0)
+}
+
 // TotalConfirm mocks base method
-func (m *MockMongoStore) TotalConfirm(arg0 string) (int, int, error) {
+func (m *MockMongoStore) TotalConfirm(arg0 schema.Location) (int, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TotalConfirm", arg0)
 	ret0, _ := ret[0].(int)
@@ -363,6 +437,20 @@ func (m *MockMongoStore) UpdatePOIMetric(arg0 primitive.ObjectID, arg1 schema.Me
 func (mr *MockMongoStoreMockRecorder) UpdatePOIMetric(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePOIMetric", reflect.TypeOf((*MockMongoStore)(nil).UpdatePOIMetric), arg0, arg1)
+}
+
+// UpdatePOIOrder mocks base method
+func (m *MockMongoStore) UpdatePOIOrder(arg0 string, arg1 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePOIOrder", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePOIOrder indicates an expected call of UpdatePOIOrder
+func (mr *MockMongoStoreMockRecorder) UpdatePOIOrder(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePOIOrder", reflect.TypeOf((*MockMongoStore)(nil).UpdatePOIOrder), arg0, arg1)
 }
 
 // UpdateProfileMetric mocks base method
