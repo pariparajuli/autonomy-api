@@ -1,12 +1,15 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
@@ -60,9 +63,16 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	accts, err := s.mongoStore.NearestDistance(consts.CORHORT_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	utils.TriggerAccountUpdate(*s.cadenceClient, ctx, accts)
 
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
-
 	return
 }
 

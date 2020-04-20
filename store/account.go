@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -374,14 +375,19 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 // RefreshAccountState checks current states of a specific account
 // and return true if the score has changed
 func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
-	currentMetric, err := m.ProfileMetric(accountNumber)
+	p, err := m.ProfileByAcctNumber(accountNumber)
 	if err != nil {
 		return false, err
 	}
-
+	loc := schema.Location{Longitude: p.Location.Coordinates[0], Latitude: p.Location.Coordinates[1]}
+	behaviorScore, behaviorDelta, err := m.NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, loc)
+	if err != nil {
+		return false, err
+	}
 	// User current metric as new metric
-	newMetric := currentMetric
-
+	newMetric := &p.Metric
+	newMetric.Behavior = behaviorScore
+	newMetric.BehaviorDelta = behaviorDelta
 	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
 		return false, err
 	}
