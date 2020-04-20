@@ -8,7 +8,7 @@ import (
 )
 
 const SAVED_LOCATION_STATUS_CHANGE = "ef7ce03c-9832-42c5-99fb-4957d2d07dbe"
-const CURRENT_LOCATION_STATUS_CHANGE = ""
+const CURRENT_LOCATION_STATUS_CHANGE = "f562147c-01a0-4c45-8901-6e4a2026e94e"
 
 // notifyAccountsByTemplate will consolidate account numbers and submit notification requests
 func (b *Background) NotifyAccountsByTemplate(accountNumbers []string, templateID string, data map[string]interface{}) error {

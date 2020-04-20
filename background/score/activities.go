@@ -15,7 +15,12 @@ func (s *ScoreUpdateWorker) SendPOINotificationActivity(ctx context.Context, id 
 	if err != nil {
 		return err
 	}
-	return s.Background.NotifyAccountsByTemplate(accounts, background.SAVED_LOCATION_STATUS_CHANGE, nil)
+	return s.Background.NotifyAccountsByTemplate(accounts, background.SAVED_LOCATION_STATUS_CHANGE,
+		map[string]interface{}{
+			"notification_type": "RISK_LEVEL_CHANGED",
+			"poi_id":            id,
+		},
+	)
 }
 
 func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, account_number string) (bool, error) {
@@ -23,5 +28,9 @@ func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, a
 }
 
 func (s *ScoreUpdateWorker) SendAccountNotificationActivity(ctx context.Context, account_number string) error {
-	return s.Background.NotifyAccountsByTemplate([]string{account_number}, background.CURRENT_LOCATION_STATUS_CHANGE, nil)
+	return s.Background.NotifyAccountsByTemplate([]string{account_number}, background.CURRENT_LOCATION_STATUS_CHANGE,
+		map[string]interface{}{
+			"notification_type": "RISK_LEVEL_CHANGED",
+		},
+	)
 }
