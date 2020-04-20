@@ -94,6 +94,7 @@ func main() {
 	mongoStore := store.NewMongoStore(
 		mongoClient,
 		viper.GetString("mongo.database"),
+		nil,
 	)
 
 	worker := scoreWorker.NewScoreUpdateWorker(viper.GetString("cadence.domain"), mongoStore)
