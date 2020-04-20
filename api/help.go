@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
@@ -62,22 +61,6 @@ func (s *Server) askForHelp(c *gin.Context) {
 		}
 	}
 
-	if _, err := s.background.SendTask(&tasks.Signature{
-		Name: "broadcast_help",
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: req.ID.String(),
-			},
-			{
-				Type:  "[]string",
-				Value: accountNumbers,
-			},
-		},
-	}); err != nil {
-		c.Error(err)
-	}
-
 	// TODO: broadcast a notification to surrounding users
 	c.JSON(http.StatusOK, req)
 	return
@@ -132,7 +115,7 @@ func (s *Server) answerHelp(c *gin.Context) {
 	id := c.Param("helpID")
 	helper := c.GetString("requester")
 
-	help, err := s.store.AnswerHelp(helper, id)
+	_, err := s.store.AnswerHelp(helper, id)
 	if err != nil {
 		if err == store.ErrRequestNotExist {
 			abortWithEncoding(c, http.StatusNotFound, errorRequestNotExist, err)
@@ -141,22 +124,6 @@ func (s *Server) answerHelp(c *gin.Context) {
 		}
 
 		return
-	}
-
-	if _, err := s.background.SendTask(&tasks.Signature{
-		Name: "notify_help_accepted",
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: id,
-			},
-			{
-				Type:  "string",
-				Value: help.Requester,
-			},
-		},
-	}); err != nil {
-		c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
