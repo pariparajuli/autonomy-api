@@ -56,64 +56,17 @@ func (m mongoDB) UpdateOrInsertConfirm(confirms ConfirmCountyCount, country stri
 		}
 
 		query := countyCountryQuery(county, country)
-		cur, err := c.Find(ctx, query)
+		var prev schema.Confirm
+		err = c.FindOne(ctx, query).Decode(&prev)
+
 		if nil != err {
 			log.WithFields(log.Fields{
 				"prefix":  mongoLogPrefix,
 				"county":  county,
 				"profile": ConfirmCollection,
 				"error":   err,
-			}).Error("retrieve confirm count")
-			continue
-		}
+			}).Info("create new record of confirm count")
 
-		var prev schema.Confirm
-
-		if cur.Next(ctx) {
-			// update existing
-			err = cur.Decode(&prev)
-			if nil != err {
-				log.WithFields(log.Fields{
-					"prefix":  mongoLogPrefix,
-					"county":  county,
-					"country": country,
-				}).Debug("convert db record")
-				continue
-			}
-
-			diff := count - prev.Count
-
-			// confirm count should be same or increased
-			if diff < 0 {
-				log.WithFields(log.Fields{
-					"prefix":        mongoLogPrefix,
-					"prev count":    prev.Count,
-					"current count": count,
-				}).Error("expect daily confirm case to be mono increasing")
-				continue
-			}
-
-			// no new data
-			if diff == 0 {
-				log.WithFields(log.Fields{
-					"prefix":  mongoLogPrefix,
-					"county":  county,
-					"count":   count,
-					"country": country,
-				}).Debug("same confirm count")
-			}
-
-			// should only exist one record
-			_, err = c.UpdateOne(ctx, query, countUpdateCommand(count, diff, now))
-			if nil != err {
-				log.WithFields(log.Fields{
-					"prefix": mongoLogPrefix,
-					"county": county,
-					"count":  count,
-					"error":  err,
-				}).Error("update confirm count")
-			}
-		} else {
 			// insert new
 			latest := schema.Confirm{
 				County:        county,
@@ -130,6 +83,48 @@ func (m mongoDB) UpdateOrInsertConfirm(confirms ConfirmCountyCount, country stri
 					"error":  err,
 				}).Error("insert confirm count")
 			}
+
+			continue
+		}
+
+		log.WithFields(log.Fields{
+			"prefix":  mongoLogPrefix,
+			"country": country,
+			"county":  prev.County,
+			"count":   prev.Count,
+		}).Debug("prev confirm count")
+
+		diff := count - prev.Count
+
+		// confirm count should be same or increased
+		if diff < 0 {
+			log.WithFields(log.Fields{
+				"prefix":        mongoLogPrefix,
+				"prev count":    prev.Count,
+				"current count": count,
+			}).Error("expect daily confirm case to be mono increasing")
+			continue
+		}
+
+		// no new data
+		if diff == 0 {
+			log.WithFields(log.Fields{
+				"prefix":  mongoLogPrefix,
+				"county":  county,
+				"count":   count,
+				"country": country,
+			}).Debug("same confirm count")
+		}
+
+		// should only exist one record
+		_, err = c.UpdateOne(ctx, query, countUpdateCommand(count, diff, now))
+		if nil != err {
+			log.WithFields(log.Fields{
+				"prefix": mongoLogPrefix,
+				"county": county,
+				"count":  count,
+				"error":  err,
+			}).Error("update confirm count")
 		}
 	}
 }
