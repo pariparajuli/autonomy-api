@@ -21,10 +21,11 @@ var activityOptions = workflow.ActivityOptions{
 
 func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
-	logger := workflow.GetLogger(ctx)
-
-	selector := workflow.NewSelector(ctx)
 	signalChan := workflow.GetSignalChannel(ctx, "poiCheckSignal")
+	defer signalChan.Close()
+
+	logger := workflow.GetLogger(ctx)
+	selector := workflow.NewSelector(ctx)
 
 	timerCancelCtx, cancelTimerHandler := workflow.WithCancel(ctx)
 	timerFuture := workflow.NewTimer(timerCancelCtx, POIStateCheckInterval)
@@ -35,7 +36,7 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 	selector.AddReceive(signalChan, func(c workflow.Channel, more bool) {
 		cancelTimerHandler()
 		signalChan.Receive(ctx, nil)
-		signalChan.Close()
+
 		logger.Info("Trigger POI info updates by signal")
 	})
 
@@ -63,10 +64,12 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 
 func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, accountNumber string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+	signalChan := workflow.GetSignalChannel(ctx, "accountCheckSignal")
+	defer signalChan.Close()
+
 	logger := workflow.GetLogger(ctx)
 
 	selector := workflow.NewSelector(ctx)
-	signalChan := workflow.GetSignalChannel(ctx, "accountCheckSignal")
 
 	timerCancelCtx, cancelTimerHandler := workflow.WithCancel(ctx)
 	timerFuture := workflow.NewTimer(timerCancelCtx, AccountStateCheckInterval)
@@ -77,7 +80,6 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 	selector.AddReceive(signalChan, func(c workflow.Channel, more bool) {
 		cancelTimerHandler()
 		signalChan.Receive(ctx, nil)
-		signalChan.Close()
 		logger.Info("Start account info updates by signal")
 	})
 

@@ -58,5 +58,5 @@ func (c *CadenceClient) StartWorkflow(ctx context.Context, options client.StartW
 func (c *CadenceClient) SignalWithStartWorkflow(ctx context.Context,
 	workflowID string, signalName string, signalArg interface{},
 	options client.StartWorkflowOptions, workflow interface{}, workflowArgs ...interface{}) (*workflow.Execution, error) {
-	return c.client.SignalWithStartWorkflow(ctx, workflowID, signalName, signalArg, options, workflow, workflowArgs)
+	return c.client.SignalWithStartWorkflow(ctx, workflowID, signalName, signalArg, options, workflow, workflowArgs...)
 }
