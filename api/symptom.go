@@ -63,16 +63,15 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	utils.TriggerAccountUpdate(*s.cadenceClient, ctx, accts)
+
+	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
 
 	pois, err := s.mongoStore.NearestPOI(consts.NEAR_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	utils.TriggerPOIUpdate(*s.cadenceClient, ctx, pois)
+	utils.TriggerPOIUpdate(*s.cadenceClient, c, pois)
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 
 	return
