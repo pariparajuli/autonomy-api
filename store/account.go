@@ -30,6 +30,7 @@ type MongoAccount interface {
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
+	ProfileByAcctNumber(accountNumber string) (*schema.Profile, error)
 }
 
 var (
