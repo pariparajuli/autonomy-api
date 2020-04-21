@@ -89,7 +89,12 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 		count++
 		totalBehavior = totalBehavior + len(result.GoodBehaviors)
 	}
-	score := 100 * (sum / float64(count*schema.TotalGoodBehaviorWeight))
+	score := float64(0)
+	if count > 0 {
+		score = 100 * (sum / float64(count*schema.TotalGoodBehaviorWeight))
+	} else {
+		score = 0
+	}
 
 	// Previous day
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage})
@@ -114,7 +119,7 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	if countYesterday > 0 {
 		scoreYesterday = 100 * (sumYesterday / float64(countYesterday*schema.TotalGoodBehaviorWeight))
 	} else {
-		scoreYesterday = 100
+		scoreYesterday = 0
 	}
 	scoreDelta := score - scoreYesterday
 	goodBehaviorDelta := totalBehavior - totalBehaviorYesterday

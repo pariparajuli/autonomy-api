@@ -59,23 +59,29 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 
 	err := s.mongoStore.GoodBehaviorSave(&data)
 	if err != nil {
-		c.Error(err)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
-	if err != nil {
+	if nil == err {
+		if errUpdate := utils.TriggerAccountUpdate(*s.cadenceClient, c, accts); errUpdate != nil {
+			c.Error(err)
+		}
+	} else {
 		c.Error(err)
-		return
 	}
-	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
 
 	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
-		return
 	}
-	utils.TriggerPOIUpdate(*s.cadenceClient, c, pois)
-
+	if nil == err {
+		if errUpdate := utils.TriggerPOIUpdate(*s.cadenceClient, c, pois); errUpdate != nil {
+			c.Error(err)
+		}
+	} else {
+		c.Error(err)
+	}
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 	return
 }

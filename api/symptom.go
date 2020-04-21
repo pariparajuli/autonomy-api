@@ -51,23 +51,27 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 
 	err := s.mongoStore.SymptomReportSave(&data)
 	if err != nil {
-		c.Error(err)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
+
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
-	if err != nil {
+	if nil == err {
+		if errUpdate := utils.TriggerAccountUpdate(*s.cadenceClient, c, accts); errUpdate != nil {
+			c.Error(errUpdate)
+		}
+	} else {
 		c.Error(err)
-		return
 	}
-
-	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
-
 	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
-	if err != nil {
+	if nil == err {
+		if errUpdate := utils.TriggerPOIUpdate(*s.cadenceClient, c, pois); err != nil {
+			c.Error(errUpdate)
+		}
+	} else {
 		c.Error(err)
-		return
 	}
-	utils.TriggerPOIUpdate(*s.cadenceClient, c, pois)
+
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 
 	return
