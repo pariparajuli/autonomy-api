@@ -62,7 +62,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 				{"$first", "$account_number"},
 			}},
 			{"symptoms", bson.D{
-				{"$first", "$symtoms"},
+				{"$first", "$symptoms"},
 			}},
 		}}}
 
