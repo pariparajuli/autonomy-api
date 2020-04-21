@@ -314,6 +314,7 @@ func (m mongoDB) RefreshPOIState(poiID primitive.ObjectID, score float64) (bool,
 
 	// User current metric as new metric
 	metric.Score = score
+	metric.LastUpdate = time.Now().UTC().Unix()
 
 	if err := m.UpdatePOIMetric(poiID, metric); err != nil {
 		return false, err

@@ -52,7 +52,7 @@ func (m mongoDB) UpdateOrInsertConfirm(confirms ConfirmCountyCount, country stri
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	now := time.Now().Unix()
+	now := time.Now().UTC().Unix()
 	for county, count := range confirms {
 		county, err := utils.TwCountyKey(county)
 		if err != nil {

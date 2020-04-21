@@ -18,6 +18,7 @@ const (
 	SymptomReportCollection = "symptomReport"
 	TotalSymptomWeight      = 9
 )
+
 const (
 	Fever   SymptomType = "fever"
 	Cough   SymptomType = "cough"

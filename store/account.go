@@ -381,6 +381,7 @@ func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
 
 	// User current metric as new metric
 	newMetric := currentMetric
+	newMetric.LastUpdate = time.Now().UTC().Unix()
 
 	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
 		return false, err

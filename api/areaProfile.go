@@ -3,11 +3,16 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+)
+
+const (
+	metricUpdateInterval = 5 * time.Minute
 )
 
 func (s *Server) singleAreaProfile(c *gin.Context) {
@@ -33,16 +38,21 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		return
 	}
 
-	_, err := s.mongoStore.RefreshAccountState(account.AccountNumber)
-	if nil != err {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
-		return
-	}
-
 	metric, err := s.mongoStore.ProfileMetric(account.AccountNumber)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
+	}
+
+	if time.Unix(metric.LastUpdate, 0).Sub(time.Now().UTC()) >= metricUpdateInterval {
+		// immediate update
+
+		// latest metric
+		metric, err = s.mongoStore.ProfileMetric(account.AccountNumber)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, metric)
