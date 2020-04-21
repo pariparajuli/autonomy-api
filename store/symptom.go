@@ -13,7 +13,7 @@ import (
 
 type SymptomReport interface {
 	SymptomReportSave(data *schema.SymptomReportData) error
-	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, error)
+	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
 }
 
 // SymptomReportSave save  a record instantly in database
@@ -33,7 +33,7 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 }
 
 // NearestGoodBehaviorScore return  the total behavior score and delta score of users within distInMeter range
-func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, error) {
+func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
@@ -61,15 +61,19 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 			{"account_number", bson.D{
 				{"$first", "$account_number"},
 			}},
+			{"symptoms", bson.D{
+				{"$first", "$symtoms"},
+			}},
 		}}}
 
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageToday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest symptom score")
-		return 0, 0, err
+		return 0, 0, 0, 0, err
 	}
 	sum := float64(0)
 	count := 0
+	totalSymptom := 0
 	for cursor.Next(ctx) {
 		var result schema.SymptomReportData
 		if err := cursor.Decode(&result); err != nil {
@@ -78,6 +82,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sum = sum + result.SymptomScore
 		count++
+		totalSymptom = totalSymptom + len(result.Symptoms)
 	}
 	score := 100 - 100*(sum/(schema.TotalSymptomWeight*2))
 	if score < 0 {
@@ -87,10 +92,11 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest symptom score")
-		return 0, 0, err
+		return 0, 0, 0, 0, err
 	}
 	sumYesterday := float64(0)
 	countYesterday := 0
+	totalSymptomYesterday := 0
 	for cursorYesterday.Next(ctx) {
 		var result schema.SymptomReportData
 		if err := cursor.Decode(&result); err != nil {
@@ -99,6 +105,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sumYesterday = sumYesterday + result.SymptomScore
 		countYesterday++
+		totalSymptomYesterday = totalSymptomYesterday + len(result.Symptoms)
 	}
 	scoreYesterday := float64(0)
 	if countYesterday > 0 {
@@ -110,6 +117,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		scoreYesterday = 100
 	}
 
-	delta := score - scoreYesterday
-	return score, delta, nil
+	scoreDelta := score - scoreYesterday
+	symptomDelta := totalSymptom - totalSymptomYesterday
+	return score, scoreDelta, totalSymptom, symptomDelta, nil
 }
