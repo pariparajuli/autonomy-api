@@ -40,16 +40,13 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	symptoms, symptomIDs := getSymptoms(params.Symptoms)
 
 	symptomScore := score(symptoms)
-	zoneLoc, _ := time.LoadLocation("UTC")
-	nowTime := time.Now().In(zoneLoc)
-
 	data := schema.SymptomReportData{
 		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
 		Symptoms:      symptomIDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		SymptomScore:  symptomScore,
-		Timestamp:     nowTime.Unix(),
+		Timestamp:     time.Now().UTC().Unix(),
 	}
 
 	err := s.mongoStore.SymptomReportSave(&data)
@@ -57,7 +54,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	accts, err := s.mongoStore.NearestDistance(consts.NEAR_DISTANCE_RANGE, *loc)
+	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
@@ -65,7 +62,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 
 	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
 
-	pois, err := s.mongoStore.NearestPOI(consts.NEAR_DISTANCE_RANGE, *loc)
+	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return

@@ -47,8 +47,6 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	}
 	behaviors, IDs := getGoodBehavior(params.GoodBehaviors)
 	behaviorScore := behaviorScore(behaviors)
-	zoneLoc, _ := time.LoadLocation("UTC")
-	nowTime := time.Now().In(zoneLoc)
 
 	data := schema.GoodBehaviorData{
 		ProfileID:     account.Profile.ID.String(),
@@ -56,7 +54,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		GoodBehaviors: IDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		BehaviorScore: behaviorScore,
-		Timestamp:     nowTime.Unix(),
+		Timestamp:     time.Now().UTC().Unix(),
 	}
 
 	err := s.mongoStore.GoodBehaviorSave(&data)
