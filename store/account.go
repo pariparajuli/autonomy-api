@@ -30,7 +30,7 @@ type MongoAccount interface {
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
-	ProfileByAcctNumber(accountNumber string) (*schema.Profile, error)
+	GetProfile(accountNumber string) (*schema.Profile, error)
 }
 
 var (
@@ -376,7 +376,7 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 // RefreshAccountState checks current states of a specific account
 // and return true if the score has changed
 func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
-	p, err := m.ProfileByAcctNumber(accountNumber)
+	p, err := m.GetProfile(accountNumber)
 	if err != nil {
 		return false, err
 	}

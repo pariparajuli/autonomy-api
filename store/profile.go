@@ -29,7 +29,7 @@ func (m *mongoDB) ProfileMetric(accountNumber string) (*schema.Metric, error) {
 	return &p.Metric, nil
 }
 
-func (m *mongoDB) ProfileByAcctNumber(accountNumber string) (*schema.Profile, error) {
+func (m *mongoDB) GetProfile(accountNumber string) (*schema.Profile, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
