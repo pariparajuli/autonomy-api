@@ -380,11 +380,11 @@ func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
 		return false, err
 	}
 	loc := schema.Location{Longitude: p.Location.Coordinates[0], Latitude: p.Location.Coordinates[1]}
-	behaviorScore, behaviorDelta, _, _, err := m.NearestGoodBehaviorScore(consts.NEAR_DISTANCE_RANGE, loc)
+	behaviorScore, behaviorDelta, _, _, err := m.NearestGoodBehaviorScore(consts.NEARBY_DISTANCE_RANGE, loc)
 	if err != nil {
 		return false, err
 	}
-	symptomScore, symptomDelta, _, _, err := m.NearestSymptomScore(consts.NEAR_DISTANCE_RANGE, loc)
+	symptomScore, symptomDelta, _, _, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, loc)
 	if err != nil {
 		return false, err
 	}

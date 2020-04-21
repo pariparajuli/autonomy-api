@@ -39,7 +39,7 @@ func (s *AutonomyStore) RequestHelp(accountNumber, subject, needs, meetingPlace,
 func (s *AutonomyStore) ListHelps(accountNumber string, latitude, longitude float64, count int64) ([]schema.HelpRequest, error) {
 	helps := []schema.HelpRequest{}
 
-	accounts, err := s.mongo.NearestDistance(consts.NEAR_DISTANCE_RANGE, schema.Location{
+	accounts, err := s.mongo.NearestDistance(consts.CORHORT_DISTANCE_RANGE, schema.Location{
 		Latitude:  latitude,
 		Longitude: longitude,
 	})
