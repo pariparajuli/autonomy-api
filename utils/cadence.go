@@ -19,7 +19,7 @@ const TaskListName = "autonomy-score-tasks"
 func TriggerAccountUpdate(client cadence.CadenceClient, c context.Context, accountNumbers []string) error {
 	for _, a := range accountNumbers {
 		if _, err := client.SignalWithStartWorkflow(c,
-			fmt.Sprintf("account-state-%s", a), "", nil,
+			fmt.Sprintf("account-state-%s", a), "accountCheckSignal", nil,
 			cadenceClient.StartWorkflowOptions{
 				ID:                           fmt.Sprintf("account-state-%s", a),
 				TaskList:                     TaskListName,
@@ -38,7 +38,7 @@ func TriggerPOIUpdate(client cadence.CadenceClient, c context.Context, poiIDs []
 	for _, id := range poiIDs {
 		poiID := id.Hex()
 		if _, err := client.SignalWithStartWorkflow(c,
-			fmt.Sprintf("poi-state-%s", poiID), "", nil,
+			fmt.Sprintf("poi-state-%s", poiID), "poiCheckSignal", nil,
 			cadenceClient.StartWorkflowOptions{
 				ID:                           fmt.Sprintf("poi-state-%s", poiID),
 				TaskList:                     TaskListName,
