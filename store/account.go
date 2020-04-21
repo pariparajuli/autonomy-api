@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -10,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -25,7 +25,7 @@ type MongoAccount interface {
 	UpdateAccountScore(string, float64) error
 	IsAccountExist(string) (bool, error)
 	AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error
-	RefreshAccountState(accountNumber string) (bool, error)
+	RefreshAccountState(accountNumber string, newMetric schema.Metric) (bool, error)
 	GetAccountsByPOI(id string) ([]string, error)
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
@@ -313,9 +313,7 @@ func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric
 
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	query := bson.M{
-		"account_number": bson.M{
-			"$eq": accountNumber,
-		},
+		"account_number": accountNumber,
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -375,39 +373,20 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 
 // RefreshAccountState checks current states of a specific account
 // and return true if the score has changed
-func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
-	p, err := m.GetProfile(accountNumber)
-	if err != nil {
-		return false, err
-	}
-	loc := schema.Location{Longitude: p.Location.Coordinates[0], Latitude: p.Location.Coordinates[1]}
-	behaviorScore, behaviorDelta, _, _, err := m.NearestGoodBehaviorScore(consts.NEARBY_DISTANCE_RANGE, loc)
-	if err != nil {
-		return false, err
-	}
-	symptomScore, symptomDelta, _, _, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, loc)
+func (m mongoDB) RefreshAccountState(accountNumber string, newMetric schema.Metric) (bool, error) {
+	metric, err := m.ProfileMetric(accountNumber)
 	if err != nil {
 		return false, err
 	}
 
-	confirm, confirmDelta, err := m.GetConfirm(loc)
-	if nil != err {
-		return false, err
-	}
+	changed := math.Abs(metric.Score-newMetric.Score) > 33
 
 	// User current metric as new metric
-	newMetric := &p.Metric
-	newMetric.Behavior = behaviorScore
-	newMetric.BehaviorDelta = behaviorDelta
 	newMetric.LastUpdate = time.Now().UTC().Unix()
 
-	newMetric.Symptoms = symptomScore
-	newMetric.SymptomsDelta = symptomDelta
-	newMetric.Confirm = float64(confirm)
-	newMetric.ConfirmDelta = float64(confirmDelta)
-	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
+	if err := m.UpdateProfileMetric(accountNumber, newMetric); err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return changed, nil
 }

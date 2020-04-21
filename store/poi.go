@@ -32,7 +32,7 @@ type POI interface {
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
-	RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error)
+	RefreshPOIState(poiID primitive.ObjectID, newMetric schema.Metric) (bool, error)
 	NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error)
 }
 
@@ -141,13 +141,13 @@ func (m *mongoDB) GetPOI(poiID primitive.ObjectID) (*schema.POI, error) {
 	c := m.client.Database(m.database).Collection(schema.POICollection)
 
 	// find user's POI
-	var poi *schema.POI
+	var poi schema.POI
 	query := bson.M{"_id": poiID}
-	if err := c.FindOne(ctx, query).Decode(poi); err != nil {
+	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
 		return nil, err
 	}
 
-	return poi, nil
+	return &poi, nil
 }
 
 // GetPOIMetrics finds POI by poi ID
@@ -304,20 +304,19 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 
 // RefreshPOIState checks current states of a specific POI and return true
 // if the score has changed.
-func (m mongoDB) RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error) {
+func (m mongoDB) RefreshPOIState(poiID primitive.ObjectID, newMetric schema.Metric) (bool, error) {
 	poi, err := m.GetPOI(poiID)
 	if err != nil {
 		return false, err
 	}
 
 	metric := poi.Metric
-	changed := math.Abs(metric.Score-score) > 33
+	changed := math.Abs(metric.Score-newMetric.Score) > 33
 
 	// User current metric as new metric
-	metric.Score = score
-	metric.LastUpdate = time.Now().UTC().Unix()
+	newMetric.LastUpdate = time.Now().UTC().Unix()
 
-	if err := m.UpdatePOIMetric(poiID, metric); err != nil {
+	if err := m.UpdatePOIMetric(poiID, newMetric); err != nil {
 		return false, err
 	}
 

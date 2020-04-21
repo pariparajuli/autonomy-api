@@ -210,6 +210,10 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 			"county":  county,
 			"error":   err,
 		}).Error("get confirm count")
+
+		if err == mongo.ErrNoDocuments {
+			return 0, 0, nil
+		}
 		return RecordNotExistCode, RecordNotExistCode, err
 	}
 	return latest.Count, latest.DiffYesterday, nil

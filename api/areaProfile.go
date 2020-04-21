@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
 )
 
 const (
@@ -38,20 +39,31 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		return
 	}
 
-	metric, err := s.mongoStore.ProfileMetric(account.AccountNumber)
+	profile, err := s.mongoStore.GetProfile(account.AccountNumber)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 
-	if time.Unix(metric.LastUpdate, 0).Sub(time.Now().UTC()) >= metricUpdateInterval {
-		// immediate update
+	metric := profile.Metric
 
-		// latest metric
-		metric, err = s.mongoStore.ProfileMetric(account.AccountNumber)
-		if err != nil {
-			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
-			return
+	if profile.Location != nil {
+		location := schema.Location{
+			Latitude:  profile.Location.Coordinates[1],
+			Longitude: profile.Location.Coordinates[0],
+		}
+
+		if time.Now().Sub(time.Unix(metric.LastUpdate, 0)) >= metricUpdateInterval {
+			if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
+				c.Error(err)
+			} else {
+				m.LastUpdate = time.Now().UTC().Unix()
+				if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
+					c.Error(err)
+				} else {
+					metric = *m
+				}
+			}
 		}
 	}
 
