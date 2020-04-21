@@ -58,7 +58,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	accts, err := s.mongoStore.NearestDistance(consts.CORHORT_DISTANCE_RANGE, *loc)
+	accts, err := s.mongoStore.NearestDistance(consts.NEAR_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
@@ -67,7 +67,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	defer cancel()
 	utils.TriggerAccountUpdate(*s.cadenceClient, ctx, accts)
 
-	pois, err := s.mongoStore.NearestPOI(consts.CORHORT_DISTANCE_RANGE, *loc)
+	pois, err := s.mongoStore.NearestPOI(consts.NEAR_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
