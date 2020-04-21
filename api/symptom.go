@@ -41,13 +41,16 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	symptoms, symptomIDs := getSymptoms(params.Symptoms)
 
 	symptomScore := score(symptoms)
+	zoneLoc, _ := time.LoadLocation("UTC")
+	nowTime := time.Now().In(zoneLoc)
+
 	data := schema.SymptomReportData{
 		ProfileID:     account.Profile.ID.String(),
 		AccountNumber: account.Profile.AccountNumber,
 		Symptoms:      symptomIDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		SymptomScore:  symptomScore,
-		Timestamp:     time.Now().Unix(),
+		Timestamp:     nowTime.Unix(),
 	}
 
 	err := s.mongoStore.SymptomReportSave(&data)
