@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -29,6 +30,7 @@ type MongoAccount interface {
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
+	GetProfile(accountNumber string) (*schema.Profile, error)
 }
 
 var (
@@ -374,15 +376,35 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 // RefreshAccountState checks current states of a specific account
 // and return true if the score has changed
 func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
-	currentMetric, err := m.ProfileMetric(accountNumber)
+	p, err := m.GetProfile(accountNumber)
+	if err != nil {
+		return false, err
+	}
+	loc := schema.Location{Longitude: p.Location.Coordinates[0], Latitude: p.Location.Coordinates[1]}
+	behaviorScore, behaviorDelta, _, _, err := m.NearestGoodBehaviorScore(consts.NEARBY_DISTANCE_RANGE, loc)
+	if err != nil {
+		return false, err
+	}
+	symptomScore, symptomDelta, _, _, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, loc)
 	if err != nil {
 		return false, err
 	}
 
+	confirm, confirmDelta, err := m.GetConfirm(loc)
+	if nil != err {
+		return false, err
+	}
+
 	// User current metric as new metric
-	newMetric := currentMetric
+	newMetric := &p.Metric
+	newMetric.Behavior = behaviorScore
+	newMetric.BehaviorDelta = behaviorDelta
 	newMetric.LastUpdate = time.Now().UTC().Unix()
 
+	newMetric.Symptoms = symptomScore
+	newMetric.SymptomsDelta = symptomDelta
+	newMetric.Confirm = float64(confirm)
+	newMetric.ConfirmDelta = float64(confirmDelta)
 	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
 		return false, err
 	}

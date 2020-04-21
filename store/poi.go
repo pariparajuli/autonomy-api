@@ -33,6 +33,7 @@ type POI interface {
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
 	RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error)
+	NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error)
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
@@ -358,4 +359,34 @@ func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric
 	}
 
 	return nil
+}
+
+func (m *mongoDB) NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error) {
+	query := distanceQuery(distance, cords)
+	c := m.client.Database(m.database).Collection(schema.POICollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	cur, err := c.Find(ctx, query)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("query poi nearest distance with error: %s", err)
+		return []primitive.ObjectID{}, fmt.Errorf("poi nearest distance query with error: %s", err)
+	}
+	var record schema.POI
+	var POIs []primitive.ObjectID
+
+	// iterate
+	for cur.Next(ctx) {
+		err = cur.Decode(&record)
+		if nil != err {
+			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", err)
+			return []primitive.ObjectID{}, fmt.Errorf("nearest distance query decode record with error: %s", err)
+		}
+		POIs = append(POIs, record.ID)
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("poi nearest distance query gets %d records near long:%v lat:%v", len(POIs),
+		cords.Longitude, cords.Latitude)
+
+	return POIs, nil
 }

@@ -6,7 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 func (s *Server) getSymptoms(c *gin.Context) {
@@ -44,7 +46,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		Symptoms:      symptomIDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		SymptomScore:  symptomScore,
-		Timestamp:     time.Now().Unix(),
+		Timestamp:     time.Now().UTC().Unix(),
 	}
 
 	err := s.mongoStore.SymptomReportSave(&data)
@@ -52,6 +54,20 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
+
+	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	utils.TriggerPOIUpdate(*s.cadenceClient, c, pois)
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 
 	return

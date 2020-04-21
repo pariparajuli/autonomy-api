@@ -6,7 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
@@ -52,7 +54,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		GoodBehaviors: IDs,
 		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		BehaviorScore: behaviorScore,
-		Timestamp:     time.Now().Unix(),
+		Timestamp:     time.Now().UTC().Unix(),
 	}
 
 	err := s.mongoStore.GoodBehaviorSave(&data)
@@ -60,9 +62,21 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
+
+	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	utils.TriggerPOIUpdate(*s.cadenceClient, c, pois)
 
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
-
 	return
 }
 
@@ -75,7 +89,6 @@ func getGoodBehavior(behaviors []string) ([]schema.GoodBehavior, []string) {
 		if ok {
 			retBehaviors = append(retBehaviors, v)
 			reBehaviorsID = append(reBehaviorsID, string(v.ID))
-
 		}
 	}
 	return retBehaviors, reBehaviorsID
