@@ -33,6 +33,7 @@ type POI interface {
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
 	RefreshPOIState(poiID primitive.ObjectID, score float64) (bool, error)
+	NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error)
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
@@ -358,21 +359,6 @@ func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric
 	}
 
 	return nil
-}
-
-// GetPOIByID finds POI by poi ID
-func (m *mongoDB) GetPOIByID(poiID primitive.ObjectID) (*schema.POI, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-	c := m.client.Database(m.database).Collection(schema.POICollection)
-
-	// find user's POI
-	var poi schema.POI
-	query := bson.M{"_id": poiID}
-	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
-		return nil, err
-	}
-	return &poi, nil
 }
 
 func (m *mongoDB) NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error) {
