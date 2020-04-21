@@ -388,6 +388,12 @@ func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	confirm, confirmDelta, err := m.GetConfirm(loc)
+	if nil != err {
+		return false, err
+	}
+
 	// User current metric as new metric
 	newMetric := &p.Metric
 	newMetric.Behavior = behaviorScore
@@ -396,6 +402,8 @@ func (m mongoDB) RefreshAccountState(accountNumber string) (bool, error) {
 
 	newMetric.Symptoms = symptomScore
 	newMetric.SymptomsDelta = symptomDelta
+	newMetric.Confirm = float64(confirm)
+	newMetric.ConfirmDelta = float64(confirmDelta)
 	if err := m.UpdateProfileMetric(accountNumber, *newMetric); err != nil {
 		return false, err
 	}
