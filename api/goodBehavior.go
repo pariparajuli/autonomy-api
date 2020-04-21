@@ -64,14 +64,14 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	accts, err := s.mongoStore.NearestDistance(consts.NEAR_DISTANCE_RANGE, *loc)
+	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 	utils.TriggerAccountUpdate(*s.cadenceClient, c, accts)
 
-	pois, err := s.mongoStore.NearestPOI(consts.NEAR_DISTANCE_RANGE, *loc)
+	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 		return
