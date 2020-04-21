@@ -66,7 +66,7 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 			{"account_number", bson.D{
 				{"$first", "$profile_id"},
 			}},
-			{"behaviors", bson.D{
+			{"good_behaviors", bson.D{
 				{"$first", "$good_behaviors"},
 			}},
 		}}}
