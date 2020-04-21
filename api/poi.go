@@ -3,15 +3,13 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	cadenceClient "go.uber.org/cadence/client"
 
-	scoreWorker "github.com/bitmark-inc/autonomy-api/background/score"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 type userPOI struct {
@@ -48,12 +46,7 @@ func (s *Server) addPOI(c *gin.Context) {
 	}
 
 	poiID := poi.ID.Hex()
-	if _, err := s.cadenceClient.StartWorkflow(c, cadenceClient.StartWorkflowOptions{
-		ID:                           fmt.Sprintf("poi-state-%s", poiID),
-		TaskList:                     scoreWorker.TaskListName,
-		ExecutionStartToCloseTimeout: time.Hour,
-		WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
-	}, "POIStateUpdateWorkflow", poiID); err != nil {
+	if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, []primitive.ObjectID{poi.ID}); err != nil {
 		c.Error(err)
 	}
 
