@@ -84,10 +84,14 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		count++
 		totalSymptom = totalSymptom + len(result.Symptoms)
 	}
-	score := 100 - 100*(sum/(schema.TotalSymptomWeight*2))
-	if score < 0 {
-		score = 0
+	score := float64(100)
+	if count > 0 {
+		score = 100 - 100*(sum/(schema.TotalSymptomWeight*2))
+		if score < 0 {
+			score = 0
+		}
 	}
+
 	// Previous day
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage})
 	if nil != err {
@@ -107,16 +111,13 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		countYesterday++
 		totalSymptomYesterday = totalSymptomYesterday + len(result.Symptoms)
 	}
-	scoreYesterday := float64(0)
+	scoreYesterday := float64(100)
 	if countYesterday > 0 {
 		scoreYesterday = 100 - 100*(sumYesterday/(schema.TotalSymptomWeight*2))
 		if scoreYesterday < 0 {
 			scoreYesterday = 0
 		}
-	} else {
-		scoreYesterday = 100
 	}
-
 	scoreDelta := score - scoreYesterday
 	symptomDelta := totalSymptom - totalSymptomYesterday
 	return score, scoreDelta, totalSymptom, symptomDelta, nil
