@@ -33,6 +33,12 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		return
 	}
 
+	_, err := s.mongoStore.RefreshAccountState(account.AccountNumber)
+	if nil != err {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
 	metric, err := s.mongoStore.ProfileMetric(account.AccountNumber)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)

@@ -42,6 +42,7 @@ func TestCurrentAreaProfile(t *testing.T) {
 		Score:         7,
 	}
 
+	m.EXPECT().RefreshAccountState("1").Return(true, nil).Times(1)
 	m.EXPECT().ProfileMetric("1").Return(&metric, nil).Times(1)
 
 	gin.SetMode(gin.TestMode)
