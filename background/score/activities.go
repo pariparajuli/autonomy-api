@@ -11,9 +11,31 @@ import (
 	"github.com/bitmark-inc/autonomy-api/background"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
+	"github.com/bitmark-inc/autonomy-api/store"
 )
 
 var ErrInvalidLocation = fmt.Errorf("invalid location of POI")
+
+func calculateStateActivity(ctx context.Context, mongo store.MongoStore, oldMetric schema.Metric, location schema.Location,
+	metricUpdateFunc func(metric schema.Metric) error) (bool, error) {
+	logger := activity.GetLogger(ctx)
+
+	logger.Info("Calculate metric by location.", zap.Any("location", location))
+	metric, err := score.CalculateMetric(mongo, location)
+	if err != nil {
+		return false, err
+	}
+
+	if err := metricUpdateFunc(*metric); err != nil {
+		return false, err
+	}
+
+	var changed bool
+	if oldMetric.LastUpdate != 0 {
+		changed = score.CheckScoreColorChange(oldMetric.Score, metric.Score)
+	}
+	return changed, nil
+}
 
 func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id string) (bool, error) {
 	logger := activity.GetLogger(ctx)
@@ -39,12 +61,9 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 		Longitude: poi.Location.Coordinates[0],
 	}
 
-	metric, err := score.CalculateMetric(s.mongo, location)
-	if err != nil {
-		return false, err
-	}
-
-	return s.mongo.RefreshPOIState(poiID, *metric)
+	return calculateStateActivity(ctx, s.mongo, poi.Metric, location, func(metric schema.Metric) error {
+		return s.mongo.UpdatePOIMetric(poiID, metric)
+	})
 }
 
 func (s *ScoreUpdateWorker) SendPOINotificationActivity(ctx context.Context, id string) error {
@@ -80,13 +99,9 @@ func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, a
 		Longitude: profile.Location.Coordinates[0],
 	}
 
-	logger.Info("Calculate metric by location.", zap.Any("location", location))
-	metric, err := score.CalculateMetric(s.mongo, location)
-	if err != nil {
-		return false, err
-	}
-
-	return s.mongo.RefreshAccountState(accountNumber, *metric)
+	return calculateStateActivity(ctx, s.mongo, profile.Metric, location, func(metric schema.Metric) error {
+		return s.mongo.UpdateProfileMetric(accountNumber, metric)
+	})
 }
 
 func (s *ScoreUpdateWorker) SendAccountNotificationActivity(ctx context.Context, accountNumber string) error {

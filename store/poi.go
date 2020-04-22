@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -32,7 +31,6 @@ type POI interface {
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
 	UpdatePOIOrder(accountNumber string, poiOrder []string) error
 	DeletePOI(accountNumber string, poiID primitive.ObjectID) error
-	RefreshPOIState(poiID primitive.ObjectID, newMetric schema.Metric) (bool, error)
 	NearestPOI(distance int, cords schema.Location) ([]primitive.ObjectID, error)
 }
 
@@ -300,27 +298,6 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 	}
 
 	return nil
-}
-
-// RefreshPOIState checks current states of a specific POI and return true
-// if the score has changed.
-func (m mongoDB) RefreshPOIState(poiID primitive.ObjectID, newMetric schema.Metric) (bool, error) {
-	poi, err := m.GetPOI(poiID)
-	if err != nil {
-		return false, err
-	}
-
-	metric := poi.Metric
-	changed := math.Abs(metric.Score-newMetric.Score) > 33
-
-	// User current metric as new metric
-	newMetric.LastUpdate = time.Now().UTC().Unix()
-
-	if err := m.UpdatePOIMetric(poiID, newMetric); err != nil {
-		return false, err
-	}
-
-	return changed, nil
 }
 
 func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error {

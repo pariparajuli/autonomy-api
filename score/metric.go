@@ -1,6 +1,8 @@
 package score
 
 import (
+	"time"
+
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
@@ -8,6 +10,25 @@ import (
 
 func TotalScore(symptomScore, behaviorScore, confirmedScore float64) float64 {
 	return 0.25*symptomScore + 0.25*behaviorScore + 0.5*confirmedScore
+}
+
+// CheckScoreColorChange check if the color of a score need to be changed.
+// Currently,
+// Red:     0 ~ 33
+// Yellow: 34 ~ 66
+// Green:  67 ~ 100
+func CheckScoreColorChange(oldScore, newScore float64) bool {
+	oldScoreMod := (int(oldScore) - 1) / 33
+	newScoreMod := (int(newScore) - 1) / 33
+
+	// for case score is 100, set the value to 2
+	if oldScoreMod == 3 {
+		oldScoreMod = 2
+	}
+	if newScoreMod == 3 {
+		newScoreMod = 2
+	}
+	return oldScoreMod != newScoreMod
 }
 
 func CalculateMetric(mongo store.MongoStore, location schema.Location) (*schema.Metric, error) {
@@ -41,5 +62,6 @@ func CalculateMetric(mongo store.MongoStore, location schema.Location) (*schema.
 		Confirm:       float64(confirmCount),
 		ConfirmDelta:  float64(confirmDelta),
 		Score:         totalScore,
+		LastUpdate:    time.Now().UTC().Unix(),
 	}, nil
 }

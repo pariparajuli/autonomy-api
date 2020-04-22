@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -25,7 +24,6 @@ type MongoAccount interface {
 	UpdateAccountScore(string, float64) error
 	IsAccountExist(string) (bool, error)
 	AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error
-	RefreshAccountState(accountNumber string, newMetric schema.Metric) (bool, error)
 	GetAccountsByPOI(id string) ([]string, error)
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
@@ -369,24 +367,4 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 	}
 
 	return accounts, nil
-}
-
-// RefreshAccountState checks current states of a specific account
-// and return true if the score has changed
-func (m mongoDB) RefreshAccountState(accountNumber string, newMetric schema.Metric) (bool, error) {
-	metric, err := m.ProfileMetric(accountNumber)
-	if err != nil {
-		return false, err
-	}
-
-	changed := math.Abs(metric.Score-newMetric.Score) > 33
-
-	// User current metric as new metric
-	newMetric.LastUpdate = time.Now().UTC().Unix()
-
-	if err := m.UpdateProfileMetric(accountNumber, newMetric); err != nil {
-		return false, err
-	}
-
-	return changed, nil
 }
