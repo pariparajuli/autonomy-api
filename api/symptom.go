@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
@@ -57,17 +58,21 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
-		if errUpdate := utils.TriggerAccountUpdate(*s.cadenceClient, c, accts); errUpdate != nil {
-			c.Error(errUpdate)
-		}
+		go func() {
+			if err := utils.TriggerAccountUpdate(*s.cadenceClient, c, accts); err != nil {
+				sentry.CaptureException(err)
+			}
+		}()
 	} else {
 		c.Error(err)
 	}
 	pois, err := s.mongoStore.NearestPOI(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
-		if errUpdate := utils.TriggerPOIUpdate(*s.cadenceClient, c, pois); err != nil {
-			c.Error(errUpdate)
-		}
+		go func() {
+			if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, pois); err != nil {
+				sentry.CaptureException(err)
+			}
+		}()
 	} else {
 		c.Error(err)
 	}

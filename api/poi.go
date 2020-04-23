@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -46,9 +47,11 @@ func (s *Server) addPOI(c *gin.Context) {
 	}
 
 	poiID := poi.ID.Hex()
-	if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, []primitive.ObjectID{poi.ID}); err != nil {
-		c.Error(err)
-	}
+	go func() {
+		if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, []primitive.ObjectID{poi.ID}); err != nil {
+			sentry.CaptureException(err)
+		}
+	}()
 
 	body.ID = poiID
 	body.Score = poi.Metric.Score
