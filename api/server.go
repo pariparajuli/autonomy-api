@@ -176,13 +176,6 @@ func (s *Server) setupRouter() *gin.Engine {
 		// metricRoute.GET("/total-users", s.metricAccountCreation)
 	}
 
-	// health score
-	scoreRoute := apiRoute.Group("/score")
-	scoreRoute.Use(s.recognizeAccountMiddleware())
-	{
-		scoreRoute.GET("", s.score)
-	}
-
 	// points of interest
 	poiRoute := apiRoute.Group("/points-of-interest")
 	poiRoute.Use(s.recognizeAccountMiddleware())

@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/api/mocks"
+	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -39,11 +40,21 @@ func TestCurrentAreaProfile(t *testing.T) {
 		SymptomsDelta: 4,
 		Behavior:      5,
 		BehaviorDelta: 6,
-		Score:         7,
+		Score:         55.66,
 	}
 
-	m.EXPECT().RefreshAccountState("1").Return(true, nil).Times(1)
-	m.EXPECT().ProfileMetric("1").Return(&metric, nil).Times(1)
+	m.EXPECT().GetProfile("1").Return(&schema.Profile{
+		Metric: metric,
+		Location: &schema.GeoJSON{
+			Type:        "Point",
+			Coordinates: []float64{1.1, 2.2},
+		},
+	}, nil).Times(1)
+	m.EXPECT().NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.Behavior), int(metric.BehaviorDelta), nil).Times(1)
+	m.EXPECT().NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.Symptoms), int(metric.SymptomsDelta), nil).Times(1)
+	m.EXPECT().GetConfirm(gomock.Any()).Return(int(metric.Confirm), int(metric.ConfirmDelta), nil).Times(1)
+	m.EXPECT().ConfirmScore(gomock.Any()).Return(metric.Score, nil).Times(1)
+	m.EXPECT().UpdateProfileMetric("1", gomock.Any()).Return(nil).Times(1)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -60,7 +71,13 @@ func TestCurrentAreaProfile(t *testing.T) {
 	err := json.Unmarshal([]byte(w.Body.String()), &jResp)
 
 	assert.Nil(t, err, "wrong json unmarshal")
-	assert.Equal(t, metric, jResp, "wrong data")
+	assert.Equal(t, metric.Confirm, jResp.Confirm, "wrong confirm")
+	assert.Equal(t, metric.ConfirmDelta, jResp.ConfirmDelta, "wrong confirm delta")
+	assert.Equal(t, metric.Symptoms, jResp.Symptoms, "wrong symptoms")
+	assert.Equal(t, metric.SymptomsDelta, jResp.SymptomsDelta, "wrong symptoms delta")
+	assert.Equal(t, metric.Behavior, jResp.Behavior, "wrong behavior")
+	assert.Equal(t, metric.BehaviorDelta, jResp.BehaviorDelta, "wrong behavior delta")
+	assert.Equal(t, metric.Score, jResp.Score, "wrong score")
 }
 
 func TestSingleAreaProfile(t *testing.T) {
