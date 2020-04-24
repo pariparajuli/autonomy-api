@@ -29,7 +29,6 @@ require (
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	googlemaps.github.io/maps v0.0.0-20200130222743-aef6b08443c7
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20190309152529-a9b748bb0e02

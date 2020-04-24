@@ -1,5 +1,9 @@
 package schema
 
+import (
+	"encoding/json"
+)
+
 type SymptomType string
 
 // SymptomFromID is a map which key is Symptom.ID and value is a object of Symptom
@@ -56,4 +60,20 @@ type SymptomReportData struct {
 	Location      GeoJSON  `json:"location" bson:"location"`
 	SymptomScore  float64  `json:"symptom_score" bson:"symptom_score"`
 	Timestamp     int64    `json:"ts" bson:"ts"`
+}
+
+func (s *SymptomReportData) MarshalJSON() ([]byte, error) {
+	symptoms := s.Symptoms
+	if s.Symptoms == nil {
+		symptoms = make([]string, 0)
+	}
+	return json.Marshal(&struct {
+		Symptoms  []string `json:"symptoms"`
+		Location  Location `json:"location"`
+		Timestamp int64    `json:"timestamp"`
+	}{
+		Symptoms:  symptoms,
+		Location:  Location{Longitude: s.Location.Coordinates[0], Latitude: s.Location.Coordinates[1]},
+		Timestamp: s.Timestamp,
+	})
 }

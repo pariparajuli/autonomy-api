@@ -1,5 +1,9 @@
 package schema
 
+import (
+	"encoding/json"
+)
+
 type GoodBehaviorType string
 
 // GoodBehaviorFromID is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
@@ -52,4 +56,20 @@ type GoodBehaviorData struct {
 	Location      GeoJSON  `json:"location" bson:"location"`
 	BehaviorScore float64  `json:"behavior_score" bson:"behavior_score"`
 	Timestamp     int64    `json:"ts" bson:"ts"`
+}
+
+func (b *GoodBehaviorData) MarshalJSON() ([]byte, error) {
+	behaviors := b.GoodBehaviors
+	if b.GoodBehaviors == nil {
+		behaviors = make([]string, 0)
+	}
+	return json.Marshal(&struct {
+		GoodBehaviors []string `json:"behaviors"`
+		Location      Location `json:"location"`
+		Timestamp     int64    `json:"timestamp"`
+	}{
+		GoodBehaviors: behaviors,
+		Location:      Location{Longitude: b.Location.Coordinates[0], Latitude: b.Location.Coordinates[1]},
+		Timestamp:     b.Timestamp,
+	})
 }
