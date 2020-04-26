@@ -27,8 +27,8 @@ var DefaultBehaviorWeightMatrix = map[GoodBehaviorType]BehaviorWeight{
 }
 
 const (
-	GoodBehaviorCollection  = "goodBehavior"
-	TotalGoodBehaviorWeight = 6
+	BehaviorReportCollection = "goodBehavior"
+	TotalGoodBehaviorWeight  = 6
 )
 
 const (
@@ -69,8 +69,8 @@ var DefaultBehaviors = []DefaultBehavior{
 	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards."},
 }
 
-// GoodBehaviorData the struct to store citizen data and score
-type GoodBehaviorData struct {
+// BehaviorReportData the struct to store citizen data and score
+type BehaviorReportData struct {
 	ProfileID            string                `json:"profile_id" bson:"profile_id"`
 	AccountNumber        string                `json:"account_number" bson:"account_number"`
 	DefaultBehaviors     []DefaultBehavior     `json:"default_behaviors" bson:"default_behaviors"`

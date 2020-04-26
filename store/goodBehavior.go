@@ -17,16 +17,16 @@ const (
 
 // GoodBehaviorReport save a GoodBehaviorData into Database
 type GoodBehaviorReport interface {
-	GoodBehaviorSave(data *schema.GoodBehaviorData) error
+	GoodBehaviorSave(data *schema.BehaviorReportData) error
 	NearestGoodBehaviorScore(distInMeter int, location schema.Location) (float64, float64, int, float64, float64, int, error)
 }
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
-func (m *mongoDB) GoodBehaviorSave(data *schema.GoodBehaviorData) error {
+func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)
-	_, err := c.Collection(schema.GoodBehaviorCollection).InsertOne(ctx, *data)
+	_, err := c.Collection(schema.BehaviorReportCollection).InsertOne(ctx, *data)
 	we, hasErr := err.(mongo.WriteException)
 	if hasErr {
 		if 1 == len(we.WriteErrors) && DuplicateKeyCode == we.WriteErrors[0].Code {
@@ -42,7 +42,7 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
-	collection := db.Collection(schema.GoodBehaviorCollection)
+	collection := db.Collection(schema.BehaviorReportCollection)
 	todayBegin := todayInterval()
 	log.Debugf("time period today > %v, yesterday %v~ %v ", todayBegin, todayBegin-86400, todayBegin)
 	geoStage := bson.D{{"$geoNear", bson.M{
@@ -60,14 +60,20 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	groupStage := bson.D{
 		{"$group", bson.D{
 			{"_id", "$profile_id"},
-			{"behavior_score", bson.D{
-				{"$first", "$behavior_score"},
+			{"default_weight", bson.D{
+				{"$first", "$default_weight"},
 			}},
 			{"account_number", bson.D{
 				{"$first", "$profile_id"},
 			}},
-			{"good_behaviors", bson.D{
-				{"$first", "$good_behaviors"},
+			{"default_behaviors", bson.D{
+				{"$first", "$default_behaviors"},
+			}},
+			{"self_defined_behaviors", bson.D{
+				{"$first", "$self_defined_behaviors"},
+			}},
+			{"self_defined_weight", bson.D{
+				{"$first", "$self_defined_weight"},
 			}},
 		}}}
 
@@ -80,7 +86,7 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	dWeight := float64(0)
 	sWeight := float64(0)
 	for cursor.Next(ctx) {
-		var result schema.GoodBehaviorData
+		var result schema.BehaviorReportData
 		if err := cursor.Decode(&result); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
 			continue
@@ -101,7 +107,7 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	sWeightPast := float64(0)
 
 	for cursorYesterday.Next(ctx) {
-		var result schema.GoodBehaviorData
+		var result schema.BehaviorReportData
 		if err := cursorYesterday.Decode(&result); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode yesterday nearest good behavior score")
 			continue

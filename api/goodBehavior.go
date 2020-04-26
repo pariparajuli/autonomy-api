@@ -3,13 +3,13 @@ package api
 import (
 	"net/http"
 	"time"
-	
+
+	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
@@ -51,7 +51,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	defaultBehaviors, selfDefinedBehaviors := getGoodBehaviors(params.DefaultBehaviors, params.SelfDefinedBehaviors)
 	behaviorWeight, selfDefinedWeight := behaviorWeight(defaultBehaviors, selfDefinedBehaviors)
 
-	data := schema.GoodBehaviorData{
+	data := schema.BehaviorReportData{
 		ProfileID:            account.Profile.ID.String(),
 		AccountNumber:        account.Profile.AccountNumber,
 		DefaultBehaviors:     defaultBehaviors,
