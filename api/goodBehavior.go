@@ -3,17 +3,17 @@ package api
 import (
 	"net/http"
 	"time"
-
+	
 	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"good_behaviors": schema.GoodBehaviors})
+	c.JSON(http.StatusOK, gin.H{"default_behaviors": schema.DefaultBehaviors})
 }
 
 func (s *Server) reportBehaviors(c *gin.Context) {
@@ -39,23 +39,27 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	}
 
 	var params struct {
-		GoodBehaviors []string `json:"good_behaviors"`
+		DefaultBehaviors     []string                     `json:"default_behaviors"`
+		SelfDefinedBehaviors []schema.SelfDefinedBehavior `json:"self_defined_behaviors"`
 	}
 
 	if err := c.BindJSON(&params); err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	behaviors, IDs := getGoodBehavior(params.GoodBehaviors)
-	behaviorScore := behaviorScore(behaviors)
+
+	defaultBehaviors, selfDefinedBehaviors := getGoodBehaviors(params.DefaultBehaviors, params.SelfDefinedBehaviors)
+	behaviorWeight, selfDefinedWeight := behaviorWeight(defaultBehaviors, selfDefinedBehaviors)
 
 	data := schema.GoodBehaviorData{
-		ProfileID:     account.Profile.ID.String(),
-		AccountNumber: account.Profile.AccountNumber,
-		GoodBehaviors: IDs,
-		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		BehaviorScore: behaviorScore,
-		Timestamp:     time.Now().UTC().Unix(),
+		ProfileID:            account.Profile.ID.String(),
+		AccountNumber:        account.Profile.AccountNumber,
+		DefaultBehaviors:     defaultBehaviors,
+		SelfDefinedBehaviors: selfDefinedBehaviors,
+		DefaultWeight:        behaviorWeight,
+		SelfDefinedWeight:    selfDefinedWeight,
+		Location:             schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		Timestamp:            time.Now().UTC().Unix(),
 	}
 
 	err := s.mongoStore.GoodBehaviorSave(&data)
@@ -63,6 +67,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
+
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
 		go func() {
@@ -91,24 +96,30 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	return
 }
 
-func getGoodBehavior(behaviors []string) ([]schema.GoodBehavior, []string) {
-	var retBehaviors []schema.GoodBehavior
-	var reBehaviorsID []string
-	for _, behavior := range behaviors {
+func getGoodBehaviors(defaultBehaviors []string, selfDefinedBehaviors []schema.SelfDefinedBehavior) ([]schema.DefaultBehavior, []schema.SelfDefinedBehavior) {
+	var retBehaviors []schema.DefaultBehavior
+	var retSelfDedinedBehaviors []schema.SelfDefinedBehavior
+
+	for _, behavior := range defaultBehaviors {
 		st := schema.GoodBehaviorType(behavior)
-		v, ok := schema.GoodBehaviorFromID[st]
+		v, ok := schema.DefaultBehaviorMatrix[st]
 		if ok {
 			retBehaviors = append(retBehaviors, v)
-			reBehaviorsID = append(reBehaviorsID, string(v.ID))
 		}
 	}
-	return retBehaviors, reBehaviorsID
+	for _, defBehavior := range selfDefinedBehaviors {
+		retSelfDedinedBehaviors = append(retSelfDedinedBehaviors, defBehavior)
+	}
+	return retBehaviors, retSelfDedinedBehaviors
 }
 
-func behaviorScore(behaviors []schema.GoodBehavior) float64 {
+func behaviorWeight(behaviors []schema.DefaultBehavior, selfDefined []schema.SelfDefinedBehavior) (float64, float64) {
 	var sum float64
 	for _, behavior := range behaviors {
-		sum = sum + float64(behavior.Weight)
+		w, ok := schema.DefaultBehaviorWeightMatrix[behavior.ID]
+		if ok {
+			sum = sum + float64(w.Weight)
+		}
 	}
-	return sum
+	return sum, float64(len(selfDefined))
 }

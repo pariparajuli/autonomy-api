@@ -18,7 +18,7 @@ const (
 // GoodBehaviorReport save a GoodBehaviorData into Database
 type GoodBehaviorReport interface {
 	GoodBehaviorSave(data *schema.GoodBehaviorData) error
-	NearestGoodBehaviorScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
+	NearestGoodBehaviorScore(distInMeter int, location schema.Location) (float64, float64, int, float64, float64, int, error)
 }
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
@@ -38,7 +38,7 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.GoodBehaviorData) error {
 }
 
 // NearestGoodBehaviorScore return  the total behavior score ,  delta score , total symptoms and delta of total symptoms of users within distInMeter range
-func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Location) (float64, float64, int, int, error) {
+func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Location) (float64, float64, int, float64, float64, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
@@ -74,56 +74,43 @@ func (m *mongoDB) NearestGoodBehaviorScore(distInMeter int, location schema.Loca
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageToday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return 0, 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, err
 	}
-	sum := float64(0)
 	count := 0
-	totalBehavior := 0
+	dWeight := float64(0)
+	sWeight := float64(0)
 	for cursor.Next(ctx) {
 		var result schema.GoodBehaviorData
 		if err := cursor.Decode(&result); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
 			continue
 		}
-		sum = sum + result.BehaviorScore
-		count++
-		totalBehavior = totalBehavior + len(result.GoodBehaviors)
-	}
-	score := float64(0)
-	if count > 0 {
-		score = 100 * (sum / float64(count*schema.TotalGoodBehaviorWeight))
-	} else {
-		score = 0
+		count = count + len(result.DefaultBehaviors) + len(result.SelfDefinedBehaviors)
+		dWeight = dWeight + result.DefaultWeight
+		sWeight = sWeight + result.SelfDefinedWeight
 	}
 
 	// Previous day
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return 0, 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, err
 	}
-	sumYesterday := float64(0)
-	countYesterday := 0
-	totalBehaviorYesterday := 0
+	countPast := 0
+	dWeightPast := float64(0)
+	sWeightPast := float64(0)
+
 	for cursorYesterday.Next(ctx) {
 		var result schema.GoodBehaviorData
 		if err := cursorYesterday.Decode(&result); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode yesterday nearest good behavior score")
 			continue
 		}
-		sumYesterday = sumYesterday + result.BehaviorScore
-		countYesterday++
-		totalBehaviorYesterday = totalBehaviorYesterday + len(result.GoodBehaviors)
+		countPast = countPast + len(result.DefaultBehaviors) + len(result.SelfDefinedBehaviors)
+		dWeightPast = dWeight + result.DefaultWeight
+		sWeightPast = sWeight + result.SelfDefinedWeight
 	}
-	scoreYesterday := float64(0)
-	if countYesterday > 0 {
-		scoreYesterday = 100 * (sumYesterday / float64(countYesterday*schema.TotalGoodBehaviorWeight))
-	} else {
-		scoreYesterday = 0
-	}
-	scoreDelta := score - scoreYesterday
-	goodBehaviorDelta := totalBehavior - totalBehaviorYesterday
-	return score, scoreDelta, totalBehavior, goodBehaviorDelta, nil
+	return dWeight, sWeight, count, dWeightPast, sWeightPast, countPast, nil
 }
 
 func todayInterval() int64 {
