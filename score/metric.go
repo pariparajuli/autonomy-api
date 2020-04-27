@@ -8,8 +8,21 @@ import (
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
-func TotalScore(symptomScore, behaviorScore, confirmedScore float64) float64 {
-	return 0.25*symptomScore + 0.25*behaviorScore + 0.5*confirmedScore
+const (
+	DefaultScoreV1SymptomCoefficient  = 0.25
+	DefaultScoreV1BehaviorCoefficient = 0.25
+	DefaultScoreV1ConfirmCoefficient  = 0.5
+)
+
+func DefaultTotalScore(symptomScore, behaviorScore, confirmedScore float64) float64 {
+	return TotalScoreV1(DefaultScoreV1SymptomCoefficient, symptomScore, DefaultScoreV1BehaviorCoefficient, behaviorScore, DefaultScoreV1ConfirmCoefficient, confirmedScore)
+}
+
+func TotalScoreV1(
+	symptomCoefficient, symptomScore,
+	behaviorCoefficient, behaviorScore,
+	confirmedCoefficient, confirmedScore float64) float64 {
+	return symptomCoefficient*symptomScore + behaviorCoefficient*behaviorScore + confirmedCoefficient*confirmedScore
 }
 
 // CheckScoreColorChange check if the color of a score need to be changed.
@@ -52,7 +65,7 @@ func CalculateMetric(mongo store.MongoStore, location schema.Location) (*schema.
 		return nil, err
 	}
 
-	totalScore := TotalScore(symptomScore, behaviorScore, confirmedScore)
+	totalScore := DefaultTotalScore(symptomScore, behaviorScore, confirmedScore)
 
 	return &schema.Metric{
 		Symptoms:      float64(symptomCount),

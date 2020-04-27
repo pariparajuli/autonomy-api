@@ -27,6 +27,9 @@ type MongoAccount interface {
 	GetAccountsByPOI(id string) ([]string, error)
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
+	GetProfileCoefficient(accountNumber string) (*schema.ScoreCoefficient, error)
+	UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error
+	ResetProfileCoefficient(accountNumber string) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
 	GetProfile(accountNumber string) (*schema.Profile, error)
 }
@@ -303,6 +306,69 @@ func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, desc *schema.P
 	}
 
 	return nil
+}
+
+// GetProfileCoefficient returns coefficient saved in mongodb
+func (m *mongoDB) GetProfileCoefficient(accountNumber string) (*schema.ScoreCoefficient, error) {
+	var profile schema.Profile
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number": accountNumber,
+	}
+	if err := c.FindOne(ctx, query).Decode(&profile); err != nil {
+		return nil, err
+	}
+
+	return profile.ScoreCoefficient, nil
+}
+
+// UpdateProfileCoefficient updates coefficient for an account into mongodb
+func (m *mongoDB) UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number": accountNumber,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"score_coefficient": coefficient,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errAccountNotFound
+	}
+
+	return nil
+}
+
+// UpdateProfileCoefficient clean up coefficient for an account from mongodb
+func (m *mongoDB) ResetProfileCoefficient(accountNumber string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number": accountNumber,
+	}
+	update := bson.M{
+		"$unset": bson.M{
+			"score_coefficient": "",
+		},
+	}
+
+	_, err := c.UpdateOne(ctx, query, update)
+	return err
 }
 
 func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric) error {
