@@ -90,7 +90,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	defer cancel()
 	db := m.client.Database(m.database)
 	collection := db.Collection(schema.SymptomReportCollection)
-	todayBegin := todayInterval()
+	todayBegin := todayStartAt()
 	log.Debugf("time period today > %v, yesterday %v~ %v ", todayBegin, todayBegin-86400, todayBegin)
 	geoStage := bson.D{{"$geoNear", bson.M{
 		"near":          bson.M{"type": "Point", "coordinates": bson.A{location.Longitude, location.Latitude}},

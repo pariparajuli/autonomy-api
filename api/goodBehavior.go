@@ -6,13 +6,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
+	a := c.MustGet("account")
+	account, ok := a.(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+	var loc *schema.Location
+	gp := c.GetHeader("Geo-Position")
+
+	if "" == gp {
+		loc = account.Profile.State.LastLocation
+		if nil == loc {
+			abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+			return
+		}
+	}
+
+	if lat, long, err := parseGeoPosition(gp); err == nil {
+		loc = &schema.Location{Latitude: lat, Longitude: long}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"default_behaviors": schema.DefaultBehaviors})
 }
 

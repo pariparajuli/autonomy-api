@@ -27,8 +27,8 @@ var DefaultBehaviorWeightMatrix = map[GoodBehaviorType]BehaviorWeight{
 }
 
 const (
-	BehaviorReportCollection = "goodBehavior"
-	TotalGoodBehaviorWeight  = 6
+	BehaviorReportCollection   = "goodBehavior"
+	TotalDefaultBehaviorWeight = float64(6)
 )
 
 const (

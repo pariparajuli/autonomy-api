@@ -5,24 +5,26 @@ import (
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
-func behaviorScore(mongo *store.MongoStore, radiusMeter int, location schema.Location) (float64, float64, int, int, error) {
-	dWeight, sWeight, count, dWeightPast, sWeightPast, countPast, err := (*mongo).NearestGoodBehaviorScore(radiusMeter, location)
+func behaviorScore(mongo *store.MongoStore, radiusMeter int, location schema.Location) (float64, float64, float64, float64, error) {
+	rawData, err := (*mongo).NearestGoodBehavior(radiusMeter, location)
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-
-	countDelta := count - countPast
 	// Score Rule:  Self defined weight can not exceed more than 1/2 of weight, if it exceeds 1/2 of weight, it counts as 1/2 of weight
-	if sWeight > (float64(count) * schema.TotalGoodBehaviorWeight / 2) {
-		sWeight = float64(count) * schema.TotalGoodBehaviorWeight / 2
+	topScore := float64(rawData.TotalRecordCount)*schema.TotalDefaultBehaviorWeight + rawData.SelfDefinedBehaviorWeight
+	nearbyScore := rawData.DefaultBehaviorWeight + rawData.SelfDefinedBehaviorWeight
+	if portion := float64(rawData.SelfDefinedBehaviorWeight) / float64(topScore); portion > 0.5 {
+		nearbyScore = topScore/2 + rawData.DefaultBehaviorWeight
 	}
-	score := float64(0)
-	if score := 100 * (dWeight + sWeight) / (float64(count) * schema.TotalGoodBehaviorWeight); score > 100 {
-		score = 100
+	topScorePast := float64(rawData.PastTotalRecordCount)*schema.TotalDefaultBehaviorWeight + rawData.PastSelfDefinedBehaviorWeight
+	nearbyScorePast := rawData.PastDefaultBehaviorWeight + rawData.PastSelfDefinedBehaviorWeight
+	if portion := float64(rawData.SelfDefinedBehaviorWeight) / float64(topScorePast); portion > 0.5 {
+		nearbyScorePast = topScorePast/2 + rawData.PastDefaultBehaviorWeight
 	}
-	scorePast := float64(0)
-	if scorePast := 100 * (dWeightPast + sWeightPast) / (float64(countPast) * schema.TotalGoodBehaviorWeight); scorePast > 100 {
-		scorePast = 100
-	}
-	return score, scorePast, count, countDelta, nil
+	score := 100 * nearbyScore / topScore
+	scorePast := 100 * nearbyScorePast / topScorePast
+	deltaInPercent := (score - scorePast/score) * 100
+	totalReportedCount := float64(rawData.DefaultBehaviorCount + rawData.SelfDefinedBehaviorCount)
+	deltaReportedCountPast := totalReportedCount - (float64(rawData.PastSelfDefinedBehaviorCount + rawData.PastDefaultBehaviorCount))
+	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast, nil
 }
