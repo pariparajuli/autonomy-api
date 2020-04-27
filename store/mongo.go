@@ -26,6 +26,7 @@ type MongoStore interface {
 	Closer
 	Pinger
 	ConfirmOperator
+	History
 }
 
 // Closer - close db connection
