@@ -42,7 +42,7 @@ func (s *Server) getHistory(c *gin.Context) {
 	case params.Before > 0:
 		before = params.Before
 	case params.Before == 0:
-		before = time.Now().Unix()
+		before = time.Now().UTC().Unix()
 	default:
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("negative before"))
 		return
