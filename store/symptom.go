@@ -49,7 +49,7 @@ func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
 }
 
 func (m *mongoDB) ListSymptoms() ([]schema.Symptom, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
 
