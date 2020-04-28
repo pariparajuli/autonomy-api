@@ -5,7 +5,7 @@ const (
 )
 
 type Geographic struct {
-	AccountNumber string  `bson:"account_number"`
-	Location      GeoJSON `bson:"location"`
-	Timestamp     int64   `bson:"ts"`
+	AccountNumber string   `json:"-" bson:"account_number"`
+	Location      Location `json:"location" bson:"location"`
+	Timestamp     int64    `json:"timestamp" bson:"ts"`
 }

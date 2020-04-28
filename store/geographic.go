@@ -24,7 +24,6 @@ var (
 // Geographic - operations for account geographic
 type Geographic interface {
 	AddGeographic(accountNumber string, latitude float64, longitude float64) error
-	ListGeographic(accountNumber string, limit int64, earlier int64) ([]schema.Geographic, error)
 }
 
 func (m *mongoDB) AddGeographic(accountNumber string, latitude float64, longitude float64) error {
@@ -86,46 +85,4 @@ func (m *mongoDB) AddGeographic(accountNumber string, latitude float64, longitud
 	}
 
 	return nil
-}
-
-func (m *mongoDB) ListGeographic(accountNumber string, limit int64, earlier int64) ([]schema.Geographic, error) {
-	c := m.client.Database(m.database).Collection(schema.GeographicCollection)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	if earlier <= 0 {
-		return nil, invalidEarlier
-	}
-
-	query := bson.M{
-		"account_number": accountNumber,
-		"ts": bson.M{
-			"$lt": earlier,
-		},
-	}
-	opts := options.Find()
-	opts = opts.SetSort(bson.M{"ts": -1}).SetLimit(limit)
-
-	cur, err := c.Find(ctx, query, opts)
-	if nil != err {
-		log.WithFields(log.Fields{
-			"prefix":         mongoLogPrefix,
-			"account_number": accountNumber,
-			"earlier":        earlier,
-			"limit":          limit,
-			"error":          err,
-		}).Error("list account geographic history")
-		return nil, err
-	}
-
-	result := make([]schema.Geographic, 0)
-	for cur.Next(ctx) {
-		var g schema.Geographic
-		if err = cur.Decode(&g); err != nil {
-			return nil, err
-		}
-		result = append(result, g)
-	}
-
-	return result, nil
 }
