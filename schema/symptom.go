@@ -18,7 +18,15 @@ var SymptomFromID = map[SymptomType]Symptom{
 	SymptomType(Face):    Symptoms[7],
 }
 
+type SymptomSource string
+
 const (
+	OfficialSymptom   SymptomSource = "official"
+	CustomizedSymptom SymptomSource = "customized"
+)
+
+const (
+	SymptomCollection       = "symptom"
 	SymptomReportCollection = "symptomReport"
 	TotalSymptomWeight      = 9
 )
@@ -35,21 +43,23 @@ const (
 )
 
 type Symptom struct {
-	ID     SymptomType `json:"id"`
-	Name   string      `json:"name"`
-	Desc   string      `json:"desc"`
-	Weight float64     `json:"-"`
+	ID     SymptomType   `json:"id" bson:"_id"`
+	Name   string        `json:"name" bson:"name"`
+	Desc   string        `json:"desc" bson:"desc"`
+	Source SymptomSource `json:"-" bson:"source"`
+	Weight float64       `json:"-" bson:"-"`
 }
 
+// The system defined symptoms. The list will be inserted into database by migration function
 var Symptoms = []Symptom{
-	{Fever, "Fever", "Body temperature above 100ºF (38ºC)", 2},
-	{Cough, "Dry cough", "Without mucous or phlegm (rattling)", 1},
-	{Fatigue, "Fatigue or tiredness", "Unusual lack of energy or feeling run down", 1},
-	{Breath, "Shortness of breath", "Constriction or difficulty inhaling fully", 1},
-	{Nasal, "Nasal congestion", "Stuffy or blocked nose", 1},
-	{Throat, "Sore throat", "Throat pain, scratchiness, or irritation", 1},
-	{Chest, "Chest pain", "Persistent pain or pressure in the chest", 1},
-	{Face, "Bluish lips or face", "Not caused by cold exposure", 1},
+	{Fever, "Fever", "Body temperature above 100ºF (38ºC)", OfficialSymptom, 2},
+	{Cough, "Dry cough", "Without mucous or phlegm (rattling)", OfficialSymptom, 1},
+	{Fatigue, "Fatigue or tiredness", "Unusual lack of energy or feeling run down", OfficialSymptom, 1},
+	{Breath, "Shortness of breath", "Constriction or difficulty inhaling fully", OfficialSymptom, 1},
+	{Nasal, "Nasal congestion", "Stuffy or blocked nose", OfficialSymptom, 1},
+	{Throat, "Sore throat", "Throat pain, scratchiness, or irritation", OfficialSymptom, 1},
+	{Chest, "Chest pain", "Persistent pain or pressure in the chest", OfficialSymptom, 1},
+	{Face, "Bluish lips or face", "Not caused by cold exposure", OfficialSymptom, 1},
 }
 
 // SymptomReportData the struct to store symptom data and score

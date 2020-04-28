@@ -12,8 +12,34 @@ import (
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
+func (s *Server) createSymptom(c *gin.Context) {
+	var params schema.Symptom
+
+	if err := c.BindJSON(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	id, err := s.mongoStore.CreateSymptom(params)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id": id,
+	})
+	return
+}
+
 func (s *Server) getSymptoms(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"symptoms": schema.Symptoms})
+	symptoms, err := s.mongoStore.ListSymptoms()
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"symptoms": symptoms})
 }
 
 func (s *Server) reportSymptoms(c *gin.Context) {

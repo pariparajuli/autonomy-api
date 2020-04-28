@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/store"
 )
 
 func init() {
@@ -59,10 +60,11 @@ func main() {
 }
 
 func migrateMongo() error {
+	ctx := context.Background()
 	opts := options.Client().ApplyURI(viper.GetString("mongo.conn"))
 	opts.SetMaxPoolSize(1)
 	client, _ := mongo.NewClient(opts)
-	_ = client.Connect(context.Background())
+	_ = client.Connect(ctx)
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.ProfileCollection)
 
 	// here is reference from api/store/profile
@@ -74,7 +76,7 @@ func migrateMongo() error {
 		Options: nil,
 	}
 
-	_, err := c.Indexes().CreateOne(context.Background(), geo)
+	_, err := c.Indexes().CreateOne(ctx, geo)
 	if nil != err {
 		fmt.Println("mongodb create geo index with error: ", err)
 		return err
@@ -87,7 +89,7 @@ func migrateMongo() error {
 		Options: options.Index().SetUnique(true),
 	}
 
-	_, err = c.Indexes().CreateOne(context.Background(), id)
+	_, err = c.Indexes().CreateOne(ctx, id)
 	if nil != err {
 		fmt.Println("mongodb create id index with error: ", err)
 		return err
@@ -100,7 +102,7 @@ func migrateMongo() error {
 		Options: options.Index().SetUnique(true),
 	}
 
-	_, err = c.Indexes().CreateOne(context.Background(), accountNumber)
+	_, err = c.Indexes().CreateOne(ctx, accountNumber)
 	if nil != err {
 		fmt.Println("mongodb create account_number index with error: ", err)
 		return err
@@ -116,8 +118,13 @@ func migrateMongo() error {
 		return err
 	}
 
-	if err := setupCollectionSymptom(client); err != nil {
+	if err := setupCollectionSymptom(ctx, client); err != nil {
 		fmt.Println("failed to set up collection `symptom`: ", err)
+		return err
+	}
+
+	if err := setupCollectionSymptomReport(client); err != nil {
+		fmt.Println("failed to set up collection `symptom reports`: ", err)
 		return err
 	}
 
@@ -167,7 +174,36 @@ func setupCollectionBehavior(client *mongo.Client) error {
 	return nil
 }
 
-func setupCollectionSymptom(client *mongo.Client) error {
+func setupCollectionSymptom(ctx context.Context, client *mongo.Client) error {
+	fmt.Println("initialize symptom collection")
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomCollection)
+
+	symptoms := make([]interface{}, 0, len(schema.Symptoms))
+	for _, s := range schema.Symptoms {
+		symptoms = append(symptoms, s)
+	}
+
+	if _, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.M{
+			"source": 1,
+		},
+	}); err != nil {
+		return err
+	}
+
+	_, err := c.InsertMany(ctx, symptoms)
+	if err != nil {
+		if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
+			if 1 == len(errs.WriteErrors) && store.DuplicateKeyCode == errs.WriteErrors[0].Code {
+				return nil
+			}
+		}
+	}
+
+	return err
+}
+
+func setupCollectionSymptomReport(client *mongo.Client) error {
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomReportCollection)
 	idAndTs := mongo.IndexModel{
 		Keys: bson.M{

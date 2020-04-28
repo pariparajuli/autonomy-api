@@ -202,8 +202,9 @@ func (s *Server) setupRouter() *gin.Engine {
 	symptomRoute := apiRoute.Group("/symptoms")
 	symptomRoute.Use(s.recognizeAccountMiddleware())
 	{
+		symptomRoute.POST("", s.createSymptom)
 		symptomRoute.GET("", s.getSymptoms)
-		symptomRoute.POST("", s.reportSymptoms)
+		symptomRoute.POST("/report", s.reportSymptoms)
 	}
 
 	behaviorRoute := apiRoute.Group("/behaviors")
