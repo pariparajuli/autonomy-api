@@ -112,8 +112,11 @@ func migrateMongo() error {
 		fmt.Println("failed to set up collection `poi`: ", err)
 		return err
 	}
-
-	if err := setupCollectionBehavior(client); err != nil {
+	if err := setupCollectionBehavior(ctx, client); err != nil {
+		fmt.Println("failed to set up collection `symptom`: ", err)
+		return err
+	}
+	if err := setupCollectionBehaviorReport(client); err != nil {
 		fmt.Println("failed to set up collection `behavior`: ", err)
 		return err
 	}
@@ -145,7 +148,36 @@ func setupCollectionPOI(client *mongo.Client) error {
 	return err
 }
 
-func setupCollectionBehavior(client *mongo.Client) error {
+func setupCollectionBehavior(ctx context.Context, client *mongo.Client) error {
+	fmt.Println("initialize behavior collection")
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorCollection)
+
+	behaviors := make([]interface{}, 0, len(schema.OfficialBehaviorMatrix))
+	for _, b := range schema.OfficialBehaviors {
+		behaviors = append(behaviors, b)
+	}
+
+	if _, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.M{
+			"source": 1,
+		},
+	}); err != nil {
+		return err
+	}
+
+	_, err := c.InsertMany(ctx, behaviors)
+	if err != nil {
+		if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
+			if 1 == len(errs.WriteErrors) && store.DuplicateKeyCode == errs.WriteErrors[0].Code {
+				return nil
+			}
+		}
+	}
+
+	return err
+}
+
+func setupCollectionBehaviorReport(client *mongo.Client) error {
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
 	idAndTs := mongo.IndexModel{
 		Keys: bson.M{

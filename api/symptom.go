@@ -3,12 +3,14 @@ package api
 import (
 	"net/http"
 	"time"
+	
+	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
+
 )
 
 func (s *Server) createSymptom(c *gin.Context) {

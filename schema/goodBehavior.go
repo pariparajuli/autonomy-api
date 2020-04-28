@@ -2,14 +2,14 @@ package schema
 
 type GoodBehaviorType string
 
-// DefaultBehaviorMatrix is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
-var DefaultBehaviorMatrix = map[GoodBehaviorType]DefaultBehavior{
-	GoodBehaviorType(CleanHand):        DefaultBehaviors[0],
-	GoodBehaviorType(SocialDistancing): DefaultBehaviors[1],
-	GoodBehaviorType(TouchFace):        DefaultBehaviors[2],
-	GoodBehaviorType(WearMask):         DefaultBehaviors[3],
-	GoodBehaviorType(CoveringCough):    DefaultBehaviors[4],
-	GoodBehaviorType(CleanSurface):     DefaultBehaviors[5],
+// OfficialBehaviorMatrix is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
+var OfficialBehaviorMatrix = map[GoodBehaviorType]Behavior{
+	GoodBehaviorType(CleanHand):        OfficialBehaviors[0],
+	GoodBehaviorType(SocialDistancing): OfficialBehaviors[1],
+	GoodBehaviorType(TouchFace):        OfficialBehaviors[2],
+	GoodBehaviorType(WearMask):         OfficialBehaviors[3],
+	GoodBehaviorType(CoveringCough):    OfficialBehaviors[4],
+	GoodBehaviorType(CleanSurface):     OfficialBehaviors[5],
 }
 
 // DefaultBehaviorWeightMatrix is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
@@ -23,8 +23,16 @@ var DefaultBehaviorWeightMatrix = map[GoodBehaviorType]BehaviorWeight{
 }
 
 const (
+	BehaviorCollection         = "behaviors"
 	BehaviorReportCollection   = "goodBehavior"
 	TotalDefaultBehaviorWeight = float64(6)
+)
+
+type BehaviorSource string
+
+const (
+	OfficialBehavior   BehaviorSource = "official"
+	CustomizedBehavior BehaviorSource = "customized"
 )
 
 const (
@@ -36,17 +44,12 @@ const (
 	CleanSurface     GoodBehaviorType = "clean_surface"
 )
 
-// DefaultBehavior a struct to define a good behavior
-type DefaultBehavior struct {
-	ID   GoodBehaviorType `json:"id"`
-	Name string           `json:"name"`
-	Desc string           `json:"desc"`
-}
-
-// SelfDefinedBehavior a struct to define a self-defined good behavior
-type SelfDefinedBehavior struct {
-	Name string `json:"name"`
-	Desc string `json:"desc"`
+// Behavior a struct to define a good behavior
+type Behavior struct {
+	ID     GoodBehaviorType `json:"id" bson:"_id"`
+	Name   string           `json:"name"  bson:"name"`
+	Desc   string           `json:"desc"  bson:"desc"`
+	Source BehaviorSource   `json:"-" bson:"source"`
 }
 
 // BehaviorWeight a struct to define a good behavior weight
@@ -55,24 +58,24 @@ type BehaviorWeight struct {
 	Weight float64          `json:"weight"`
 }
 
-// DefaultBehaviors return a slice that contains all GoodBehavior
-var DefaultBehaviors = []DefaultBehavior{
-	{CleanHand, "Frequent hand cleaning", "Washing hands thoroughly with soap and water for at least 20 seconds or applying an alcohol-based hand sanitizer"},
-	{SocialDistancing, "Social & physical distancing", "Avoiding crowds, working from home, and maintaining at least 6 feet of distance from others whenever possibl"},
-	{TouchFace, "Avoiding touching face", "Restraining from touching your eyes, nose, or mouth, especially with unwashed hands."},
-	{WearMask, "Wearing a face mask or covering", "Covering your nose and mouth when in public or whenever social distancing measures are difficult to maintain."},
-	{CoveringCough, "Covering coughs and sneezes", "Covering your mouth with the inside of your elbow or a tissue whenever you cough or sneeze."},
-	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards."},
+// OfficialBehaviors return a slice that contains all GoodBehavior
+var OfficialBehaviors = []Behavior{
+	{CleanHand, "Frequent hand cleaning", "Washing hands thoroughly with soap and water for at least 20 seconds or applying an alcohol-based hand sanitizer", OfficialBehavior},
+	{SocialDistancing, "Social & physical distancing", "Avoiding crowds, working from home, and maintaining at least 6 feet of distance from others whenever possibl", OfficialBehavior},
+	{TouchFace, "Avoiding touching face", "Restraining from touching your eyes, nose, or mouth, especially with unwashed hands.", OfficialBehavior},
+	{WearMask, "Wearing a face mask or covering", "Covering your nose and mouth when in public or whenever social distancing measures are difficult to maintain.", OfficialBehavior},
+	{CoveringCough, "Covering coughs and sneezes", "Covering your mouth with the inside of your elbow or a tissue whenever you cough or sneeze.", OfficialBehavior},
+	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards.", OfficialBehavior},
 }
 
 // BehaviorReportData the struct to store citizen data and score
 type BehaviorReportData struct {
-	ProfileID            string                `json:"profile_id" bson:"profile_id"`
-	AccountNumber        string                `json:"account_number" bson:"account_number"`
-	DefaultBehaviors     []DefaultBehavior     `json:"default_behaviors" bson:"default_behaviors"`
-	SelfDefinedBehaviors []SelfDefinedBehavior `json:"self_defined_behaviors" bson:"self_defined_behaviors"`
-	Location             GeoJSON               `json:"location" bson:"location"`
-	DefaultWeight        float64               `json:"default_weight" bson:"default_weight"`
-	SelfDefinedWeight    float64               `json:"self_defined_weight" bson:"self_defined_weight"`
-	Timestamp            int64                 `json:"ts" bson:"ts"`
+	ProfileID             string     `json:"profile_id" bson:"profile_id"`
+	AccountNumber         string     `json:"account_number" bson:"account_number"`
+	OfficialBehaviors     []Behavior `json:"default_behaviors" bson:"default_behaviors"`
+	CustomerizedBehaviors []Behavior `json:"self_defined_behaviors" bson:"self_defined_behaviors"`
+	Location              GeoJSON    `json:"location" bson:"location"`
+	DefaultWeight         float64    `json:"default_weight" bson:"default_weight"`
+	SelfDefinedWeight     float64    `json:"self_defined_weight" bson:"self_defined_weight"`
+	Timestamp             int64      `json:"ts" bson:"ts"`
 }

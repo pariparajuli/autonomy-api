@@ -2,6 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -15,10 +18,19 @@ const (
 	DuplicateKeyCode = 11000
 )
 
+type BehaviorSource string
+
+const (
+	OfficialBehavior     BehaviorSource = "official"
+	CustomerizedBehavior BehaviorSource = "customerized"
+)
+
 // GoodBehaviorReport save a GoodBehaviorData into Database
 type GoodBehaviorReport interface {
+	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
 	NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error)
+	QueryBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 }
 
 type NearestGoodBehaviorData struct {
@@ -32,6 +44,26 @@ type NearestGoodBehaviorData struct {
 	PastDefaultBehaviorCount      int32
 	PastSelfDefinedBehaviorWeight float64
 	PastSelfDefinedBehaviorCount  int32
+}
+
+func (m *mongoDB) CreateBehavior(behavior schema.Behavior) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c := m.client.Database(m.database)
+
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%s=:=%s", behavior.Name, behavior.Desc)))
+	behavior.ID = schema.GoodBehaviorType(hex.EncodeToString(h.Sum(nil)))
+	behavior.Source = schema.CustomizedBehavior
+	if _, err := c.Collection(schema.BehaviorCollection).InsertOne(ctx, &behavior); err != nil {
+		if we, hasErr := err.(mongo.WriteException); hasErr {
+			if 1 == len(we.WriteErrors) && DuplicateKeyCode == we.WriteErrors[0].Code {
+				return string(behavior.ID), nil
+			}
+		}
+		return "", err
+	}
+	return string(behavior.ID), nil
 }
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
@@ -48,6 +80,33 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 		return err
 	}
 	return nil
+}
+
+func (m *mongoDB) QueryBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	c := m.client.Database(m.database)
+	var foundOfficial []schema.Behavior
+	var foundCustomerized []schema.Behavior
+	var notFound []schema.GoodBehaviorType
+	for _, id := range ids {
+		query := bson.M{"_id": string(id)}
+		var result schema.Behavior
+		err := c.Collection(schema.BehaviorCollection).FindOne(ctx, query).Decode(&result)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				notFound = append(notFound, id)
+			}
+			return nil, nil, nil, err
+		}
+		if result.Source == schema.OfficialBehavior {
+			foundOfficial = append(foundOfficial, result)
+		} else {
+			foundCustomerized = append(foundCustomerized, result)
+		}
+
+	}
+	return foundOfficial, foundCustomerized, notFound, nil
 }
 
 // NearestGoodBehavior returns
