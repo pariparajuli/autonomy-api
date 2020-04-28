@@ -38,8 +38,8 @@ func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit in
 	return reports, nil
 }
 
-func (m *mongoDB) GetReportedBehaviors(accountNumber string, earierThan, limit int64) ([]*schema.GoodBehaviorData, error) {
-	c := m.client.Database(m.database).Collection(schema.GoodBehaviorCollection)
+func (m *mongoDB) GetReportedBehaviors(accountNumber string, earierThan, limit int64) ([]*schema.BehaviorReportData, error) {
+	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -49,9 +49,9 @@ func (m *mongoDB) GetReportedBehaviors(accountNumber string, earierThan, limit i
 		return nil, err
 	}
 
-	reports := make([]*schema.GoodBehaviorData, 0)
+	reports := make([]*schema.BehaviorReportData, 0)
 	for cur.Next(ctx) {
-		var r schema.GoodBehaviorData
+		var r schema.BehaviorReportData
 		if err := cur.Decode(&r); err != nil {
 			return nil, err
 		}

@@ -48,21 +48,28 @@ func (m *mongoDB) GetProfile(accountNumber string) (*schema.Profile, error) {
 	return &p, nil
 }
 
-func (m *mongoDB) UpdateProfileSelfDefinedBehavior(accountNumber string, behaviors []schema.SelfDefinedBehavior) (*schema.Profile, error) {
+func (m *mongoDB) UpdateProfileSymptom(accountNumber string, symptoms []schema.SymptomReportData) (*schema.Profile, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	query := bson.M{
 		"account_number": bson.M{
 			"$eq": accountNumber,
 		},
 	}
-
 	var p schema.Profile
 	err := c.FindOne(ctx, query).Decode(&p)
 	if err != nil {
 		return nil, err
 	}
-	return &p, nil
+	/*
+		for _, newSyptom := range symptoms {
+			for _, existSymptom := range schema.Profile.CustomerizedSymptom {
+				if newSyptom != existSymptom {
+
+				}
+			}
+		}*/
+
+	return nil, nil
 }

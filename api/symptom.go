@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) createSymptom(c *gin.Context) {
@@ -64,19 +63,24 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	symptoms, symptomIDs := getSymptoms(params.Symptoms)
-
-	symptomScore := score(symptoms)
+	official, customerized, err := s.findSymptomsInDB(params.Symptoms)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+	totalSymptoms := append(official, customerized...)
+	symptomScore := score(totalSymptoms)
 	data := schema.SymptomReportData{
-		ProfileID:     account.Profile.ID.String(),
-		AccountNumber: account.Profile.AccountNumber,
-		Symptoms:      symptomIDs,
-		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		SymptomScore:  symptomScore,
-		Timestamp:     time.Now().UTC().Unix(),
+		ProfileID:          account.Profile.ID.String(),
+		AccountNumber:      account.Profile.AccountNumber,
+		OfficialSymptoms:   official,
+		Location:           schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		CustomizedSymptoms: customerized,
+		SymptomScore:       symptomScore,
+		Timestamp:          time.Now().UTC().Unix(),
 	}
 
-	err := s.mongoStore.SymptomReportSave(&data)
+	err = s.mongoStore.SymptomReportSave(&data)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
@@ -119,16 +123,11 @@ func score(symptoms []schema.Symptom) float64 {
 	return sum
 }
 
-func getSymptoms(ids []string) ([]schema.Symptom, []string) {
-	var symptoms []schema.Symptom
-	var syIDs []string
+func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symptom, error) {
+	var syIDs []schema.SymptomType
 	for _, id := range ids {
-		st := schema.SymptomType(id)
-		sy, ok := schema.SymptomFromID[st]
-		if ok {
-			symptoms = append(symptoms, sy)
-			syIDs = append(syIDs, string(sy.ID))
-		}
+		syIDs = append(syIDs, schema.SymptomType(id))
 	}
-	return symptoms, syIDs
+	official, customeried, _, err := s.mongoStore.QuerySymptoms(syIDs)
+	return official, customeried, err
 }

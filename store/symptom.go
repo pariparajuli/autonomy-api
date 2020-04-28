@@ -18,6 +18,7 @@ import (
 type SymptomList interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
 	ListSymptoms() ([]schema.Symptom, error)
+	QuerySymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
 }
 
 type SymptomReport interface {
@@ -84,6 +85,33 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 	return nil
 }
 
+func (m *mongoDB) QuerySymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	c := m.client.Database(m.database)
+	var foundOfficial []schema.Symptom
+	var foundCustomerized []schema.Symptom
+	var notFound []schema.SymptomType
+	for _, id := range ids {
+		query := bson.M{"_id": string(id)}
+		var result schema.Symptom
+		err := c.Collection(schema.SymptomCollection).FindOne(ctx, query).Decode(&result)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				notFound = append(notFound, id)
+			}
+			return nil, nil, nil, err
+		}
+		if result.Source == schema.OfficialSymptom {
+			foundOfficial = append(foundOfficial, result)
+		} else {
+			foundCustomerized = append(foundCustomerized, result)
+		}
+
+	}
+	return foundOfficial, foundCustomerized, notFound, nil
+}
+
 // NearestGoodBehaviorScore return  the total behavior score and delta score of users within distInMeter range
 func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -134,7 +162,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sum = sum + result.SymptomScore
 		count++
-		totalSymptom = totalSymptom + len(result.Symptoms)
+		totalSymptom = totalSymptom + len(result.OfficialSymptoms)
 	}
 	score := float64(100)
 	if count > 0 {
@@ -161,7 +189,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sumYesterday = sumYesterday + result.SymptomScore
 		countYesterday++
-		totalSymptomYesterday = totalSymptomYesterday + len(result.Symptoms)
+		totalSymptomYesterday = totalSymptomYesterday + len(result.OfficialSymptoms)
 	}
 	scoreYesterday := float64(100)
 	if countYesterday > 0 {

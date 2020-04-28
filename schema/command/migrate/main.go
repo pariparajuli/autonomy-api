@@ -146,7 +146,7 @@ func setupCollectionPOI(client *mongo.Client) error {
 }
 
 func setupCollectionBehavior(client *mongo.Client) error {
-	c := client.Database(viper.GetString("mongo.database")).Collection(schema.GoodBehaviorCollection)
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
 	idAndTs := mongo.IndexModel{
 		Keys: bson.M{
 			"profile_id": 1,

@@ -3,12 +3,11 @@ package api
 import (
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) goodBehaviors(c *gin.Context) {
@@ -142,4 +141,12 @@ func behaviorWeight(behaviors []schema.DefaultBehavior, selfDefined []schema.Sel
 		}
 	}
 	return sum, float64(len(selfDefined))
+}
+
+func areaInfection(infectedUser *schema.BehaviorReportData) {
+	// update self behavior list
+	// UpdateProfileBehavior
+	
+	
+	// update people 1 km around me
 }
