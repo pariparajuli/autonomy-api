@@ -69,9 +69,9 @@ func (m *mongoDB) AddGeographic(accountNumber string, latitude float64, longitud
 
 	current := schema.Geographic{
 		AccountNumber: accountNumber,
-		Location: schema.Location{
-			Latitude:  latitude,
-			Longitude: longitude,
+		Location: schema.GeoJSON{
+			Type:        "Point",
+			Coordinates: []float64{longitude, latitude},
 		},
 		Timestamp: now.Unix(),
 	}
