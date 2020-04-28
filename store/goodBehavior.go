@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -92,10 +93,12 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		return NearestGoodBehaviorData{}, err
 	}
 	var results bson.M
-	if cursor.Next(ctx) {
-		if err := cursor.Decode(&results); err != nil {
-			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-		}
+	if !cursor.Next(ctx) {
+		return rawData, errors.New("no record")
+	}
+	if err := cursor.Decode(&results); err != nil {
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
+		return rawData, err
 	}
 	rawData.DefaultBehaviorWeight = results["totalDWeight"].(float64)
 	rawData.DefaultBehaviorCount = results["totalDCount"].(int32)
@@ -110,10 +113,12 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		return NearestGoodBehaviorData{}, err
 	}
 	var resultsYesterday bson.M
-	if cursorYesterday.Next(ctx) {
-		if err := cursorYesterday.Decode(&resultsYesterday); err != nil {
-			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-		}
+	if !cursorYesterday.Next(ctx) {
+		return rawData, errors.New("no record")
+	}
+	if err := cursorYesterday.Decode(&resultsYesterday); err != nil {
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
+		return rawData, err
 	}
 	rawData.PastTotalRecordCount = resultsYesterday["totalRecord"].(int32)
 	rawData.PastDefaultBehaviorWeight = resultsYesterday["totalDWeight"].(float64)
