@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -93,19 +92,18 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		return NearestGoodBehaviorData{}, err
 	}
 	var results bson.M
-	if !cursor.Next(ctx) {
-		return rawData, errors.New("no record")
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&results); nil == err {
+			rawData.DefaultBehaviorWeight = results["totalDWeight"].(float64)
+			rawData.DefaultBehaviorCount = results["totalDCount"].(int32)
+			rawData.SelfDefinedBehaviorCount = results["totalSCount"].(int32)
+			rawData.SelfDefinedBehaviorWeight = results["totalSWeight"].(float64)
+			rawData.TotalRecordCount = results["totalRecord"].(int32)
+		} else {
+			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
+			return rawData, err
+		}
 	}
-	if err := cursor.Decode(&results); err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-		return rawData, err
-	}
-	rawData.DefaultBehaviorWeight = results["totalDWeight"].(float64)
-	rawData.DefaultBehaviorCount = results["totalDCount"].(int32)
-	rawData.SelfDefinedBehaviorCount = results["totalSCount"].(int32)
-	rawData.SelfDefinedBehaviorWeight = results["totalSWeight"].(float64)
-	rawData.TotalRecordCount = results["totalRecord"].(int32)
-
 	// Previous day
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
@@ -113,18 +111,18 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		return NearestGoodBehaviorData{}, err
 	}
 	var resultsYesterday bson.M
-	if !cursorYesterday.Next(ctx) {
-		return rawData, errors.New("no record")
+	if cursorYesterday.Next(ctx) {
+		if err := cursorYesterday.Decode(&resultsYesterday); nil == err {
+			rawData.PastTotalRecordCount = resultsYesterday["totalRecord"].(int32)
+			rawData.PastDefaultBehaviorWeight = resultsYesterday["totalDWeight"].(float64)
+			rawData.PastDefaultBehaviorCount = resultsYesterday["totalDCount"].(int32)
+			rawData.PastSelfDefinedBehaviorCount = resultsYesterday["totalSCount"].(int32)
+			rawData.PastSelfDefinedBehaviorWeight = resultsYesterday["totalSWeight"].(float64)
+		} else {
+			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
+			return rawData, err
+		}
 	}
-	if err := cursorYesterday.Decode(&resultsYesterday); err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-		return rawData, err
-	}
-	rawData.PastTotalRecordCount = resultsYesterday["totalRecord"].(int32)
-	rawData.PastDefaultBehaviorWeight = resultsYesterday["totalDWeight"].(float64)
-	rawData.PastDefaultBehaviorCount = resultsYesterday["totalDCount"].(int32)
-	rawData.PastSelfDefinedBehaviorCount = resultsYesterday["totalSCount"].(int32)
-	rawData.PastSelfDefinedBehaviorWeight = resultsYesterday["totalSWeight"].(float64)
 	return rawData, nil
 }
 
