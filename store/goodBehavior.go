@@ -52,7 +52,6 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 
 // NearestGoodBehavior returns
 // default behavior weight and count, self-defined-behavior weight and count, total number of records and error
-
 func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -69,45 +68,23 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	timeStageToday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin}}}}
 	timeStageYesterday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin - 86400, "$lt": todayBegin}}}}
 	sortStage := bson.D{{"$sort", bson.D{{"ts", -1}}}}
-	groupStage := bson.D{
-		{"$group", bson.D{
-			{"_id", "$profile_id"},
-			{"account_number", bson.D{
-				{"$first", "$account_number"},
-			}},
-			{"default_count", bson.D{
-				{"$first", bson.D{{"$size", "$default_behaviors"}}},
-			}},
-			{"self_count", bson.D{
-				{"$first", bson.D{{"$size", "$self_defined_behaviors"}}},
-			}},
-			{"default_weight", bson.D{
-				{"$first", "$default_weight"},
-			}},
-			{"self_defined_weight", bson.D{
-				{"$first", "$self_defined_weight"},
-			}},
-		}}}
+	groupStage := bson.D{{"$group", bson.D{
+		{"_id", "$profile_id"},
+		{"account_number", bson.D{{"$first", "$account_number"}}},
+		{"default_count", bson.D{{"$first", bson.D{{"$size", "$default_behaviors"}}}}},
+		{"self_count", bson.D{{"$first", bson.D{{"$size", "$self_defined_behaviors"}}}}},
+		{"default_weight", bson.D{{"$first", "$default_weight"}}},
+		{"self_defined_weight", bson.D{{"$first", "$self_defined_weight"}}},
+	}}}
+	groupMergeStage := bson.D{{"$group", bson.D{
+		{"_id", 1},
+		{"totalDCount", bson.D{{"$sum", "$default_count"}}},
+		{"totalSCount", bson.D{{"$sum", "$self_count"}}},
+		{"totalDWeight", bson.D{{"$sum", "$default_weight"}}},
+		{"totalSWeight", bson.D{{"$sum", "$self_defined_weight"}}},
+		{"totalRecord", bson.D{{"$sum", 1}}},
+	}}}
 
-	groupMergeStage := bson.D{
-		{"$group", bson.D{
-			{"_id", 1},
-			{"totalDCount", bson.D{
-				{"$sum", "$default_count"},
-			}},
-			{"totalSCount", bson.D{
-				{"$sum", "$self_count"},
-			}},
-			{"totalDWeight", bson.D{
-				{"$sum", "$default_weight"},
-			}},
-			{"totalSWeight", bson.D{
-				{"$sum", "$self_defined_weight"},
-			}},
-			{"totalRecord", bson.D{
-				{"$sum", 1},
-			}},
-		}}}
 	var rawData NearestGoodBehaviorData
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageToday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
