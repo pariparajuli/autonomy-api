@@ -23,9 +23,9 @@ var DefaultBehaviorWeightMatrix = map[GoodBehaviorType]BehaviorWeight{
 }
 
 const (
-	BehaviorCollection         = "behaviors"
-	BehaviorReportCollection   = "goodBehavior"
-	TotalDefaultBehaviorWeight = float64(6)
+	BehaviorCollection          = "behaviors"
+	BehaviorReportCollection    = "behaviorReport"
+	TotalOfficialBehaviorWeight = float64(6)
 )
 
 type BehaviorSource string
@@ -72,10 +72,10 @@ var OfficialBehaviors = []Behavior{
 type BehaviorReportData struct {
 	ProfileID             string     `json:"profile_id" bson:"profile_id"`
 	AccountNumber         string     `json:"account_number" bson:"account_number"`
-	OfficialBehaviors     []Behavior `json:"default_behaviors" bson:"default_behaviors"`
-	CustomerizedBehaviors []Behavior `json:"self_defined_behaviors" bson:"self_defined_behaviors"`
+	OfficialBehaviors     []Behavior `json:"official_behaviors" bson:"official_behaviors"`
+	CustomerizedBehaviors []Behavior `json:"customerized_behaviors" bson:"customerized_behaviors"`
 	Location              GeoJSON    `json:"location" bson:"location"`
-	DefaultWeight         float64    `json:"default_weight" bson:"default_weight"`
-	SelfDefinedWeight     float64    `json:"self_defined_weight" bson:"self_defined_weight"`
+	OfficialWeight        float64    `json:"official_weight" bson:"official_weight"`
+	CustomerizedWeight    float64    `json:"customerized_weight" bson:"customerized_weight"`
 	Timestamp             int64      `json:"ts" bson:"ts"`
 }

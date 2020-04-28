@@ -2,8 +2,14 @@ package store
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/bitmark-inc/autonomy-api/consts"
+
+	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
@@ -48,28 +54,49 @@ func (m *mongoDB) GetProfile(accountNumber string) (*schema.Profile, error) {
 	return &p, nil
 }
 
-func (m *mongoDB) UpdateProfileSymptom(accountNumber string, symptoms []schema.SymptomReportData) (*schema.Profile, error) {
+func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, location schema.Location) error {
+	if 0 == len(behaviors) {
+		return fmt.Errorf("no behavior")
+	}
+	query := distanceQuery(consts.NEARBY_DISTANCE_RANGE, location)
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
-	query := bson.M{
-		"account_number": bson.M{
-			"$eq": accountNumber,
-		},
-	}
-	var p schema.Profile
-	err := c.FindOne(ctx, query).Decode(&p)
-	if err != nil {
-		return nil, err
-	}
-	/*
-		for _, newSyptom := range symptoms {
-			for _, existSymptom := range schema.Profile.CustomerizedSymptom {
-				if newSyptom != existSymptom {
 
+	cur, err := c.Find(ctx, query)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("query nearest distance with error: %s", err)
+		return fmt.Errorf("nearest distance query with error: %s", err)
+	}
+
+	var profiles []schema.Profile
+	for cur.Next(ctx) {
+		var p schema.Profile
+
+		if errDecode := cur.Decode(&p); errDecode != nil {
+			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
+			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
+		}
+		updatedBehavior := behaviors
+		for _, existBehavior := range p.CustomerizedBehaviors {
+			for _, newBehavior := range behaviors {
+				if newBehavior.ID != existBehavior.ID {
+					updatedBehavior = append(updatedBehavior, existBehavior)
 				}
 			}
-		}*/
+		}
+		opts := options.Update().SetUpsert(false)
+		filter := bson.D{{"account_number", p.AccountNumber}}
+		update := bson.D{{"$set", bson.D{{"customerized_behavior", updatedBehavior}}}}
 
-	return nil, nil
+		result, err := c.UpdateOne(context.TODO(), filter, update, opts)
+		if result.MatchedCount == 0 || err != nil {
+			return err
+		}
+		profiles = append(profiles, p)
+	}
+
+	log.WithField("prefix", mongoLogPrefix).Debugf("profile nearest distance query gets %d records near long:%v lat:%v", len(profiles),
+		location.Longitude, location.Latitude)
+	return nil
 }

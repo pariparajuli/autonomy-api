@@ -36,14 +36,14 @@ type ScoreCoefficient struct {
 
 // Profile - user profile data
 type Profile struct {
-	ID                  string                  `bson:"id"`
-	AccountNumber       string                  `bson:"account_number"`
-	Location            *GeoJSON                `bson:"location,omitempty"`
-	HealthScore         float64                 `bson:"health_score"`
-	Metric              Metric                  `bson:"metric"`
-	ScoreCoefficient    *ScoreCoefficient       `bson:"score_coefficient"`
-	PointsOfInterest    []ProfilePOI            `bson:"points_of_interest,omitempty"`
-	CustomerizedSymptom map[SymptomType]Symptom `bson:"self_defined_symptom"`
+	ID                    string            `bson:"id"`
+	AccountNumber         string            `bson:"account_number"`
+	Location              *GeoJSON          `bson:"location,omitempty"`
+	HealthScore           float64           `bson:"health_score"`
+	Metric                Metric            `bson:"metric"`
+	ScoreCoefficient      *ScoreCoefficient `bson:"score_coefficient"`
+	PointsOfInterest      *[]POIDesc        `bson:"points_of_interest,omitempty"`
+	CustomerizedBehaviors []Behavior        `bson:"customerized_behavior"`
 }
 
 // GeoJSON - mongo location format

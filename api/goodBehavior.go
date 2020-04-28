@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -53,8 +52,20 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	if lat, long, err := parseGeoPosition(gp); err == nil {
 		loc = &schema.Location{Latitude: lat, Longitude: long}
 	}
+	official, err := s.mongoStore.ListOfficialBehavior()
+	if err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+	}
+	customerized, err := s.areaInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+	}
 
-	c.JSON(http.StatusOK, gin.H{"behaviors": schema.OfficialBehaviors})
+	if customerized != nil {
+		official = append(official, customerized...)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"behaviors": official})
 }
 
 func (s *Server) reportBehaviors(c *gin.Context) {
@@ -80,15 +91,14 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	}
 
 	var params struct {
-		behaviors []string `json:"behaviors"`
+		Behaviors []string `json:"behaviors"`
 	}
 
 	if err := c.BindJSON(&params); err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-
-	official, customerized, err := s.findBehaviorInDB(params.behaviors)
+	official, customerized, err := s.findBehaviorInDB(params.Behaviors)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
@@ -100,8 +110,8 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		AccountNumber:         account.Profile.AccountNumber,
 		OfficialBehaviors:     official,
 		CustomerizedBehaviors: customerized,
-		DefaultWeight:         behaviorWeight,
-		SelfDefinedWeight:     selfDefinedWeight,
+		OfficialWeight:        behaviorWeight,
+		CustomerizedWeight:    selfDefinedWeight,
 		Location:              schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		Timestamp:             time.Now().UTC().Unix(),
 	}
@@ -111,7 +121,10 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-
+	err = s.userInfection(&data, *loc)
+	if err != nil {
+		c.Error(err)
+	}
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
 		go func() {
@@ -160,9 +173,19 @@ func behaviorWeight(official []schema.Behavior, customerized []schema.Behavior) 
 	return sum, float64(len(customerized))
 }
 
-func areaInfection(infectedUser *schema.BehaviorReportData) {
-	// update self behavior list
-	// UpdateProfileBehavior
-
+func (s *Server) userInfection(infectedUser *schema.BehaviorReportData, loc schema.Location) error {
 	// update people 1 km around me
+	err := s.mongoStore.UpdateAreaProfileBehavior(infectedUser.CustomerizedBehaviors, loc)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) areaInfection(distance int, loc schema.Location) ([]schema.Behavior, error) {
+	list, err := s.mongoStore.NearestCustomerizedBehaviorList(distance, loc)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
