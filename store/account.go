@@ -368,6 +368,9 @@ func (m *mongoDB) ResetProfileCoefficient(accountNumber string) error {
 		"$unset": bson.M{
 			"score_coefficient": "",
 		},
+		"$set": bson.M{
+			"metric.last_update": 0,
+		},
 	}
 
 	_, err := c.UpdateOne(ctx, query, update)

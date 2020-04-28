@@ -53,24 +53,37 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 			Longitude: profile.Location.Coordinates[0],
 		}
 
-		if profile.ScoreCoefficient.UpdatedAt.Sub(time.Unix(metric.LastUpdate, 0)) > 0 || // check if the coefficient updates after a metric calculation
-			time.Now().Sub(time.Unix(metric.LastUpdate, 0)) >= metricUpdateInterval {
-			if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
-				c.Error(err)
-			} else {
-				m.LastUpdate = time.Now().UTC().Unix()
-				if coefficient := profile.ScoreCoefficient; coefficient != nil {
+		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
+
+		if coefficient := profile.ScoreCoefficient; coefficient != nil {
+			if coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 || // check if the coefficient updates after a metric calculation
+				time.Now().Sub(metricLastUpdate) >= metricUpdateInterval {
+				if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
+					c.Error(err)
+				} else {
+					m.LastUpdate = time.Now().UTC().Unix()
 					m.Score = scoreUtil.TotalScoreV1(
 						coefficient.Symptoms, m.Symptoms,
 						coefficient.Behaviors, m.Behavior,
 						coefficient.Confirms, m.Confirm,
 					)
+					if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
+						c.Error(err)
+					} else {
+						metric = *m
+					}
 				}
-
-				if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
+			}
+		} else {
+			if time.Now().Sub(metricLastUpdate) >= metricUpdateInterval {
+				if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
 					c.Error(err)
 				} else {
-					metric = *m
+					if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
+						c.Error(err)
+					} else {
+						metric = *m
+					}
 				}
 			}
 		}
