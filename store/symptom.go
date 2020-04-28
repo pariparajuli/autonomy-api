@@ -2,18 +2,70 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	log "github.com/sirupsen/logrus"
 )
 
+type SymptomList interface {
+	CreateSymptom(symptom schema.Symptom) (string, error)
+	ListSymptoms() ([]schema.Symptom, error)
+}
+
 type SymptomReport interface {
 	SymptomReportSave(data *schema.SymptomReportData) error
 	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
+}
+
+func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c := m.client.Database(m.database)
+
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%s=:=%s", symptom.Name, symptom.Desc)))
+
+	symptom.ID = schema.SymptomType(hex.EncodeToString(h.Sum(nil)))
+	symptom.Source = schema.CustomizedSymptom
+
+	if _, err := c.Collection(schema.SymptomCollection).InsertOne(ctx, &symptom); err != nil {
+		if we, hasErr := err.(mongo.WriteException); hasErr {
+			if 1 == len(we.WriteErrors) && DuplicateKeyCode == we.WriteErrors[0].Code {
+				return string(symptom.ID), nil
+			}
+		}
+		return "", err
+	}
+
+	return string(symptom.ID), nil
+}
+
+func (m *mongoDB) ListSymptoms() ([]schema.Symptom, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c := m.client.Database(m.database)
+
+	query := bson.M{"source": schema.OfficialSymptom}
+
+	cursor, err := c.Collection(schema.SymptomCollection).Find(ctx, query, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
+	}
+
+	symptoms := make([]schema.Symptom, 0)
+	if err := cursor.All(ctx, &symptoms); err != nil {
+		return nil, err
+	}
+
+	return symptoms, nil
 }
 
 // SymptomReportSave save  a record instantly in database
