@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -56,7 +56,7 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
-	customerized, err := s.areaInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
+	customerized, err := s.areaBehaviorInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 	}
@@ -98,7 +98,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	official, customerized, err := s.findBehaviorInDB(params.Behaviors)
+	official, customerized, err := s.getBehaviors(params.Behaviors)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
@@ -121,8 +121,8 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	err = s.userInfection(&data, *loc)
-	if err != nil {
+	err = s.userBehaviorInfection(&data, *loc)
+	if err != nil { // do nothing
 		c.Error(err)
 	}
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
@@ -153,12 +153,12 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	return
 }
 
-func (s *Server) findBehaviorInDB(ids []string) ([]schema.Behavior, []schema.Behavior, error) {
+func (s *Server) getBehaviors(ids []string) ([]schema.Behavior, []schema.Behavior, error) {
 	var behviorIDs []schema.GoodBehaviorType
 	for _, id := range ids {
 		behviorIDs = append(behviorIDs, schema.GoodBehaviorType(id))
 	}
-	official, customeried, _, err := s.mongoStore.QueryBehaviors(behviorIDs)
+	official, customeried, _, err := s.mongoStore.IDToBehaviors(behviorIDs)
 	return official, customeried, err
 }
 
@@ -173,8 +173,7 @@ func behaviorWeight(official []schema.Behavior, customerized []schema.Behavior) 
 	return sum, float64(len(customerized))
 }
 
-func (s *Server) userInfection(infectedUser *schema.BehaviorReportData, loc schema.Location) error {
-	// update people 1 km around me
+func (s *Server) userBehaviorInfection(infectedUser *schema.BehaviorReportData, loc schema.Location) error {
 	err := s.mongoStore.UpdateAreaProfileBehavior(infectedUser.CustomerizedBehaviors, loc)
 	if err != nil {
 		return err
@@ -182,8 +181,8 @@ func (s *Server) userInfection(infectedUser *schema.BehaviorReportData, loc sche
 	return nil
 }
 
-func (s *Server) areaInfection(distance int, loc schema.Location) ([]schema.Behavior, error) {
-	list, err := s.mongoStore.NearestCustomerizedBehaviorList(distance, loc)
+func (s *Server) areaBehaviorInfection(distance int, loc schema.Location) ([]schema.Behavior, error) {
+	list, err := s.mongoStore.AreaCustomerizedBehaviorList(distance, loc)
 	if err != nil {
 		return nil, err
 	}

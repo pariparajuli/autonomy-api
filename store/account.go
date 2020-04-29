@@ -37,7 +37,11 @@ type MongoAccount interface {
 =======
 	GetProfile(accountNumber string) (*schema.Profile, error)
 	UpdateAreaProfileBehavior(behaviors []schema.Behavior, location schema.Location) error
+<<<<<<< HEAD
 >>>>>>> add infection mode of behavior
+=======
+	UpdateAreaProfileSymptom(symptoms []schema.Symptom, location schema.Location) error
+>>>>>>> add infection of customerized symptom
 }
 
 var (

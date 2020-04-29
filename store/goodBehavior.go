@@ -31,8 +31,8 @@ type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
 	NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error)
-	QueryBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
-	NearestCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
+	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
+	AreaCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior() ([]schema.Behavior, error)
 }
 
@@ -105,7 +105,8 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 	return nil
 }
 
-func (m *mongoDB) QueryBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error) {
+// IDToBehaviors return official and customerized behavuiors from a list of GoodBehaviorType ID
+func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
@@ -132,21 +133,14 @@ func (m *mongoDB) QueryBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavi
 	return foundOfficial, foundCustomerized, notFound, nil
 }
 
-func (m *mongoDB) NearestCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
-
-	geoStage := bson.D{{"$geoNear", bson.M{
-		"near":          bson.M{"type": "Point", "coordinates": bson.A{location.Longitude, location.Latitude}},
-		"distanceField": "dist",
-		"spherical":     true,
-		"maxDistance":   distInMeter,
-	}}}
-	matchStage := bson.D{{"$match", bson.M{"customerized_weight": bson.M{"$gt": 0}}}}
-
+// AreaCustomerizedBehaviorList return a list  of customerized behaviors within distInMeter range
+func (m *mongoDB) AreaCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
+	filterStage := bson.D{{"$match", bson.M{"customerized_weight": bson.M{"$gt": 0}}}}
 	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	log.Info(fmt.Sprintf("NearestCustomerizedBehaviorList location %v", location))
-	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoStage, matchStage})
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
 	if nil != err {
 		log.WithField("prefix", mongoLogPrefix).Errorf("nearest  distance  customerized behavio with error: %s", err)
 		return nil, fmt.Errorf("nearest  distance  customerized behavior list query with error: %s", err)
@@ -169,8 +163,7 @@ func (m *mongoDB) NearestCustomerizedBehaviorList(distInMeter int, location sche
 	return cBehaviors, nil
 }
 
-// NearestGoodBehavior returns
-// default behavior weight and count, self-defined-behavior weight and count, total number of records and error
+// NearestGoodBehavior returns NearestGoodBehaviorData which caculates from location within distInMeter distance
 func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -178,12 +171,6 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	collection := db.Collection(schema.BehaviorReportCollection)
 	todayBegin := todayStartAt()
 	log.Debugf("time period today > %v, yesterday %v~ %v ", todayBegin, todayBegin-86400, todayBegin)
-	geoStage := bson.D{{"$geoNear", bson.M{
-		"near":          bson.M{"type": "Point", "coordinates": bson.A{location.Longitude, location.Latitude}},
-		"distanceField": "dist",
-		"spherical":     true,
-		"maxDistance":   distInMeter,
-	}}}
 	timeStageToday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin}}}}
 	timeStageYesterday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin - 86400, "$lt": todayBegin}}}}
 	sortStage := bson.D{{"$sort", bson.D{{"ts", -1}}}}
@@ -205,7 +192,7 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	}}}
 
 	var rawData NearestGoodBehaviorData
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageToday, sortStage, groupStage, groupMergeStage})
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
 		return NearestGoodBehaviorData{}, err
@@ -224,7 +211,7 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		}
 	}
 	// Previous day
-	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage, groupMergeStage})
+	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
 		return NearestGoodBehaviorData{}, err
@@ -249,4 +236,13 @@ func todayStartAt() int64 {
 	curTime := time.Now()
 	start := time.Date(curTime.Year(), curTime.Month(), curTime.Day(), 0, 0, 0, 0, time.UTC)
 	return start.Unix()
+}
+
+func geoAggregate(maxDist int, loc schema.Location) bson.D {
+	return bson.D{{"$geoNear", bson.M{
+		"near":          bson.M{"type": "Point", "coordinates": bson.A{loc.Longitude, loc.Latitude}},
+		"distanceField": "dist",
+		"spherical":     true,
+		"maxDistance":   maxDist,
+	}}}
 }

@@ -42,8 +42,9 @@ type Profile struct {
 	HealthScore           float64           `bson:"health_score"`
 	Metric                Metric            `bson:"metric"`
 	ScoreCoefficient      *ScoreCoefficient `bson:"score_coefficient"`
-	PointsOfInterest      *[]POIDesc        `bson:"points_of_interest,omitempty"`
+	PointsOfInterest      []ProfilePOI      `bson:"points_of_interest,omitempty"`
 	CustomerizedBehaviors []Behavior        `bson:"customerized_behavior"`
+	CustomerizedSymptom   []Symptom         `bson:"customerized_symptom"`
 }
 
 // GeoJSON - mongo location format
