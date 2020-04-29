@@ -5,8 +5,8 @@ import (
 	"github.com/bitmark-inc/autonomy-api/store"
 )
 
-func behaviorScore(mongo *store.MongoStore, radiusMeter int, location schema.Location) (float64, float64, float64, float64, error) {
-	rawData, err := (*mongo).NearestGoodBehavior(radiusMeter, location)
+func behaviorScore(mongo store.MongoStore, radiusMeter int, location schema.Location) (float64, float64, float64, float64, error) {
+	rawData, err := mongo.NearestGoodBehavior(radiusMeter, location)
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}

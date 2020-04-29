@@ -47,7 +47,7 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 }
 
 func CalculateMetric(mongo store.MongoStore, location schema.Location) (*schema.Metric, error) {
-	behaviorScore, _, behaviorCount, behaviorDelta, err := behaviorScore(&mongo, consts.CORHORT_DISTANCE_RANGE, location)
+	behaviorScore, _, behaviorCount, behaviorDelta, err := behaviorScore(mongo, consts.CORHORT_DISTANCE_RANGE, location)
 	if err != nil {
 		return nil, err
 	}
