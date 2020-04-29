@@ -209,11 +209,13 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 			"country": country,
 			"county":  county,
 			"error":   err,
-		}).Error("get confirm count")
+		}).Error("get confirm count from db")
 
 		if err == mongo.ErrNoDocuments {
+			log.WithError(err).Error("no documents found")
 			return 0, 0, nil
 		}
+		log.WithError(err).Error("other mongodb errors")
 		return RecordNotExistCode, RecordNotExistCode, err
 	}
 	return latest.Count, latest.DiffYesterday, nil

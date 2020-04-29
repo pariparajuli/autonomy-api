@@ -15,18 +15,16 @@ type POI struct {
 	Metric   Metric             `bson:"metric"`
 }
 
-type POIDesc struct {
-	ID      primitive.ObjectID `bson:"_id"`
-	Alias   string             `bson:"alias"`
-	Address string             `bson:"address"`
+type ProfilePOI struct {
+	ID      primitive.ObjectID `bson:"id" json:"id"`
+	Alias   string             `bson:"alias" json:"alias"`
+	Address string             `bson:"address" json:"address"`
+	Score   float64            `bson:"score" json:"score"`
 }
 
 // This structure will not store into database, it's only for client response.
 // Data comes from schema Profile.PointsOfInterest & POI
 type POIDetail struct {
-	ID       primitive.ObjectID `json:"id"`
-	Alias    string             `json:"alias"`
-	Address  string             `json:"address"`
-	Location Location           `json:"location"`
-	Score    float64            `json:"score"`
+	ProfilePOI `bson:",inline"`
+	Location   *Location `json:"location"`
 }

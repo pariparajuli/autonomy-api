@@ -23,15 +23,16 @@ type MongoAccount interface {
 	DeleteAccount(string) error
 	UpdateAccountScore(string, float64) error
 	IsAccountExist(string) (bool, error)
-	AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error
-	GetAccountsByPOI(id string) ([]string, error)
+	GetProfile(accountNumber string) (*schema.Profile, error)
+	GetProfilesByPOI(id string) ([]schema.Profile, error)
+	AppendPOIToAccountProfile(accountNumber string, desc schema.ProfilePOI) error
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
+	UpdateProfilePOIMetric(accountNumber string, poiID primitive.ObjectID, metric schema.Metric) error
 	GetProfileCoefficient(accountNumber string) (*schema.ScoreCoefficient, error)
 	UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error
 	ResetProfileCoefficient(accountNumber string) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
-	GetProfile(accountNumber string) (*schema.Profile, error)
 }
 
 var (
@@ -271,21 +272,17 @@ func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error 
 }
 
 // AppendPOIToAccountProfile appends a POI to end of the POI list of an account
-func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, desc *schema.POIDesc) error {
+func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, poiDesc schema.ProfilePOI) error {
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	if desc == nil {
-		return fmt.Errorf("poi desc not available")
-	}
-
-	prefixedLog := log.WithField("prefix", mongoLogPrefix).WithField("account", accountNumber).WithField("poi_id", desc.ID)
+	prefixedLog := log.WithField("prefix", mongoLogPrefix).WithField("account", accountNumber).WithField("poi_id", poiDesc.ID)
 
 	// don't do anything if the POI was added before
 	query := bson.M{
 		"account_number":        accountNumber,
-		"points_of_interest.id": desc.ID,
+		"points_of_interest.id": poiDesc.ID,
 	}
 	count, err := c.CountDocuments(ctx, query)
 	if err != nil {
@@ -298,11 +295,7 @@ func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, desc *schema.P
 
 	// add the POI if not added before
 	query = bson.M{"account_number": bson.M{"$eq": accountNumber}}
-	update := bson.M{"$push": bson.M{"points_of_interest": bson.M{
-		"id":      desc.ID,
-		"alias":   desc.Alias,
-		"address": desc.Address,
-	}}}
+	update := bson.M{"$push": bson.M{"points_of_interest": poiDesc}}
 	if _, err := c.UpdateOne(ctx, query, update); nil != err {
 		prefixedLog.WithError(err).Error("unable to add POI for this account")
 		return err
@@ -381,6 +374,8 @@ func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	metric.LastUpdate = time.Now().Unix()
+
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	query := bson.M{
 		"account_number": accountNumber,
@@ -402,7 +397,33 @@ func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric
 	return nil
 }
 
-func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
+func (m *mongoDB) UpdateProfilePOIMetric(accountNumber string, poiID primitive.ObjectID, metric schema.Metric) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number":        accountNumber,
+		"points_of_interest.id": poiID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"points_of_interest.$.score": metric.Score,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errAccountNotFound
+	}
+
+	return nil
+}
+
+func (m *mongoDB) GetProfilesByPOI(id string) ([]schema.Profile, error) {
 	log.WithField("prefix", mongoLogPrefix).Debugf("get accounts by POI id: %s", id)
 
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
@@ -418,25 +439,26 @@ func (m *mongoDB) GetAccountsByPOI(id string) ([]string, error) {
 	query := bson.M{"points_of_interest.id": poiID}
 
 	filter := bson.M{
-		"account_number": 1,
+		"account_number":       1,
+		"score_coefficient":    1,
+		"metric":               1,
+		"points_of_interest.$": 1,
 	}
 
 	cursor, err := c.Find(ctx, query, options.Find().SetProjection(filter))
 
-	accounts := []string{}
+	profiles := []schema.Profile{}
 
 	for cursor.Next(ctx) {
 		// Declare a result BSON object
-		var profile struct {
-			AccountNumber string `bson:"account_number"`
-		}
+		var profile schema.Profile
 		if err := cursor.Decode(&profile); err != nil {
 			log.WithField("prefix", mongoLogPrefix).Errorf("fail to query accounts include POI id:%s  error: %s", id, err.Error())
 			return nil, err
 		}
 
-		accounts = append(accounts, profile.AccountNumber)
+		profiles = append(profiles, profile)
 	}
 
-	return accounts, nil
+	return profiles, nil
 }

@@ -67,7 +67,7 @@ func (s *Server) getPOI(c *gin.Context) {
 
 	pois, err := s.mongoStore.ListPOI(account.AccountNumber)
 	if err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 

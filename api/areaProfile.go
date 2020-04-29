@@ -61,11 +61,10 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 				if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
 					c.Error(err)
 				} else {
-					m.LastUpdate = time.Now().UTC().Unix()
-					m.Score = scoreUtil.TotalScoreV1(
-						coefficient.Symptoms, m.Symptoms,
-						coefficient.Behaviors, m.Behavior,
-						coefficient.Confirms, m.Confirm,
+					m.Score = scoreUtil.TotalScoreV1(*coefficient,
+						m.Symptoms,
+						m.Behavior,
+						m.Confirm,
 					)
 					if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
 						c.Error(err)

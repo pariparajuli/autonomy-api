@@ -42,10 +42,10 @@ func (s *ScoreUpdateWorker) Register() {
 	workflow.RegisterWithOptions(s.AccountStateUpdateWorkflow, workflow.RegisterOptions{Name: "AccountStateUpdateWorkflow"})
 
 	activity.RegisterWithOptions(s.CalculatePOIStateActivity, activity.RegisterOptions{Name: "CalculatePOIStateActivity"})
-	activity.RegisterWithOptions(s.SendPOINotificationActivity, activity.RegisterOptions{Name: "SendPOINotificationActivity"})
-
 	activity.RegisterWithOptions(s.CalculateAccountStateActivity, activity.RegisterOptions{Name: "CalculateAccountStateActivity"})
-	activity.RegisterWithOptions(s.SendAccountNotificationActivity, activity.RegisterOptions{Name: "SendAccountNotificationActivity"})
+
+	activity.RegisterWithOptions(s.RefreshLocationStateActivity, activity.RegisterOptions{Name: "UpdateLocationStateActivity"})
+	activity.RegisterWithOptions(s.NotifyLocationStateActivity, activity.RegisterOptions{Name: "NotifyLocationStateActivity"})
 
 }
 

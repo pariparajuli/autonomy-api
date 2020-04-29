@@ -5,11 +5,12 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	schema "github.com/bitmark-inc/autonomy-api/schema"
 	store "github.com/bitmark-inc/autonomy-api/store"
 	gomock "github.com/golang/mock/gomock"
 	primitive "go.mongodb.org/mongo-driver/bson/primitive"
-	reflect "reflect"
 )
 
 // MockMongoStore is a mock of MongoStore interface
@@ -51,7 +52,7 @@ func (mr *MockMongoStoreMockRecorder) AddPOI(arg0, arg1, arg2, arg3, arg4 interf
 }
 
 // AppendPOIToAccountProfile mocks base method
-func (m *MockMongoStore) AppendPOIToAccountProfile(arg0 string, arg1 *schema.POIDesc) error {
+func (m *MockMongoStore) AppendPOIToAccountProfile(arg0 string, arg1 *schema.ProfilePOI) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AppendPOIToAccountProfile", arg0, arg1)
 	ret0, _ := ret[0].(error)

@@ -1,8 +1,6 @@
 package score
 
 import (
-	"time"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
@@ -15,14 +13,18 @@ const (
 )
 
 func DefaultTotalScore(symptomScore, behaviorScore, confirmedScore float64) float64 {
-	return TotalScoreV1(DefaultScoreV1SymptomCoefficient, symptomScore, DefaultScoreV1BehaviorCoefficient, behaviorScore, DefaultScoreV1ConfirmCoefficient, confirmedScore)
+	return TotalScoreV1(schema.ScoreCoefficient{
+		Symptoms:  DefaultScoreV1SymptomCoefficient,
+		Behaviors: DefaultScoreV1BehaviorCoefficient,
+		Confirms:  DefaultScoreV1ConfirmCoefficient,
+	},
+		symptomScore,
+		behaviorScore,
+		confirmedScore)
 }
 
-func TotalScoreV1(
-	symptomCoefficient, symptomScore,
-	behaviorCoefficient, behaviorScore,
-	confirmedCoefficient, confirmedScore float64) float64 {
-	return symptomCoefficient*symptomScore + behaviorCoefficient*behaviorScore + confirmedCoefficient*confirmedScore
+func TotalScoreV1(c schema.ScoreCoefficient, symptomScore, behaviorScore, confirmedScore float64) float64 {
+	return c.Symptoms*symptomScore + c.Behaviors*behaviorScore + c.Confirms*confirmedScore
 }
 
 // CheckScoreColorChange check if the color of a score need to be changed.
@@ -70,11 +72,13 @@ func CalculateMetric(mongo store.MongoStore, location schema.Location) (*schema.
 	return &schema.Metric{
 		Symptoms:      float64(symptomCount),
 		SymptomsDelta: float64(symptomDelta),
+		SymptomScore:  float64(symptomScore),
 		Behavior:      float64(behaviorCount),
 		BehaviorDelta: float64(behaviorDelta),
+		BehaviorScore: float64(behaviorScore),
 		Confirm:       float64(confirmCount),
 		ConfirmDelta:  float64(confirmDelta),
+		ConfirmScore:  float64(confirmedScore),
 		Score:         totalScore,
-		LastUpdate:    time.Now().UTC().Unix(),
 	}, nil
 }

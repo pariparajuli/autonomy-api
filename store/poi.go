@@ -22,7 +22,7 @@ var (
 
 type POI interface {
 	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
-	ListPOI(accountNumber string) ([]*schema.POIDetail, error)
+	ListPOI(accountNumber string) ([]schema.POIDetail, error)
 
 	GetPOI(poiID primitive.ObjectID) (*schema.POI, error)
 	GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error)
@@ -64,10 +64,11 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		}
 	}
 
-	poiDesc := &schema.POIDesc{
+	poiDesc := schema.ProfilePOI{
 		ID:      poi.ID,
 		Alias:   alias,
 		Address: address,
+		Score:   poi.Score,
 	}
 	if err := m.AppendPOIToAccountProfile(accountNumber, poiDesc); err != nil {
 		return nil, err
@@ -77,7 +78,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 }
 
 // ListPOI finds the POI list of an account along with customied alias and address
-func (m *mongoDB) ListPOI(accountNumber string) ([]*schema.POIDetail, error) {
+func (m *mongoDB) ListPOI(accountNumber string) ([]schema.POIDetail, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -85,14 +86,14 @@ func (m *mongoDB) ListPOI(accountNumber string) ([]*schema.POIDetail, error) {
 
 	// find user's POI list
 	var result struct {
-		Points []*schema.POIDetail `bson:"points_of_interest"`
+		Points []schema.POIDetail `bson:"points_of_interest"`
 	}
 	query := bson.M{"account_number": accountNumber}
 	if err := c.FindOne(ctx, query).Decode(&result); err != nil {
 		return nil, err
 	}
-	if result.Points == nil { // user hasn't tracked any location yet
-		return []*schema.POIDetail{}, nil
+	if len(result.Points) == 0 { // user hasn't tracked any location yet
+		return []schema.POIDetail{}, nil
 	}
 
 	// find scores
@@ -113,19 +114,26 @@ func (m *mongoDB) ListPOI(accountNumber string) ([]*schema.POIDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	var pois []*schema.POI
+	var pois []schema.POI
 	if err = cursor.All(ctx, &pois); err != nil {
 		return nil, err
 	}
 
 	if len(pois) != len(result.Points) {
+		log.WithFields(log.Fields{
+			"pois":     pois,
+			"poi_desc": result.Points,
+		}).Error("poi data wrongly retrieved or removed")
 		return nil, fmt.Errorf("poi data wrongly retrieved or removed")
 	}
 
-	for i, p := range result.Points {
-		p.Score = pois[i].Metric.Score
-		p.Location.Longitude = pois[i].Location.Coordinates[0]
-		p.Location.Latitude = pois[i].Location.Coordinates[1]
+	for i := range result.Points {
+		if l := pois[i].Location; l != nil {
+			result.Points[i].Location = &schema.Location{
+				Longitude: l.Coordinates[0],
+				Latitude:  l.Coordinates[1],
+			}
+		}
 	}
 
 	return result.Points, nil
