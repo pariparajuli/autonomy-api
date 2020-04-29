@@ -22,8 +22,8 @@ const (
 type BehaviorSource string
 
 const (
-	OfficialBehavior     BehaviorSource = "official"
-	CustomerizedBehavior BehaviorSource = "customerized"
+	OfficialBehavior   BehaviorSource = "official"
+	CustomizedBehavior BehaviorSource = "customized"
 )
 
 // GoodBehaviorReport save a GoodBehaviorData into Database
@@ -32,21 +32,21 @@ type GoodBehaviorReport interface {
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
 	NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error)
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
-	AreaCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
+	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior() ([]schema.Behavior, error)
 }
 
 type NearestGoodBehaviorData struct {
-	TotalRecordCount               int32
-	OfficialBehaviorWeight         float64
-	OfficialBehaviorCount          int32
-	CustomerizedBehaviorWeight     float64
-	CustomerizedBehaviorCount      int32
-	PastTotalRecordCount           int32
-	PastOfficialBehaviorWeight     float64
-	PastOfficialBehaviorCount      int32
-	PastCustomerizedBehaviorWeight float64
-	PastCustomerizedBehaviorCount  int32
+	TotalRecordCount             int32
+	OfficialBehaviorWeight       float64
+	OfficialBehaviorCount        int32
+	CustomizedBehaviorWeight     float64
+	CustomizedBehaviorCount      int32
+	PastTotalRecordCount         int32
+	PastOfficialBehaviorWeight   float64
+	PastOfficialBehaviorCount    int32
+	PastCustomizedBehaviorWeight float64
+	PastCustomizedBehaviorCount  int32
 }
 
 func (m *mongoDB) ListOfficialBehavior() ([]schema.Behavior, error) {
@@ -105,13 +105,13 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 	return nil
 }
 
-// IDToBehaviors return official and customerized behavuiors from a list of GoodBehaviorType ID
+// IDToBehaviors return official and customized behavuiors from a list of GoodBehaviorType ID
 func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
 	var foundOfficial []schema.Behavior
-	var foundCustomerized []schema.Behavior
+	var foundCustomized []schema.Behavior
 	var notFound []schema.GoodBehaviorType
 	for _, id := range ids {
 		query := bson.M{"_id": string(id)}
@@ -126,24 +126,24 @@ func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavio
 		if result.Source == schema.OfficialBehavior {
 			foundOfficial = append(foundOfficial, result)
 		} else {
-			foundCustomerized = append(foundCustomerized, result)
+			foundCustomized = append(foundCustomized, result)
 		}
 
 	}
-	return foundOfficial, foundCustomerized, notFound, nil
+	return foundOfficial, foundCustomized, notFound, nil
 }
 
-// AreaCustomerizedBehaviorList return a list  of customerized behaviors within distInMeter range
-func (m *mongoDB) AreaCustomerizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
-	filterStage := bson.D{{"$match", bson.M{"customerized_weight": bson.M{"$gt": 0}}}}
+// AreaCustomizedBehaviorList return a list  of customized behaviors within distInMeter range
+func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
+	filterStage := bson.D{{"$match", bson.M{"customized_weight": bson.M{"$gt": 0}}}}
 	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	log.Info(fmt.Sprintf("NearestCustomerizedBehaviorList location %v", location))
+	log.Info(fmt.Sprintf("NearestCustomizedBehaviorList location %v", location))
 	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
 	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("nearest  distance  customerized behavio with error: %s", err)
-		return nil, fmt.Errorf("nearest  distance  customerized behavior list query with error: %s", err)
+		log.WithField("prefix", mongoLogPrefix).Errorf("nearest  distance  customized behavio with error: %s", err)
+		return nil, fmt.Errorf("nearest  distance  customized behavior list query with error: %s", err)
 	}
 	cbMap := make(map[schema.GoodBehaviorType]schema.Behavior, 0)
 	for cur.Next(ctx) {
@@ -152,7 +152,7 @@ func (m *mongoDB) AreaCustomerizedBehaviorList(distInMeter int, location schema.
 			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
 			return nil, fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
-		for _, behavior := range b.CustomerizedBehaviors {
+		for _, behavior := range b.CustomizedBehaviors {
 			cbMap[behavior.ID] = behavior
 		}
 	}
@@ -178,16 +178,16 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		{"_id", "$profile_id"},
 		{"account_number", bson.D{{"$first", "$account_number"}}},
 		{"default_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
-		{"self_count", bson.D{{"$first", bson.D{{"$size", "$customerized_behaviors"}}}}},
+		{"self_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
 		{"default_weight", bson.D{{"$first", "$official_weight"}}},
-		{"self_defined_weight", bson.D{{"$first", "$customerized_weight"}}},
+		{"self_defined_weight", bson.D{{"$first", "$customized_weight"}}},
 	}}}
 	groupMergeStage := bson.D{{"$group", bson.D{
 		{"_id", 1},
 		{"totalDCount", bson.D{{"$sum", "$default_count"}}},
 		{"totalSCount", bson.D{{"$sum", "$self_count"}}},
 		{"totalDWeight", bson.D{{"$sum", "$official_weight"}}},
-		{"totalSWeight", bson.D{{"$sum", "$customerized_weight"}}},
+		{"totalSWeight", bson.D{{"$sum", "$customized_weight"}}},
 		{"totalRecord", bson.D{{"$sum", 1}}},
 	}}}
 
@@ -202,8 +202,8 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		if err := cursor.Decode(&results); nil == err {
 			rawData.OfficialBehaviorWeight = results["totalDWeight"].(float64)
 			rawData.OfficialBehaviorCount = results["totalDCount"].(int32)
-			rawData.CustomerizedBehaviorCount = results["totalSCount"].(int32)
-			rawData.CustomerizedBehaviorWeight = results["totalSWeight"].(float64)
+			rawData.CustomizedBehaviorCount = results["totalSCount"].(int32)
+			rawData.CustomizedBehaviorWeight = results["totalSWeight"].(float64)
 			rawData.TotalRecordCount = results["totalRecord"].(int32)
 		} else {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
@@ -222,8 +222,8 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 			rawData.PastTotalRecordCount = resultsYesterday["totalRecord"].(int32)
 			rawData.PastOfficialBehaviorWeight = resultsYesterday["totalDWeight"].(float64)
 			rawData.PastOfficialBehaviorCount = resultsYesterday["totalDCount"].(int32)
-			rawData.PastCustomerizedBehaviorCount = resultsYesterday["totalSCount"].(int32)
-			rawData.PastCustomerizedBehaviorWeight = resultsYesterday["totalSWeight"].(float64)
+			rawData.PastCustomizedBehaviorCount = resultsYesterday["totalSCount"].(int32)
+			rawData.PastCustomizedBehaviorWeight = resultsYesterday["totalSWeight"].(float64)
 		} else {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
 			return rawData, err

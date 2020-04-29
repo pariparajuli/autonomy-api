@@ -19,7 +19,7 @@ type SymptomList interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
 	ListOfficialSymptoms() ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
-	AreaCustomerizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
+	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
 	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
 }
@@ -87,13 +87,13 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 	return nil
 }
 
-// IDToSymptoms return official and customerized symptoms from a list of SymptomType ID
+// IDToSymptoms return official and customized symptoms from a list of SymptomType ID
 func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
 	var foundOfficial []schema.Symptom
-	var foundCustomerized []schema.Symptom
+	var foundCustomized []schema.Symptom
 	var notFound []schema.SymptomType
 	for _, id := range ids {
 		query := bson.M{"_id": string(id)}
@@ -108,30 +108,30 @@ func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []sc
 		if result.Source == schema.OfficialSymptom {
 			foundOfficial = append(foundOfficial, result)
 		} else {
-			foundCustomerized = append(foundCustomerized, result)
+			foundCustomized = append(foundCustomized, result)
 		}
 
 	}
-	return foundOfficial, foundCustomerized, notFound, nil
+	return foundOfficial, foundCustomized, notFound, nil
 }
 
-func (m *mongoDB) AreaCustomerizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error) {
+func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error) {
 	filterStage := bson.D{{"$match", bson.M{"score": bson.M{"$gt": 0}}}}
 	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	log.Debug(fmt.Sprintf("AreaCustomerizedSymptomList location long:%d, lat: %d ", location.Longitude, location.Latitude))
+	log.Debug(fmt.Sprintf("AreaCustomizedSymptomList location long:%d, lat: %d ", location.Longitude, location.Latitude))
 	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
 	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("area  customerized symptom list with error: %s", err)
-		return nil, fmt.Errorf("area  customerized symptom list aggregate with error: %s", err)
+		log.WithField("prefix", mongoLogPrefix).Errorf("area  customized symptom list with error: %s", err)
+		return nil, fmt.Errorf("area  customized symptom list aggregate with error: %s", err)
 	}
 	cbMap := make(map[schema.SymptomType]schema.Symptom, 0)
 	for cur.Next(ctx) {
 		var b schema.SymptomReportData
 		if errDecode := cur.Decode(&b); errDecode != nil {
-			log.WithField("prefix", mongoLogPrefix).Infof("area  customerized symptomwith error: %s", errDecode)
-			return nil, fmt.Errorf("area  customerized symptom decode record with error: %s", errDecode)
+			log.WithField("prefix", mongoLogPrefix).Infof("area  customized symptomwith error: %s", errDecode)
+			return nil, fmt.Errorf("area  customized symptom decode record with error: %s", errDecode)
 		}
 		for _, symptom := range b.CustomizedSymptoms {
 			cbMap[symptom.ID] = symptom

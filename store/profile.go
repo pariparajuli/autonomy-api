@@ -78,7 +78,7 @@ func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, locatio
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
 		updatedBehavior := behaviors
-		for _, existBehavior := range p.CustomerizedBehaviors {
+		for _, existBehavior := range p.CustomizedBehaviors {
 			for _, newBehavior := range behaviors {
 				if newBehavior.ID != existBehavior.ID {
 					updatedBehavior = append(updatedBehavior, existBehavior)
@@ -87,7 +87,7 @@ func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, locatio
 		}
 		opts := options.Update().SetUpsert(false)
 		filter := bson.D{{"account_number", p.AccountNumber}}
-		update := bson.D{{"$set", bson.D{{"customerized_behavior", updatedBehavior}}}}
+		update := bson.D{{"$set", bson.D{{"customized_behavior", updatedBehavior}}}}
 
 		result, err := c.UpdateOne(context.TODO(), filter, update, opts)
 		if result.MatchedCount == 0 || err != nil {
@@ -123,7 +123,7 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
 		updatedSymptom := symptoms
-		for _, existSymptom := range p.CustomerizedSymptom {
+		for _, existSymptom := range p.CustomizedSymptom {
 			for _, newBehavior := range symptoms {
 				if newBehavior.ID != existSymptom.ID {
 					updatedSymptom = append(updatedSymptom, existSymptom)
@@ -132,7 +132,7 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 		}
 		opts := options.Update().SetUpsert(false)
 		filter := bson.D{{"account_number", p.AccountNumber}}
-		update := bson.D{{"$set", bson.D{{"customerized_symptom", updatedSymptom}}}}
+		update := bson.D{{"$set", bson.D{{"customized_symptom", updatedSymptom}}}}
 
 		result, err := c.UpdateOne(context.TODO(), filter, update, opts)
 		if result.MatchedCount == 0 || err != nil {

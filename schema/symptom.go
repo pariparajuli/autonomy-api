@@ -75,8 +75,8 @@ type SymptomReportData struct {
 
 func (s *SymptomReportData) MarshalJSON() ([]byte, error) {
 	officialSymptoms := s.OfficialSymptoms
-	customerizedSymptoms := s.CustomizedSymptoms
-	allSymptoms := append(officialSymptoms, customerizedSymptoms...)
+	customizedSymptoms := s.CustomizedSymptoms
+	allSymptoms := append(officialSymptoms, customizedSymptoms...)
 	symptoms := make([]SymptomType, 0)
 
 	for _, sym := range allSymptoms {

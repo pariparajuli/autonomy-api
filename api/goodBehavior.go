@@ -3,12 +3,14 @@ package api
 import (
 	"net/http"
 	"time"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
+	
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -56,13 +58,13 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
-	customerized, err := s.areaBehaviorInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
+	customized, err := s.areaBehaviorInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 	}
 
-	if customerized != nil {
-		official = append(official, customerized...)
+	if customized != nil {
+		official = append(official, customized...)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"behaviors": official})
@@ -98,22 +100,22 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	official, customerized, err := s.getBehaviors(params.Behaviors)
+	official, customized, err := s.getBehaviors(params.Behaviors)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	behaviorWeight, selfDefinedWeight := behaviorWeight(official, customerized)
+	behaviorWeight, selfDefinedWeight := behaviorWeight(official, customized)
 
 	data := schema.BehaviorReportData{
-		ProfileID:             account.Profile.ID.String(),
-		AccountNumber:         account.Profile.AccountNumber,
-		OfficialBehaviors:     official,
-		CustomerizedBehaviors: customerized,
-		OfficialWeight:        behaviorWeight,
-		CustomerizedWeight:    selfDefinedWeight,
-		Location:              schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		Timestamp:             time.Now().UTC().Unix(),
+		ProfileID:           account.Profile.ID.String(),
+		AccountNumber:       account.Profile.AccountNumber,
+		OfficialBehaviors:   official,
+		CustomizedBehaviors: customized,
+		OfficialWeight:      behaviorWeight,
+		CustomizedWeight:    selfDefinedWeight,
+		Location:            schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		Timestamp:           time.Now().UTC().Unix(),
 	}
 
 	err = s.mongoStore.GoodBehaviorSave(&data)
@@ -162,7 +164,7 @@ func (s *Server) getBehaviors(ids []string) ([]schema.Behavior, []schema.Behavio
 	return official, customeried, err
 }
 
-func behaviorWeight(official []schema.Behavior, customerized []schema.Behavior) (float64, float64) {
+func behaviorWeight(official []schema.Behavior, customized []schema.Behavior) (float64, float64) {
 	var sum float64
 	for _, behavior := range official {
 		w, ok := schema.DefaultBehaviorWeightMatrix[behavior.ID]
@@ -170,11 +172,11 @@ func behaviorWeight(official []schema.Behavior, customerized []schema.Behavior) 
 			sum = sum + float64(w.Weight)
 		}
 	}
-	return sum, float64(len(customerized))
+	return sum, float64(len(customized))
 }
 
 func (s *Server) userBehaviorInfection(infectedUser *schema.BehaviorReportData, loc schema.Location) error {
-	err := s.mongoStore.UpdateAreaProfileBehavior(infectedUser.CustomerizedBehaviors, loc)
+	err := s.mongoStore.UpdateAreaProfileBehavior(infectedUser.CustomizedBehaviors, loc)
 	if err != nil {
 		return err
 	}
@@ -182,7 +184,7 @@ func (s *Server) userBehaviorInfection(infectedUser *schema.BehaviorReportData, 
 }
 
 func (s *Server) areaBehaviorInfection(distance int, loc schema.Location) ([]schema.Behavior, error) {
-	list, err := s.mongoStore.AreaCustomerizedBehaviorList(distance, loc)
+	list, err := s.mongoStore.AreaCustomizedBehaviorList(distance, loc)
 	if err != nil {
 		return nil, err
 	}
