@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
@@ -40,18 +39,10 @@ func (s *Server) getSymptoms(c *gin.Context) {
 		return
 	}
 	var loc *schema.Location
-	gp := c.GetHeader("Geo-Position")
-
-	if "" == gp {
-		loc = account.Profile.State.LastLocation
-		if nil == loc {
-			abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
-			return
-		}
-	}
-
-	if lat, long, err := parseGeoPosition(gp); err == nil {
-		loc = &schema.Location{Latitude: lat, Longitude: long}
+	loc = account.Profile.State.LastLocation
+	if nil == loc {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+		return
 	}
 	symptoms, err := s.mongoStore.ListOfficialSymptoms()
 	if err != nil {
