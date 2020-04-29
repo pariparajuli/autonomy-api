@@ -69,7 +69,6 @@ func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, locatio
 		return fmt.Errorf("nearest distance query with error: %s", err)
 	}
 
-	var profiles []schema.Profile
 	for cur.Next(ctx) {
 		var p schema.Profile
 
@@ -97,7 +96,6 @@ func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, locatio
 		if result.MatchedCount == 0 || err != nil {
 			return err
 		}
-		profiles = append(profiles, p)
 	}
 
 	return nil
@@ -118,24 +116,22 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 		return fmt.Errorf("nearest distance query with error: %s", err)
 	}
 
-	var profiles []schema.Profile
 	for cur.Next(ctx) {
 		var p schema.Profile
-
 		if errDecode := cur.Decode(&p); errDecode != nil {
 			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
 		temp := make(map[schema.SymptomType]schema.Symptom, 0)
-		for _, b := range symptoms {
-			temp[b.ID] = b
+		for _, s := range symptoms {
+			temp[s.ID] = s
 		}
-		for _, b := range p.CustomizedSymptom {
-			temp[b.ID] = b
+		for _, s := range p.CustomizedSymptom {
+			temp[s.ID] = s
 		}
 		var updatedSymptom []schema.Symptom
-		for _, b := range temp {
-			updatedSymptom = append(updatedSymptom, b)
+		for _, s := range temp {
+			updatedSymptom = append(updatedSymptom, s)
 		}
 
 		opts := options.Update().SetUpsert(false)
@@ -146,7 +142,6 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 		if result.MatchedCount == 0 || err != nil {
 			return err
 		}
-		profiles = append(profiles, p)
 	}
 
 	return nil
