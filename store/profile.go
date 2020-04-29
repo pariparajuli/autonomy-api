@@ -77,14 +77,18 @@ func (m *mongoDB) UpdateAreaProfileBehavior(behaviors []schema.Behavior, locatio
 			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
-		updatedBehavior := behaviors
-		for _, existBehavior := range p.CustomizedBehaviors {
-			for _, newBehavior := range behaviors {
-				if newBehavior.ID != existBehavior.ID {
-					updatedBehavior = append(updatedBehavior, existBehavior)
-				}
-			}
+		temp := make(map[schema.GoodBehaviorType]schema.Behavior, 0)
+		for _, b := range behaviors {
+			temp[b.ID] = b
 		}
+		for _, b := range p.CustomizedBehaviors {
+			temp[b.ID] = b
+		}
+		var updatedBehavior []schema.Behavior
+		for _, b := range temp {
+			updatedBehavior = append(updatedBehavior, b)
+		}
+
 		opts := options.Update().SetUpsert(false)
 		filter := bson.D{{"account_number", p.AccountNumber}}
 		update := bson.D{{"$set", bson.D{{"customized_behavior", updatedBehavior}}}}
@@ -122,14 +126,18 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
-		updatedSymptom := symptoms
-		for _, existSymptom := range p.CustomizedSymptom {
-			for _, newBehavior := range symptoms {
-				if newBehavior.ID != existSymptom.ID {
-					updatedSymptom = append(updatedSymptom, existSymptom)
-				}
-			}
+		temp := make(map[schema.SymptomType]schema.Symptom, 0)
+		for _, b := range symptoms {
+			temp[b.ID] = b
 		}
+		for _, b := range p.CustomizedSymptom {
+			temp[b.ID] = b
+		}
+		var updatedSymptom []schema.Symptom
+		for _, b := range temp {
+			updatedSymptom = append(updatedSymptom, b)
+		}
+
 		opts := options.Update().SetUpsert(false)
 		filter := bson.D{{"account_number", p.AccountNumber}}
 		update := bson.D{{"$set", bson.D{{"customized_symptom", updatedSymptom}}}}
