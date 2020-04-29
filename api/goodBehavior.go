@@ -57,7 +57,9 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
-	customized, err := s.areaBehaviorInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
+
+	customized, err := s.mongoStore.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, *loc)
+
 	if err != nil {
 		c.Error(err)
 	}
@@ -122,7 +124,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	err = s.userBehaviorInfection(&data, *loc)
+	err = s.mongoStore.UpdateAreaProfileBehavior(data.CustomizedBehaviors, *loc)
 	if err != nil { // do nothing
 		c.Error(err)
 	}
@@ -172,20 +174,4 @@ func behaviorWeight(official []schema.Behavior, customized []schema.Behavior) (f
 		}
 	}
 	return sum, float64(len(customized))
-}
-
-func (s *Server) userBehaviorInfection(infectedUser *schema.BehaviorReportData, loc schema.Location) error {
-	err := s.mongoStore.UpdateAreaProfileBehavior(infectedUser.CustomizedBehaviors, loc)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Server) areaBehaviorInfection(distance int, loc schema.Location) ([]schema.Behavior, error) {
-	list, err := s.mongoStore.AreaCustomizedBehaviorList(distance, loc)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
 }

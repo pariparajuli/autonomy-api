@@ -57,7 +57,8 @@ func (s *Server) getSymptoms(c *gin.Context) {
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
-	customized, err := s.areaSymptomInfection(consts.NEARBY_DISTANCE_RANGE, *loc)
+
+	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 	}
@@ -114,7 +115,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		return
 	}
 
-	err = s.userSymptomInfection(&data, *loc)
+	err = s.mongoStore.UpdateAreaProfileSymptom(data.CustomizedSymptoms, *loc)
 	if err != nil { // do nothing
 		c.Error(err)
 	}
@@ -164,6 +165,7 @@ func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symp
 	official, customeried, _, err := s.mongoStore.IDToSymptoms(syIDs)
 	return official, customeried, err
 }
+
 func (s *Server) userSymptomInfection(infectedUser *schema.SymptomReportData, loc schema.Location) error {
 	err := s.mongoStore.UpdateAreaProfileSymptom(infectedUser.CustomizedSymptoms, loc)
 	if err != nil {
