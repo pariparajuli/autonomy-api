@@ -23,7 +23,7 @@ func behaviorScore(mongo store.MongoStore, radiusMeter int, location schema.Loca
 	}
 	score := 100 * nearbyScore / topScore
 	scorePast := 100 * nearbyScorePast / topScorePast
-	deltaInPercent := (score - scorePast/score) * 100
+	deltaInPercent := (score - scorePast/scorePast) * 100
 	totalReportedCount := float64(rawData.OfficialBehaviorCount + rawData.CustomizedBehaviorCount)
 	deltaReportedCountPast := totalReportedCount - (float64(rawData.PastCustomizedBehaviorCount + rawData.PastOfficialBehaviorCount))
 	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast, nil
