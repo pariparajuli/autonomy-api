@@ -119,9 +119,10 @@ func (s *Server) getProfileFormula(c *gin.Context) {
 	if coefficient == nil {
 		isDefaultFormula = true
 		coefficient = &schema.ScoreCoefficient{
-			Symptoms:  scoreUtil.DefaultScoreV1SymptomCoefficient,
-			Behaviors: scoreUtil.DefaultScoreV1BehaviorCoefficient,
-			Confirms:  scoreUtil.DefaultScoreV1ConfirmCoefficient,
+			Symptoms:       scoreUtil.DefaultScoreV1SymptomCoefficient,
+			Behaviors:      scoreUtil.DefaultScoreV1BehaviorCoefficient,
+			Confirms:       scoreUtil.DefaultScoreV1ConfirmCoefficient,
+			SymptomWeights: schema.DefaultSymptomWeights,
 		}
 	}
 

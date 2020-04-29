@@ -7,16 +7,20 @@ const (
 )
 
 // SymptomWeights is structure for customized symptom weights
-type SymptomWeights struct {
-	BluishFace      int64 `json:"face" bson:"face"`
-	BreathShortness int64 `json:"breath" bson:"breath"`
-	ChestPain       int64 `json:"chest" bson:"chest"`
-	DryCough        int64 `json:"cough" bson:"cough"`
-	Fatigue         int64 `json:"fatigue" bson:"fatigue"`
-	Fever           int64 `json:"fever" bson:"fever"`
-	NasalCongestion int64 `json:"nasal" bson:"nasal"`
-	SoreThroat      int64 `json:"throat" bson:"throat"`
-}
+type SymptomWeights map[SymptomType]float64
+
+var (
+	DefaultSymptomWeights = SymptomWeights{
+		Fever:   3,
+		Cough:   2,
+		Fatigue: 1,
+		Breath:  1,
+		Nasal:   1,
+		Throat:  1,
+		Chest:   2,
+		Face:    2,
+	}
+)
 
 // ScoreCoefficient is structure for all customized weights for calculating personal score
 type ScoreCoefficient struct {
