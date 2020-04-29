@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-
 )
 
 func (s *Server) createSymptom(c *gin.Context) {
@@ -54,7 +53,7 @@ func (s *Server) getSymptoms(c *gin.Context) {
 	if lat, long, err := parseGeoPosition(gp); err == nil {
 		loc = &schema.Location{Latitude: lat, Longitude: long}
 	}
-	official, err := s.mongoStore.ListOfficialSymptoms()
+	symptoms, err := s.mongoStore.ListOfficialSymptoms()
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
@@ -64,10 +63,10 @@ func (s *Server) getSymptoms(c *gin.Context) {
 	}
 
 	if customized != nil {
-		official = append(official, customized...)
+		symptoms = append(symptoms, customized...)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"symptoms": official})
+	c.JSON(http.StatusOK, gin.H{"symptoms": symptoms})
 }
 
 func (s *Server) reportSymptoms(c *gin.Context) {
