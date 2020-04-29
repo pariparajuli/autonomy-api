@@ -210,8 +210,9 @@ func (s *Server) setupRouter() *gin.Engine {
 	behaviorRoute := apiRoute.Group("/behaviors")
 	behaviorRoute.Use(s.recognizeAccountMiddleware())
 	{
+		behaviorRoute.POST("", s.createBehavior)
 		behaviorRoute.GET("", s.goodBehaviors)
-		behaviorRoute.POST("", s.reportBehaviors)
+		behaviorRoute.POST("/report", s.reportBehaviors)
 	}
 
 	historyRoute := apiRoute.Group("/history")

@@ -17,7 +17,11 @@ import (
 
 type SymptomList interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
-	ListSymptoms() ([]schema.Symptom, error)
+	ListOfficialSymptoms() ([]schema.Symptom, error)
+	SymptomReportSave(data *schema.SymptomReportData) error
+	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
+	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
+	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
 }
 
 type SymptomReport interface {
@@ -48,7 +52,7 @@ func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
 	return string(symptom.ID), nil
 }
 
-func (m *mongoDB) ListSymptoms() ([]schema.Symptom, error) {
+func (m *mongoDB) ListOfficialSymptoms() ([]schema.Symptom, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
@@ -64,7 +68,6 @@ func (m *mongoDB) ListSymptoms() ([]schema.Symptom, error) {
 	if err := cursor.All(ctx, &symptoms); err != nil {
 		return nil, err
 	}
-
 	return symptoms, nil
 }
 
@@ -84,13 +87,71 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 	return nil
 }
 
-// NearestGoodBehaviorScore return  the total behavior score and delta score of users within distInMeter range
+// IDToSymptoms return official and customized symptoms from a list of SymptomType ID
+func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	c := m.client.Database(m.database)
+	var foundOfficial []schema.Symptom
+	var foundCustomized []schema.Symptom
+	var notFound []schema.SymptomType
+	for _, id := range ids {
+		query := bson.M{"_id": string(id)}
+		var result schema.Symptom
+		err := c.Collection(schema.SymptomCollection).FindOne(ctx, query).Decode(&result)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				notFound = append(notFound, id)
+			} else {
+				return nil, nil, nil, err
+			}
+		}
+		if result.Source == schema.OfficialSymptom {
+			foundOfficial = append(foundOfficial, result)
+		} else {
+			foundCustomized = append(foundCustomized, result)
+		}
+
+	}
+	return foundOfficial, foundCustomized, notFound, nil
+}
+
+func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error) {
+	filterStage := bson.D{{"$match", bson.M{"score": bson.M{"$gt": 0}}}}
+	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	log.Debug(fmt.Sprintf("AreaCustomizedSymptomList location long:%d, lat: %d ", location.Longitude, location.Latitude))
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("area  customized symptom list with error: %s", err)
+		return nil, fmt.Errorf("area  customized symptom list aggregate with error: %s", err)
+	}
+	cbMap := make(map[schema.SymptomType]schema.Symptom, 0)
+	for cur.Next(ctx) {
+		var b schema.SymptomReportData
+		if errDecode := cur.Decode(&b); errDecode != nil {
+			log.WithField("prefix", mongoLogPrefix).Infof("area  customized symptomwith error: %s", errDecode)
+			return nil, fmt.Errorf("area  customized symptom decode record with error: %s", errDecode)
+		}
+		for _, symptom := range b.CustomizedSymptoms {
+			cbMap[symptom.ID] = symptom
+		}
+	}
+	var cSymptoms []schema.Symptom
+	for _, b := range cbMap {
+		cSymptoms = append(cSymptoms, b)
+	}
+	return cSymptoms, nil
+}
+
+// NearestGoodBehaviorScore return  the total symptom score and delta score of users within distInMeter range
 func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
 	collection := db.Collection(schema.SymptomReportCollection)
-	todayBegin := todayInterval()
+	todayBegin := todayStartAt()
 	log.Debugf("time period today > %v, yesterday %v~ %v ", todayBegin, todayBegin-86400, todayBegin)
 	geoStage := bson.D{{"$geoNear", bson.M{
 		"near":          bson.M{"type": "Point", "coordinates": bson.A{location.Longitude, location.Latitude}},
@@ -134,7 +195,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sum = sum + result.SymptomScore
 		count++
-		totalSymptom = totalSymptom + len(result.Symptoms)
+		totalSymptom = totalSymptom + len(result.OfficialSymptoms)
 	}
 	score := float64(100)
 	if count > 0 {
@@ -161,7 +222,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		}
 		sumYesterday = sumYesterday + result.SymptomScore
 		countYesterday++
-		totalSymptomYesterday = totalSymptomYesterday + len(result.Symptoms)
+		totalSymptomYesterday = totalSymptomYesterday + len(result.OfficialSymptoms)
 	}
 	scoreYesterday := float64(100)
 	if countYesterday > 0 {

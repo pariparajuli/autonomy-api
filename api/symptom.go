@@ -4,9 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
-
+	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
@@ -33,10 +32,30 @@ func (s *Server) createSymptom(c *gin.Context) {
 }
 
 func (s *Server) getSymptoms(c *gin.Context) {
-	symptoms, err := s.mongoStore.ListSymptoms()
-	if err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+	a := c.MustGet("account")
+	account, ok := a.(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
+	}
+	var loc *schema.Location
+	loc = account.Profile.State.LastLocation
+	if nil == loc {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+		return
+	}
+	symptoms, err := s.mongoStore.ListOfficialSymptoms()
+	if err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+	}
+
+	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		c.Error(err)
+	}
+
+	if customized != nil {
+		symptoms = append(symptoms, customized...)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"symptoms": symptoms})
@@ -64,22 +83,32 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}
-	symptoms, symptomIDs := getSymptoms(params.Symptoms)
-
-	symptomScore := score(symptoms)
-	data := schema.SymptomReportData{
-		ProfileID:     account.Profile.ID.String(),
-		AccountNumber: account.Profile.AccountNumber,
-		Symptoms:      symptomIDs,
-		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		SymptomScore:  symptomScore,
-		Timestamp:     time.Now().UTC().Unix(),
-	}
-
-	err := s.mongoStore.SymptomReportSave(&data)
+	official, customized, err := s.findSymptomsInDB(params.Symptoms)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
+	}
+	totalSymptoms := append(official, customized...)
+	symptomScore := score(totalSymptoms)
+	data := schema.SymptomReportData{
+		ProfileID:          account.Profile.ID.String(),
+		AccountNumber:      account.Profile.AccountNumber,
+		OfficialSymptoms:   official,
+		Location:           schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		CustomizedSymptoms: customized,
+		SymptomScore:       symptomScore,
+		Timestamp:          time.Now().UTC().Unix(),
+	}
+
+	err = s.mongoStore.SymptomReportSave(&data)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	err = s.mongoStore.UpdateAreaProfileSymptom(data.CustomizedSymptoms, *loc)
+	if err != nil { // do nothing
+		c.Error(err)
 	}
 
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
@@ -119,16 +148,27 @@ func score(symptoms []schema.Symptom) float64 {
 	return sum
 }
 
-func getSymptoms(ids []string) ([]schema.Symptom, []string) {
-	var symptoms []schema.Symptom
-	var syIDs []string
+func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symptom, error) {
+	var syIDs []schema.SymptomType
 	for _, id := range ids {
-		st := schema.SymptomType(id)
-		sy, ok := schema.SymptomFromID[st]
-		if ok {
-			symptoms = append(symptoms, sy)
-			syIDs = append(syIDs, string(sy.ID))
-		}
+		syIDs = append(syIDs, schema.SymptomType(id))
 	}
-	return symptoms, syIDs
+	official, customeried, _, err := s.mongoStore.IDToSymptoms(syIDs)
+	return official, customeried, err
+}
+
+func (s *Server) userSymptomInfection(infectedUser *schema.SymptomReportData, loc schema.Location) error {
+	err := s.mongoStore.UpdateAreaProfileSymptom(infectedUser.CustomizedSymptoms, loc)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) areaSymptomInfection(distance int, loc schema.Location) ([]schema.Symptom, error) {
+	list, err := s.mongoStore.AreaCustomizedSymptomList(distance, loc)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
