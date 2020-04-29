@@ -120,8 +120,9 @@ func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavio
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				notFound = append(notFound, id)
+			} else {
+				return nil, nil, nil, err
 			}
-			return nil, nil, nil, err
 		}
 		if result.Source == schema.OfficialBehavior {
 			foundOfficial = append(foundOfficial, result)

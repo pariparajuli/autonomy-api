@@ -102,8 +102,9 @@ func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []sc
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				notFound = append(notFound, id)
+			} else {
+				return nil, nil, nil, err
 			}
-			return nil, nil, nil, err
 		}
 		if result.Source == schema.OfficialSymptom {
 			foundOfficial = append(foundOfficial, result)
@@ -144,7 +145,7 @@ func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Loc
 	return cSymptoms, nil
 }
 
-// NearestGoodBehaviorScore return  the total behavior score and delta score of users within distInMeter range
+// NearestGoodBehaviorScore return  the total symptom score and delta score of users within distInMeter range
 func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
