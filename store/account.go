@@ -33,15 +33,8 @@ type MongoAccount interface {
 	UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error
 	ResetProfileCoefficient(accountNumber string) error
 	ProfileMetric(accountNumber string) (*schema.Metric, error)
-<<<<<<< HEAD
-=======
-	GetProfile(accountNumber string) (*schema.Profile, error)
 	UpdateAreaProfileBehavior(behaviors []schema.Behavior, location schema.Location) error
-<<<<<<< HEAD
->>>>>>> add infection mode of behavior
-=======
 	UpdateAreaProfileSymptom(symptoms []schema.Symptom, location schema.Location) error
->>>>>>> add infection of customerized symptom
 }
 
 var (

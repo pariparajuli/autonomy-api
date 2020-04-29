@@ -11,7 +11,7 @@ import (
 
 type History interface {
 	GetReportedSymptoms(accountNumber string, earierThan, limit int64) ([]*schema.SymptomReportData, error)
-	GetReportedBehaviors(accountNumber string, earierThan, limit int64) ([]*schema.GoodBehaviorData, error)
+	GetReportedBehaviors(accountNumber string, earierThan, limit int64) ([]*schema.BehaviorReportData, error)
 	GetReportedLocations(accountNumber string, earierThan, limit int64) ([]schema.Geographic, error)
 }
 
