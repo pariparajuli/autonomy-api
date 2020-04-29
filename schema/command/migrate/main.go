@@ -113,7 +113,7 @@ func migrateMongo() error {
 		return err
 	}
 	if err := setupCollectionBehavior(ctx, client); err != nil {
-		fmt.Println("failed to set up collection `symptom`: ", err)
+		fmt.Println("failed to set up collection `behavior`: ", err)
 		return err
 	}
 	if err := setupCollectionBehaviorReport(client); err != nil {
