@@ -1,21 +1,21 @@
 package schema
 
 type ConfirmDetail struct {
-	Yesterday int `json:"yesterday" bson:"yesterday"`
-	Today     int `json:"today" bson:"today"`
+	Yesterday float64 `json:"yesterday" bson:"yesterday"`
+	Today     float64 `json:"today" bson:"today"`
 }
 
 type BehaviorDetail struct {
-	BehaviorTotal     int     `json:"behavior_total" bson:"behavior_total"`
-	TotalPeople       int     `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson int     `json:"max_score_per_person" bson:"max_score_per_person"`
+	BehaviorTotal     float64 `json:"behavior_total" bson:"behavior_total"`
+	TotalPeople       float64 `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson float64 `json:"max_score_per_person" bson:"max_score_per_person"`
 	Score             float64 `json:"score" bson:"score"`
 }
 
 type SymptomDetail struct {
-	SymptomTotal      int     `json:"symptom_total" bson:"symptom_total"`
-	TotalPeople       int     `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson int     `json:"max_score_per_person" bson:"max_score_per_person"`
+	SymptomTotal      float64 `json:"symptom_total" bson:"symptom_total"`
+	TotalPeople       float64 `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson float64 `json:"max_score_per_person" bson:"max_score_per_person"`
 	Score             float64 `json:"score" bson:"score"`
 }
 
