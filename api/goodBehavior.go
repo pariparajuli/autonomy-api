@@ -4,11 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -47,6 +46,7 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	behaviors, err := s.mongoStore.ListOfficialBehavior()
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+		return
 	}
 
 	customized, err := s.mongoStore.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, *loc)

@@ -126,7 +126,7 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 		for _, s := range symptoms {
 			temp[s.ID] = s
 		}
-		for _, s := range p.CustomizedSymptom {
+		for _, s := range p.CustomizedSymptoms {
 			temp[s.ID] = s
 		}
 		var updatedSymptom []schema.Symptom
