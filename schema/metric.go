@@ -1,5 +1,30 @@
 package schema
 
+type ConfirmDetail struct {
+	Yesterday int `json:"yesterday" bson:"yesterday"`
+	Today     int `json:"today" bson:"today"`
+}
+
+type BehaviorDetail struct {
+	BehaviorTotal     int     `json:"behavior_total" bson:"behavior_total"`
+	TotalPeople       int     `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson int     `json:"max_score_per_person" bson:"max_score_per_person"`
+	Score             float64 `json:"score" bson:"score"`
+}
+
+type SymptomDetail struct {
+	SymptomTotal      int     `json:"symptom_total" bson:"symptom_total"`
+	TotalPeople       int     `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson int     `json:"max_score_per_person" bson:"max_score_per_person"`
+	Score             float64 `json:"score" bson:"score"`
+}
+
+type Details struct {
+	Confirm   ConfirmDetail  `json:"confirm" bson:"confirm"`
+	Behaviors BehaviorDetail `json:"behaviors" bson:"behaviors"`
+	Symptoms  SymptomDetail  `json:"symptoms" bson:"symptoms"`
+}
+
 type Metric struct {
 	Confirm       float64 `json:"confirm" bson:"confirm"`
 	ConfirmDelta  float64 `json:"confirm_delta" bson:"confirm_delta"`
@@ -12,4 +37,5 @@ type Metric struct {
 	BehaviorScore float64 `json:"behavior_score" bson:"behavior_score"`
 	Score         float64 `json:"score" bson:"score"`
 	LastUpdate    int64   `bson:"last_update"`
+	Details       Details `json:"details" bson:"details"`
 }
