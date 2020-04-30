@@ -28,6 +28,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
+	fmt.Println("**************behaviorData", behaviorData, behaviorScore, behaviorDelta, behaviorCount)
 
 	officialSymptomsCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
@@ -93,9 +94,9 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
-			metric.SymptomScore,
-			metric.BehaviorScore,
-			metric.ConfirmedScore,
+			metric.SymptomCount,
+			metric.BehaviorCount,
+			metric.ConfirmedCount,
 		)
 	} else {
 		scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
