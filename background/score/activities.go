@@ -3,6 +3,7 @@ package score
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/cadence/activity"
@@ -14,6 +15,7 @@ import (
 )
 
 var ErrInvalidLocation = fmt.Errorf("invalid location")
+var ErrTooFrequentUpdate = fmt.Errorf("too frequent update")
 
 // CalculatePOIStateActivity calculates metrics by the location of a POI
 func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id string) (*schema.Metric, error) {
@@ -32,6 +34,10 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 
 	if poi == nil || poi.Location == nil {
 		return nil, ErrInvalidLocation
+	}
+
+	if time.Since(time.Unix(poi.Metric.LastUpdate, 0)) < 5*time.Second {
+		return nil, ErrTooFrequentUpdate
 	}
 
 	location := schema.Location{

@@ -47,6 +47,9 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 	var metric schema.Metric
 	err := workflow.ExecuteActivity(ctx, s.CalculatePOIStateActivity, id).Get(ctx, &metric)
 	if err != nil {
+		if err == ErrTooFrequentUpdate {
+			return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
+		}
 		logger.Error("Fail to update POI.", zap.Error(err))
 		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
