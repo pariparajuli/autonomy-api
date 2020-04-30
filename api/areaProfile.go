@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
 )
 
 const (
@@ -54,37 +53,21 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		}
 
 		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
-
-		if coefficient := profile.ScoreCoefficient; coefficient != nil {
-			if coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 || // check if the coefficient updates after a metric calculation
-				time.Now().Sub(metricLastUpdate) >= metricUpdateInterval {
-				if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
-					c.Error(err)
-				} else {
-					m.Score = scoreUtil.TotalScoreV1(*coefficient,
-						m.Symptoms,
-						m.Behavior,
-						m.Confirm,
-					)
-					if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
-						c.Error(err)
-					} else {
-						metric = *m
-					}
-				}
-			}
+		var coefficient *schema.ScoreCoefficient
+		if time.Since(metricLastUpdate) >= metricUpdateInterval {
+			// will sync with coefficient = nil
+		} else if coefficient = profile.ScoreCoefficient; coefficient != nil && coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 {
+			// will sync with coefficient = profile.ScoreCoefficient
 		} else {
-			if time.Now().Sub(metricLastUpdate) >= metricUpdateInterval {
-				if m, err := scoreUtil.CalculateMetric(s.mongoStore, location); err != nil {
-					c.Error(err)
-				} else {
-					if err := s.mongoStore.UpdateProfileMetric(account.AccountNumber, *m); err != nil {
-						c.Error(err)
-					} else {
-						metric = *m
-					}
-				}
-			}
+			c.JSON(http.StatusOK, metric)
+			return
+		}
+
+		m, err := s.mongoStore.SyncAccountMetrics(account.AccountNumber, coefficient, location)
+		if err != nil {
+			c.Error(err)
+		} else {
+			metric = *m
 		}
 	}
 

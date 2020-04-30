@@ -34,13 +34,13 @@ func TestCurrentAreaProfile(t *testing.T) {
 	}, nil).Times(1)
 
 	metric := schema.Metric{
-		Confirm:       1,
-		ConfirmDelta:  2,
-		Symptoms:      3,
-		SymptomsDelta: 4,
-		Behavior:      5,
-		BehaviorDelta: 6,
-		Score:         55.66,
+		ConfirmedCount: 1,
+		ConfirmedDelta: 2,
+		SymptomCount:   3,
+		SymptomDelta:   4,
+		BehaviorCount:  5,
+		BehaviorDelta:  6,
+		Score:          55.66,
 	}
 
 	m.EXPECT().GetProfile("1").Return(&schema.Profile{
@@ -50,9 +50,9 @@ func TestCurrentAreaProfile(t *testing.T) {
 			Coordinates: []float64{1.1, 2.2},
 		},
 	}, nil).Times(1)
-	m.EXPECT().NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.Behavior), int(metric.BehaviorDelta), nil).Times(1)
-	m.EXPECT().NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.Symptoms), int(metric.SymptomsDelta), nil).Times(1)
-	m.EXPECT().GetConfirm(gomock.Any()).Return(int(metric.Confirm), int(metric.ConfirmDelta), nil).Times(1)
+	m.EXPECT().NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.BehaviorCount), int(metric.BehaviorDelta), nil).Times(1)
+	m.EXPECT().NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.SymptomCount), int(metric.SymptomDelta), nil).Times(1)
+	m.EXPECT().GetConfirm(gomock.Any()).Return(int(metric.ConfirmedCount), int(metric.ConfirmedDelta), nil).Times(1)
 	m.EXPECT().ConfirmScore(gomock.Any()).Return(metric.Score, nil).Times(1)
 	m.EXPECT().UpdateProfileMetric("1", gomock.Any()).Return(nil).Times(1)
 
@@ -71,11 +71,11 @@ func TestCurrentAreaProfile(t *testing.T) {
 	err := json.Unmarshal([]byte(w.Body.String()), &jResp)
 
 	assert.Nil(t, err, "wrong json unmarshal")
-	assert.Equal(t, metric.Confirm, jResp.Confirm, "wrong confirm")
-	assert.Equal(t, metric.ConfirmDelta, jResp.ConfirmDelta, "wrong confirm delta")
-	assert.Equal(t, metric.Symptoms, jResp.Symptoms, "wrong symptoms")
-	assert.Equal(t, metric.SymptomsDelta, jResp.SymptomsDelta, "wrong symptoms delta")
-	assert.Equal(t, metric.Behavior, jResp.Behavior, "wrong behavior")
+	assert.Equal(t, metric.ConfirmedCount, jResp.ConfirmedCount, "wrong confirm")
+	assert.Equal(t, metric.ConfirmedDelta, jResp.ConfirmedDelta, "wrong confirm delta")
+	assert.Equal(t, metric.SymptomCount, jResp.SymptomCount, "wrong symptoms")
+	assert.Equal(t, metric.SymptomDelta, jResp.SymptomDelta, "wrong symptoms delta")
+	assert.Equal(t, metric.BehaviorCount, jResp.BehaviorCount, "wrong behavior")
 	assert.Equal(t, metric.BehaviorDelta, jResp.BehaviorDelta, "wrong behavior delta")
 	assert.Equal(t, metric.Score, jResp.Score, "wrong score")
 }
@@ -100,13 +100,13 @@ func TestSingleAreaProfile(t *testing.T) {
 	poiID, _ := primitive.ObjectIDFromHex("5e8bf47a0ff4f2d27df71bb5")
 
 	metric := schema.Metric{
-		Confirm:       9,
-		ConfirmDelta:  8,
-		Symptoms:      7,
-		SymptomsDelta: 6,
-		Behavior:      5,
-		BehaviorDelta: 4,
-		Score:         3,
+		ConfirmedCount: 9,
+		ConfirmedDelta: 8,
+		SymptomCount:   7,
+		SymptomDelta:   6,
+		BehaviorCount:  5,
+		BehaviorDelta:  4,
+		Score:          3,
 	}
 
 	m.EXPECT().GetPOIMetrics(poiID).Return(&metric, nil).Times(1)

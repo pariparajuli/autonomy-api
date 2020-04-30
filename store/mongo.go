@@ -28,6 +28,7 @@ type MongoStore interface {
 	ConfirmOperator
 	History
 	Geographic
+	Metric
 }
 
 // Closer - close db connection

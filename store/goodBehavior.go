@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 const (
@@ -30,23 +31,10 @@ const (
 type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
-	NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error)
+	NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, error)
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior() ([]schema.Behavior, error)
-}
-
-type NearestGoodBehaviorData struct {
-	TotalRecordCount             int32
-	OfficialBehaviorWeight       float64
-	OfficialBehaviorCount        int32
-	CustomizedBehaviorWeight     float64
-	CustomizedBehaviorCount      int32
-	PastTotalRecordCount         int32
-	PastOfficialBehaviorWeight   float64
-	PastOfficialBehaviorCount    int32
-	PastCustomizedBehaviorWeight float64
-	PastCustomizedBehaviorCount  int32
 }
 
 func (m *mongoDB) ListOfficialBehavior() ([]schema.Behavior, error) {
@@ -165,7 +153,7 @@ func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Lo
 }
 
 // NearestGoodBehavior returns NearestGoodBehaviorData which caculates from location within distInMeter distance
-func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (NearestGoodBehaviorData, error) {
+func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
@@ -192,11 +180,11 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		{"totalRecord", bson.D{{"$sum", 1}}},
 	}}}
 
-	var rawData NearestGoodBehaviorData
+	var rawData score.NearestGoodBehaviorData
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return NearestGoodBehaviorData{}, err
+		return score.NearestGoodBehaviorData{}, err
 	}
 	var results bson.M
 	if cursor.Next(ctx) {
@@ -215,7 +203,7 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return NearestGoodBehaviorData{}, err
+		return score.NearestGoodBehaviorData{}, err
 	}
 	var resultsYesterday bson.M
 	if cursorYesterday.Next(ctx) {

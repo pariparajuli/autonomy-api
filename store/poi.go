@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
 )
 
 var (
@@ -64,12 +65,38 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		}
 	}
 
-	poiDesc := schema.ProfilePOI{
-		ID:      poi.ID,
-		Alias:   alias,
-		Address: address,
-		Score:   poi.Score,
+	profile, err := m.GetProfile(accountNumber)
+	if err != nil {
+		return nil, err
 	}
+
+	if time.Since(time.Unix(poi.Metric.LastUpdate, 0)) > metricUpdateInterval {
+		newMetric, err := m.SyncPOIMetrics(poi.ID, schema.Location{
+			Latitude:  lat,
+			Longitude: lon,
+		})
+		if err != nil {
+			return nil, err
+		}
+		poi.Metric = *newMetric
+	}
+
+	// the default score for a POI is calculated from RefreshPOIMetrics
+	profilePOIScore := poi.Metric.Score
+
+	if profile.ScoreCoefficient != nil {
+		profilePOIScore = scoreUtil.TotalScoreV1(*profile.ScoreCoefficient,
+			poi.Metric.SymptomScore, poi.Metric.BehaviorScore, poi.Metric.ConfirmedScore)
+	}
+
+	poiDesc := schema.ProfilePOI{
+		ID:        poi.ID,
+		Alias:     alias,
+		Address:   address,
+		Score:     profilePOIScore,
+		UpdatedAt: time.Now().UTC(),
+	}
+
 	if err := m.AppendPOIToAccountProfile(accountNumber, poiDesc); err != nil {
 		return nil, err
 	}
@@ -316,6 +343,8 @@ func (m *mongoDB) UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric
 	query := bson.M{
 		"_id": poiID,
 	}
+
+	metric.LastUpdate = time.Now().Unix()
 	update := bson.M{
 		"$set": bson.M{
 			"metric": metric,

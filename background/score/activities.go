@@ -40,7 +40,12 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 	}
 
 	logger.Info("Calculate metric by location.", zap.Any("location", location))
-	return score.CalculateMetric(s.mongo, location)
+	rawMetrics, err := s.mongo.CollectRawMetrics(location)
+	if err != nil {
+		return nil, err
+	}
+
+	return score.CalculateMetric(*rawMetrics)
 }
 
 // RefreshLocationStateActivity updates the metrics as well as the score if the POI id
@@ -56,6 +61,10 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
+		if err := s.mongo.UpdatePOIMetric(id, metric); err != nil {
+			return nil, err
+		}
+
 		profiles, err := s.mongo.GetProfilesByPOI(poiID)
 		if err != nil {
 			return nil, err
@@ -63,7 +72,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 		for _, profile := range profiles {
 			if profile.ScoreCoefficient != nil {
-				metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmScore)
+				metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
 			}
 
 			if err := s.mongo.UpdateProfilePOIMetric(profile.AccountNumber, id, metric); err != nil {
@@ -87,10 +96,10 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 		}
 
 		if profile.ScoreCoefficient != nil {
-			metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmScore)
+			metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
 		}
 
-		if err := s.mongo.UpdateProfileMetric(accountNumber, metric); err != nil {
+		if err := s.mongo.UpdateProfileMetric(accountNumber, &metric); err != nil {
 			return nil, err
 		}
 
@@ -153,5 +162,10 @@ func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, a
 	}
 
 	logger.Info("Calculate metric by location.", zap.Any("location", location))
-	return score.CalculateMetric(s.mongo, location)
+	rawMetrics, err := s.mongo.CollectRawMetrics(location)
+	if err != nil {
+		return nil, err
+	}
+
+	return score.CalculateMetric(*rawMetrics)
 }

@@ -2,14 +2,22 @@ package score
 
 import (
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/store"
 )
 
-func behaviorScore(mongo store.MongoStore, radiusMeter int, location schema.Location) (float64, float64, float64, float64, error) {
-	rawData, err := mongo.NearestGoodBehavior(radiusMeter, location)
-	if err != nil {
-		return 0, 0, 0, 0, err
-	}
+type NearestGoodBehaviorData struct {
+	TotalRecordCount             int32
+	OfficialBehaviorWeight       float64
+	OfficialBehaviorCount        int32
+	CustomizedBehaviorWeight     float64
+	CustomizedBehaviorCount      int32
+	PastTotalRecordCount         int32
+	PastOfficialBehaviorWeight   float64
+	PastOfficialBehaviorCount    int32
+	PastCustomizedBehaviorWeight float64
+	PastCustomizedBehaviorCount  int32
+}
+
+func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, float64, error) {
 	// Score Rule:  Self defined weight can not exceed more than 1/2 of weight, if it exceeds 1/2 of weight, it counts as 1/2 of weight
 	topScore := float64(rawData.TotalRecordCount)*schema.TotalOfficialBehaviorWeight + rawData.CustomizedBehaviorWeight
 	nearbyScore := rawData.OfficialBehaviorWeight + rawData.CustomizedBehaviorWeight

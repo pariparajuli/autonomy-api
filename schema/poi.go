@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,14 +18,15 @@ type POI struct {
 }
 
 type ProfilePOI struct {
-	ID      primitive.ObjectID `bson:"id" json:"id"`
-	Alias   string             `bson:"alias" json:"alias"`
-	Address string             `bson:"address" json:"address"`
-	Score   float64            `bson:"score" json:"score"`
+	ID        primitive.ObjectID `bson:"id" json:"id"`
+	Alias     string             `bson:"alias" json:"alias"`
+	Address   string             `bson:"address" json:"address"`
+	Score     float64            `bson:"score" json:"score"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
-// This structure will not store into database, it's only for client response.
-// Data comes from schema Profile.PointsOfInterest & POI
+// POIDetail is a client response **ONLY** structure since the data come
+// from both schema Profile.PointsOfInterest & POI
 type POIDetail struct {
 	ProfilePOI `bson:",inline"`
 	Location   *Location `json:"location"`

@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 type userPOI struct {
@@ -46,14 +44,7 @@ func (s *Server) addPOI(c *gin.Context) {
 		return
 	}
 
-	poiID := poi.ID.Hex()
-	go func() {
-		if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, []primitive.ObjectID{poi.ID}); err != nil {
-			sentry.CaptureException(err)
-		}
-	}()
-
-	body.ID = poiID
+	body.ID = poi.ID.Hex()
 	body.Score = poi.Metric.Score
 	c.JSON(http.StatusOK, body)
 }
