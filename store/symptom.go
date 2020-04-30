@@ -114,12 +114,12 @@ func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []sc
 }
 
 func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error) {
-	filterStage := bson.D{{"$match", bson.M{"score": bson.M{"$gt": 0}}}}
+	nonEmptyArray := bson.D{{"$match", bson.M{"customized_symptoms": bson.M{"$exists": true, "$ne": bson.A{}}}}}
 	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	log.Debug(fmt.Sprintf("AreaCustomizedSymptomList location long:%d, lat: %d ", location.Longitude, location.Latitude))
-	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), nonEmptyArray})
 	if nil != err {
 		log.WithField("prefix", mongoLogPrefix).Errorf("area  customized symptom list with error: %s", err)
 		return nil, fmt.Errorf("area  customized symptom list aggregate with error: %s", err)
