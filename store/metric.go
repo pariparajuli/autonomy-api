@@ -28,7 +28,6 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
-	fmt.Println("**************behaviorData", behaviorData, behaviorScore, behaviorDelta, behaviorCount)
 
 	officialSymptomsCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {

@@ -33,8 +33,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/muesli/reflow v0.1.0 // indirect
-	github.com/onsi/ginkgo v1.12.0 // indirect
-	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/peterh/liner v1.2.0 // indirect
 	github.com/rogpeppe/godef v1.1.2 // indirect
 	github.com/securego/gosec v0.0.0-20200401082031-e946c8c39989 // indirect

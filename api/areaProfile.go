@@ -52,6 +52,7 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 			Longitude: profile.Location.Coordinates[0],
 		}
 
+		// FIXME: return cached result directly if possible; otherwise get coefficient and run SyncAccountMetrics
 		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
 		var coefficient *schema.ScoreCoefficient
 		if time.Since(metricLastUpdate) >= metricUpdateInterval {
@@ -66,6 +67,8 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		m, err := s.mongoStore.SyncAccountMetrics(account.AccountNumber, coefficient, location)
 		if err != nil {
 			c.Error(err)
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
 		} else {
 			metric = *m
 		}
