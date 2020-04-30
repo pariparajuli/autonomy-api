@@ -1,5 +1,9 @@
 package schema
 
+import (
+	"encoding/json"
+)
+
 type GoodBehaviorType string
 
 // OfficialBehaviorMatrix is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
@@ -14,12 +18,12 @@ var OfficialBehaviorMatrix = map[GoodBehaviorType]Behavior{
 
 // DefaultBehaviorWeightMatrix is a map which key is GoodBehavior.ID and value is a object of GoodBehavior
 var DefaultBehaviorWeightMatrix = map[GoodBehaviorType]BehaviorWeight{
-	GoodBehaviorType(CleanHand):        BehaviorWeight{ID: GoodBehaviorType(CleanHand), Weight: 1},
-	GoodBehaviorType(SocialDistancing): BehaviorWeight{ID: GoodBehaviorType(SocialDistancing), Weight: 1},
-	GoodBehaviorType(TouchFace):        BehaviorWeight{ID: GoodBehaviorType(TouchFace), Weight: 1},
-	GoodBehaviorType(WearMask):         BehaviorWeight{ID: GoodBehaviorType(WearMask), Weight: 1},
-	GoodBehaviorType(CoveringCough):    BehaviorWeight{ID: GoodBehaviorType(CoveringCough), Weight: 1},
-	GoodBehaviorType(CleanSurface):     BehaviorWeight{ID: GoodBehaviorType(CleanSurface), Weight: 1},
+	GoodBehaviorType(CleanHand):        {ID: GoodBehaviorType(CleanHand), Weight: 1},
+	GoodBehaviorType(SocialDistancing): {ID: GoodBehaviorType(SocialDistancing), Weight: 1},
+	GoodBehaviorType(TouchFace):        {ID: GoodBehaviorType(TouchFace), Weight: 1},
+	GoodBehaviorType(WearMask):         {ID: GoodBehaviorType(WearMask), Weight: 1},
+	GoodBehaviorType(CoveringCough):    {ID: GoodBehaviorType(CoveringCough), Weight: 1},
+	GoodBehaviorType(CleanSurface):     {ID: GoodBehaviorType(CleanSurface), Weight: 1},
 }
 
 const (
@@ -78,4 +82,20 @@ type BehaviorReportData struct {
 	OfficialWeight      float64    `json:"official_weight" bson:"official_weight"`
 	CustomizedWeight    float64    `json:"customized_weight" bson:"customized_weight"`
 	Timestamp           int64      `json:"ts" bson:"ts"`
+}
+
+func (b *BehaviorReportData) MarshalJSON() ([]byte, error) {
+	allBehaviors := append(b.OfficialBehaviors, b.CustomizedBehaviors...)
+	if allBehaviors == nil {
+		allBehaviors = make([]Behavior, 0)
+	}
+	return json.Marshal(&struct {
+		Behaviors []Behavior `json:"behaviors"`
+		Location  Location   `json:"location"`
+		Timestamp int64      `json:"timestamp"`
+	}{
+		Behaviors: allBehaviors,
+		Location:  Location{Longitude: b.Location.Coordinates[0], Latitude: b.Location.Coordinates[1]},
+		Timestamp: b.Timestamp,
+	})
 }

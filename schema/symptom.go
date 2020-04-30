@@ -66,29 +66,24 @@ var Symptoms = []Symptom{
 type SymptomReportData struct {
 	ProfileID          string    `json:"profile_id" bson:"profile_id"`
 	AccountNumber      string    `json:"account_number" bson:"account_number"`
-	OfficialSymptoms   []Symptom `json:"symptoms" bson:"official_symptoms"`
-	CustomizedSymptoms []Symptom `json:"symptoms" bson:"customized_symptoms"`
+	OfficialSymptoms   []Symptom `json:"official_symptoms" bson:"official_symptoms"`
+	CustomizedSymptoms []Symptom `json:"customized_symptoms" bson:"customized_symptoms"`
 	Location           GeoJSON   `json:"location" bson:"location"`
 	Timestamp          int64     `json:"ts" bson:"ts"`
 	SymptomScore       float64   `json:"score" bson:"score"`
 }
 
 func (s *SymptomReportData) MarshalJSON() ([]byte, error) {
-	officialSymptoms := s.OfficialSymptoms
-	customizedSymptoms := s.CustomizedSymptoms
-	allSymptoms := append(officialSymptoms, customizedSymptoms...)
-	symptoms := make([]SymptomType, 0)
-
-	for _, sym := range allSymptoms {
-		symptoms = append(symptoms, sym.ID)
+	allSymptoms := append(s.OfficialSymptoms, s.CustomizedSymptoms...)
+	if allSymptoms == nil {
+		allSymptoms = make([]Symptom, 0)
 	}
-
 	return json.Marshal(&struct {
-		Symptoms  []SymptomType `json:"symptoms"`
-		Location  Location      `json:"location"`
-		Timestamp int64         `json:"timestamp"`
+		Symptoms  []Symptom `json:"symptoms"`
+		Location  Location  `json:"location"`
+		Timestamp int64     `json:"timestamp"`
 	}{
-		Symptoms:  symptoms,
+		Symptoms:  allSymptoms,
 		Location:  Location{Longitude: s.Location.Coordinates[0], Latitude: s.Location.Coordinates[1]},
 		Timestamp: s.Timestamp,
 	})
