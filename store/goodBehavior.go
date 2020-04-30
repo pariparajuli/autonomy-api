@@ -154,6 +154,7 @@ func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Lo
 
 // NearestGoodBehavior returns NearestGoodBehaviorData which caculates from location within distInMeter distance
 func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, error) {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
@@ -187,13 +188,14 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 		return score.NearestGoodBehaviorData{}, err
 	}
 	var results bson.M
+
 	if cursor.Next(ctx) {
 		if err := cursor.Decode(&results); nil == err {
-			rawData.OfficialBehaviorWeight = results["totalDWeight"].(float64)
-			rawData.OfficialBehaviorCount = results["totalDCount"].(int32)
-			rawData.CustomizedBehaviorCount = results["totalSCount"].(int32)
-			rawData.CustomizedBehaviorWeight = results["totalSWeight"].(float64)
-			rawData.TotalRecordCount = results["totalRecord"].(int32)
+			rawData.OfficialBehaviorWeight, _ = results["totalDWeight"].(float64)
+			rawData.OfficialBehaviorCount, _ = results["totalDCount"].(int32)
+			rawData.CustomizedBehaviorCount, _ = results["totalSCount"].(int32)
+			rawData.CustomizedBehaviorWeight, _ = results["totalSWeight"].(float64)
+			rawData.TotalRecordCount, _ = results["totalRecord"].(int32)
 		} else {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
 			return rawData, err
@@ -208,11 +210,11 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	var resultsYesterday bson.M
 	if cursorYesterday.Next(ctx) {
 		if err := cursorYesterday.Decode(&resultsYesterday); nil == err {
-			rawData.PastTotalRecordCount = resultsYesterday["totalRecord"].(int32)
-			rawData.PastOfficialBehaviorWeight = resultsYesterday["totalDWeight"].(float64)
-			rawData.PastOfficialBehaviorCount = resultsYesterday["totalDCount"].(int32)
-			rawData.PastCustomizedBehaviorCount = resultsYesterday["totalSCount"].(int32)
-			rawData.PastCustomizedBehaviorWeight = resultsYesterday["totalSWeight"].(float64)
+			rawData.PastTotalRecordCount, _ = resultsYesterday["totalRecord"].(int32)
+			rawData.PastOfficialBehaviorWeight, _ = resultsYesterday["totalDWeight"].(float64)
+			rawData.PastOfficialBehaviorCount, _ = resultsYesterday["totalDCount"].(int32)
+			rawData.PastCustomizedBehaviorCount, _ = resultsYesterday["totalSCount"].(int32)
+			rawData.PastCustomizedBehaviorWeight, _ = resultsYesterday["totalSWeight"].(float64)
 		} else {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
 			return rawData, err
