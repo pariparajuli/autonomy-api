@@ -11,8 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/bitmark-inc/autonomy-api/schema"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 type Symptom interface {
@@ -22,6 +23,7 @@ type Symptom interface {
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
 	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
+	NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, error)
 }
 
 func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
@@ -229,4 +231,123 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	scoreDelta := score - scoreYesterday
 	symptomDelta := totalSymptom - totalSymptomYesterday
 	return score, scoreDelta, totalSymptom, symptomDelta, nil
+}
+
+func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, error) {
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	geoNear := bson.D{
+		{"$geoNear", bson.M{
+			"near": bson.M{
+				"type":        "Point",
+				"coordinates": bson.A{loc.Longitude, loc.Latitude},
+			},
+			"distanceField": "dist",
+			"maxDistance":   meter,
+			"spherical:":    true,
+			"includeLocs":   "location",
+		}},
+	}
+
+	joinSymptoms := bson.D{
+		{"$lookup", bson.M{
+			"from":         schema.SymptomReportCollection,
+			"localField":   "account_number",
+			"foreignField": "account_number",
+			"as":           "symptoms",
+		}},
+	}
+
+	nonEmptyArray := bson.D{
+		{"$match", bson.M{
+			"symptoms": bson.M{
+				"$exists": true,
+				"$ne":     bson.A{},
+			},
+		}},
+	}
+
+	nonNil := bson.D{
+		{"$match", bson.M{
+			"symptoms.official_symptoms": bson.M{"$ne": nil},
+		}},
+	}
+
+	latestSymptoms := bson.D{
+		{"$project", bson.M{
+			"account_number": 1,
+			"symptoms:": bson.M{
+				"$arrayElemAt": bson.A{"$symptoms.official_symptoms", -1},
+			},
+			"ts:": bson.M{
+				"$arrayElemAt": bson.A{"$symptoms.ts", -1},
+			},
+		}},
+	}
+
+	todayBeginTime := todayStartAt()
+	latestSymptomUpdatedToday := bson.D{
+		{"$match", bson.M{"ts": bson.M{"$gte": todayBeginTime}}},
+	}
+
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{
+		geoNear,
+		joinSymptoms,
+		nonEmptyArray,
+		nonNil,
+		latestSymptoms,
+		latestSymptomUpdatedToday,
+	})
+
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":   mongoLogPrefix,
+			"distance": meter,
+			"lat":      loc.Latitude,
+			"lng":      loc.Longitude,
+			"error":    err,
+		}).Error("aggregate nearby symptoms")
+		return schema.SymptomDistribution{}, 0, err
+	}
+
+	type data struct {
+		AccountNumber string           `bson:"account_number"`
+		Symptoms      []schema.Symptom `bson:"symptoms"`
+		Timestamp     int64            `bson:"ts"`
+	}
+
+	var d data
+	var count schema.SymptomDistribution
+	var users int
+
+	for cur.Next(ctx) {
+		if err = cur.Decode(&d); err != nil {
+			log.WithFields(log.Fields{
+				"prefix":   mongoLogPrefix,
+				"distance": meter,
+				"lat":      loc.Latitude,
+				"lng":      loc.Longitude,
+				"error":    err,
+			}).Error("decode nearby official symptoms")
+			return schema.SymptomDistribution{}, 0, err
+		}
+
+		for _, s := range d.Symptoms {
+			if _, ok := count[s.ID]; ok {
+				count[s.ID]++
+			} else {
+				log.WithFields(log.Fields{
+					"prefix":         mongoLogPrefix,
+					"account_number": d.AccountNumber,
+					"id":             s.ID,
+					"timestamp":      d.Timestamp,
+				}).Info("official symptom ID not in list")
+			}
+		}
+		users++
+	}
+
+	return count, float64(users), nil
 }

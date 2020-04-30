@@ -73,6 +73,8 @@ type SymptomReportData struct {
 	SymptomScore       float64   `json:"score" bson:"score"`
 }
 
+type SymptomDistribution map[SymptomType]int
+
 func (s *SymptomReportData) MarshalJSON() ([]byte, error) {
 	allSymptoms := append(s.OfficialSymptoms, s.CustomizedSymptoms...)
 	if allSymptoms == nil {

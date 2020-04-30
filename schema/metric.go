@@ -14,10 +14,12 @@ type BehaviorDetail struct {
 }
 
 type SymptomDetail struct {
-	SymptomTotal      float64 `json:"symptom_total" bson:"symptom_total"`
-	TotalPeople       float64 `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson float64 `json:"max_score_per_person" bson:"max_score_per_person"`
-	Score             float64 `json:"score" bson:"score"`
+	SymptomTotal       float64             `json:"symptom_total" bson:"symptom_total"`
+	TotalPeople        float64             `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson  float64             `json:"max_score_per_person" bson:"max_score_per_person"`
+	Score              float64             `json:"score" bson:"score"`
+	Symptoms           SymptomDistribution `json:"-" bson:"symptoms"`
+	CustomSymptomCount float64             `json:"-" bson:"custom_symptom_count"`
 }
 
 type Details struct {

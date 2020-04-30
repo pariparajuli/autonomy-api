@@ -3,10 +3,12 @@ package store
 import (
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -27,7 +29,12 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
 
-	symptomScore, _, symptomCount, symptomDelta, err := m.NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, location)
+	officialSymptomsCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
+	if err != nil {
+		return nil, err
+	}
+
+	customSymptoms, err := m.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
 		return nil, err
 	}
@@ -43,37 +50,56 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	return &schema.Metric{
-		SymptomCount:   float64(symptomCount),
-		SymptomDelta:   float64(symptomDelta),
-		SymptomScore:   float64(symptomScore),
 		BehaviorCount:  float64(behaviorCount),
 		BehaviorDelta:  float64(behaviorDelta),
 		BehaviorScore:  float64(behaviorScore),
 		ConfirmedCount: float64(confirmedCount),
 		ConfirmedDelta: float64(confirmedDelta),
 		ConfirmedScore: float64(confirmedScore),
+		Details: schema.Details{
+			Symptoms: schema.SymptomDetail{
+				TotalPeople:        userCount,
+				Symptoms:           officialSymptomsCount,
+				CustomSymptomCount: float64(len(customSymptoms)),
+			},
+		},
 	}, nil
 }
 
 func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, location schema.Location) (*schema.Metric, error) {
+	p, err := m.GetProfile(accountNumber)
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":         mongoLogPrefix,
+			"account_number": accountNumber,
+			"lat":            location.Latitude,
+			"lng":            location.Longitude,
+		}).Error("get profile")
+		return nil, err
+	}
+
 	var metric *schema.Metric
 	rawMetrics, err := m.CollectRawMetrics(location)
 	if err != nil {
 		return nil, err
 	}
 
-	metric, err = scoreUtil.CalculateMetric(*rawMetrics)
+	metric, err = scoreUtil.CalculateMetric(*rawMetrics, &p.Metric)
 	if err != nil {
 		return nil, err
 	}
 
 	if coefficient != nil {
+		scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
+
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
 			metric.SymptomScore,
 			metric.BehaviorScore,
 			metric.ConfirmedScore,
 		)
 	} else {
+		scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
+
 		scoreUtil.DefaultTotalScore(metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
 	}
 
@@ -86,12 +112,17 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 
 func (m *mongoDB) SyncPOIMetrics(poiID primitive.ObjectID, location schema.Location) (*schema.Metric, error) {
 	var metric *schema.Metric
+	poi, err := m.GetPOI(poiID)
+	if err != nil {
+		return nil, err
+	}
+
 	rawMetrics, err := m.CollectRawMetrics(location)
 	if err != nil {
 		return nil, err
 	}
 
-	metric, err = scoreUtil.CalculateMetric(*rawMetrics)
+	metric, err = scoreUtil.CalculateMetric(*rawMetrics, &poi.Metric)
 	if err != nil {
 		return nil, err
 	}
