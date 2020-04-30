@@ -110,8 +110,6 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		return
 	}
 
-	s.mongoStore.NearestGoodBehavior(consts.NEARBY_DISTANCE_RANGE, *loc)
-
 	if len(data.CustomizedBehaviors) > 0 {
 		err = s.mongoStore.UpdateAreaProfileBehavior(data.CustomizedBehaviors, *loc)
 		if err != nil { // do nothing
