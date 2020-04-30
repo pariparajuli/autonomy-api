@@ -1,7 +1,6 @@
 package score
 
 import (
-	"errors"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -18,14 +17,14 @@ type NearestGoodBehaviorData struct {
 	PastCustomizedBehaviorCount  int32
 }
 
-func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, float64, error) {
+func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, float64) {
 	// Score Rule:  Self defined weight can not exceed more than 1/2 of weight, if it exceeds 1/2 of weight, it counts as 1/2 of weight
 	topScore := float64(rawData.TotalRecordCount)*schema.TotalOfficialBehaviorWeight + rawData.CustomizedBehaviorWeight
 	nearbyScore := rawData.OfficialBehaviorWeight + rawData.CustomizedBehaviorWeight
 	topScorePast := float64(rawData.PastTotalRecordCount)*schema.TotalOfficialBehaviorWeight + rawData.PastCustomizedBehaviorWeight
 	nearbyScorePast := rawData.PastOfficialBehaviorWeight + rawData.PastCustomizedBehaviorWeight
 	if topScore <= 0 && topScorePast <= 0 {
-		return 0, 0, 0, 0, errors.New("records")
+		return 0, 0, 0, 0
 	}
 
 	if topScore > 0 {
@@ -52,5 +51,5 @@ func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, 
 
 	totalReportedCount := float64(rawData.OfficialBehaviorCount + rawData.CustomizedBehaviorCount)
 	deltaReportedCountPast := totalReportedCount - (float64(rawData.PastCustomizedBehaviorCount + rawData.PastOfficialBehaviorCount))
-	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast, nil
+	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast
 }
