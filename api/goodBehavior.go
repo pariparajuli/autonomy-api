@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 	"time"
-	
-	"github.com/gin-gonic/gin"
+
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -110,10 +109,16 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	err = s.mongoStore.UpdateAreaProfileBehavior(data.CustomizedBehaviors, *loc)
-	if err != nil { // do nothing
-		c.Error(err)
+
+	s.mongoStore.NearestGoodBehavior(consts.NEARBY_DISTANCE_RANGE, *loc)
+
+	if len(data.CustomizedBehaviors) > 0 {
+		err = s.mongoStore.UpdateAreaProfileBehavior(data.CustomizedBehaviors, *loc)
+		if err != nil { // do nothing
+			c.Error(err)
+		}
 	}
+
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
 		go func() {

@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) createSymptom(c *gin.Context) {
@@ -105,10 +105,11 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-
-	err = s.mongoStore.UpdateAreaProfileSymptom(data.CustomizedSymptoms, *loc)
-	if err != nil { // do nothing
-		c.Error(err)
+	if len(data.CustomizedSymptoms) > 0 {
+		err = s.mongoStore.UpdateAreaProfileSymptom(data.CustomizedSymptoms, *loc)
+		if err != nil { // do nothing
+			c.Error(err)
+		}
 	}
 
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
