@@ -75,10 +75,12 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 			Latitude:  lat,
 			Longitude: lon,
 		})
-		if err != nil {
-			return nil, err
+		if err == nil {
+			poi.Metric = *newMetric
+		} else {
+			log.WithError(err).Error("fail to sync poi metrics")
+
 		}
-		poi.Metric = *newMetric
 	}
 
 	// the default score for a POI is calculated from RefreshPOIMetrics

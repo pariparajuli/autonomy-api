@@ -40,7 +40,7 @@ func (s *Server) addPOI(c *gin.Context) {
 	poi, err := s.mongoStore.AddPOI(account.AccountNumber, body.Alias, body.Address,
 		body.Location.Longitude, body.Location.Latitude)
 	if err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 
