@@ -3,6 +3,7 @@ package schema
 type ConfirmDetail struct {
 	Yesterday float64 `json:"yesterday" bson:"yesterday"`
 	Today     float64 `json:"today" bson:"today"`
+	Score     float64 `json:"score" bson:"score"`
 }
 
 type BehaviorDetail struct {
