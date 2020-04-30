@@ -246,7 +246,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 			},
 			"distanceField": "dist",
 			"maxDistance":   meter,
-			"spherical:":    true,
+			"spherical":     true,
 			"includeLocs":   "location",
 		}},
 	}
@@ -278,10 +278,10 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 	latestSymptoms := bson.D{
 		{"$project", bson.M{
 			"account_number": 1,
-			"symptoms:": bson.M{
+			"symptoms": bson.M{
 				"$arrayElemAt": bson.A{"$symptoms.official_symptoms", -1},
 			},
-			"ts:": bson.M{
+			"ts": bson.M{
 				"$arrayElemAt": bson.A{"$symptoms.ts", -1},
 			},
 		}},
