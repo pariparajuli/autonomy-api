@@ -319,7 +319,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 	}
 
 	var d data
-	var count schema.SymptomDistribution
+	distribution := make(schema.SymptomDistribution)
 	var users int
 
 	for cur.Next(ctx) {
@@ -335,19 +335,10 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 		}
 
 		for _, s := range d.Symptoms {
-			if _, ok := count[s.ID]; ok {
-				count[s.ID]++
-			} else {
-				log.WithFields(log.Fields{
-					"prefix":         mongoLogPrefix,
-					"account_number": d.AccountNumber,
-					"id":             s.ID,
-					"timestamp":      d.Timestamp,
-				}).Info("official symptom ID not in list")
-			}
+			distribution[s.ID]++
 		}
 		users++
 	}
 
-	return count, float64(users), nil
+	return distribution, float64(users), nil
 }
