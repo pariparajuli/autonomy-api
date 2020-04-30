@@ -15,17 +15,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type SymptomList interface {
+type Symptom interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
 	ListOfficialSymptoms() ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
-	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
-}
-
-type SymptomReport interface {
-	SymptomReportSave(data *schema.SymptomReportData) error
 	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
 }
 

@@ -20,8 +20,7 @@ type MongoStore interface {
 	Group
 	Healthier
 	MongoAccount
-	SymptomList
-	SymptomReport
+	Symptom
 	POI
 	GoodBehaviorReport
 	Closer
