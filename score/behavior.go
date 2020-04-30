@@ -38,7 +38,7 @@ func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, 
 		}
 	}
 	score := float64(0)
-	if score > 0 {
+	if topScore > 0 {
 		score = 100 * nearbyScore / topScore
 	}
 
