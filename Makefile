@@ -32,19 +32,12 @@ endif
 	docker build --build-arg dist=$(dist) -t autonomy:score-worker-$(dist) . -f Dockerfile-ScoreWorker
 	docker tag autonomy:score-worker-$(dist)  083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:score-worker-$(dist)
 
-build-crawler-image:
-ifndef dist
-	$(error dist is undefined)
-endif
-	docker build --build-arg dist=$(dist) -t autonomy:crawler-$(dist) . -f Dockerfile-Crawler
-	docker tag autonomy:crawler-$(dist)  083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:crawler-$(dist)
-
-push-crawler:
+push-worker:
 ifndef dist
 	$(error dist is undefined)
 endif
 	aws ecr get-login-password | docker login --username AWS --password-stdin 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com
-	docker push 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:crawler-$(dist)
+	docker push 083397868157.dkr.ecr.ap-northeast-1.amazonaws.com/autonomy:score-worker-$(dist)
 
 push:
 ifndef dist
