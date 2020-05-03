@@ -79,6 +79,12 @@ func (m *mongoDB) CreateBehavior(behavior schema.Behavior) (string, error) {
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
 func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
+	if 0 == len(data.OfficialBehaviors) {
+		data.OfficialBehaviors = []schema.Behavior{}
+	}
+	if 0 == len(data.CustomizedBehaviors) {
+		data.CustomizedBehaviors = []schema.Behavior{}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)
@@ -163,36 +169,25 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	timeStageToday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin}}}}
 
 	sortStage := bson.D{{"$sort", bson.D{{"ts", -1}}}}
-	projectEmptyArrayStage := bson.D{{"$project", bson.M{
-		"profile_id":           1,
-		"account_number":       1,
-		"official_behaviors":   bson.M{"$ifNull": bson.A{"$official_behaviors", bson.A{}}},
-		"customized_behaviors": bson.M{"$ifNull": bson.A{"$customized_behaviors", bson.A{}}},
-		"location":             1,
-		"official_weight":      1,
-		"customized_weight":    1,
-		"ts":                   1,
-	}}}
-
 	timeStageYesterday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin - 86400, "$lt": todayBegin}}}}
 	groupStage := bson.D{{"$group", bson.D{
 		{"_id", "$profile_id"},
 		{"account_number", bson.D{{"$first", "$account_number"}}},
-		{"default_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
-		{"self_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
-		{"default_weight", bson.D{{"$first", "$official_weight"}}},
-		{"self_defined_weight", bson.D{{"$first", "$customized_weight"}}},
+		{"official_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
+		{"customized_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
+		{"official_weight", bson.D{{"$first", "$official_weight"}}},
+		{"customized_weight", bson.D{{"$first", "$customized_weight"}}},
 	}}}
 	groupMergeStage := bson.D{{"$group", bson.D{
 		{"_id", 1},
-		{"totalDCount", bson.D{{"$sum", "$default_count"}}},
-		{"totalSCount", bson.D{{"$sum", "$self_count"}}},
-		{"totalDWeight", bson.D{{"$sum", "$official_weight"}}},
-		{"totalSWeight", bson.D{{"$sum", "$customized_weight"}}},
-		{"totalRecord", bson.D{{"$sum", 1}}},
+		{"officialCount", bson.D{{"$sum", "$official_count"}}},
+		{"customizedCount", bson.D{{"$sum", "$customized_count"}}},
+		{"officialWeight", bson.D{{"$sum", "$official_weight"}}},
+		{"customizedWeight", bson.D{{"$sum", "$customized_weight"}}},
+		{"totalCount", bson.D{{"$sum", 1}}},
 	}}}
 
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, projectEmptyArrayStage, groupStage, groupMergeStage})
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
 		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
@@ -207,7 +202,7 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	}
 
 	// Previous day
-	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, projectEmptyArrayStage, groupStage, groupMergeStage})
+	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
 		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
@@ -219,11 +214,14 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 		}
 	}
+	log.Debug(fmt.Sprintf("TotalCount:%v OfficialWeight:%v,OfficialCount:%v, CustimizedWeight:%v, CustimizedCount:%v, TotalCountYesterday:%v, OfficialWeightYesterday:%v, OfficialCountYesterday:%v, CustimizedWeightYesterday:%v, CustimizedCountYesterday:%v",
+		resultToday.TotalCount, resultToday.OfficialWeight, resultToday.OfficialCount, resultToday.CustomizedWeight, resultToday.CustomizedCount,
+		resultYesterday.TotalCount, resultYesterday.OfficialWeight, resultYesterday.OfficialCount, resultYesterday.CustomizedWeight, resultYesterday.CustomizedCount))
 	return resultToday, resultYesterday, nil
 }
 
 func todayStartAt() int64 {
-	curTime := time.Now()
+	curTime := time.Now().UTC()
 	start := time.Date(curTime.Year(), curTime.Month(), curTime.Day(), 0, 0, 0, 0, time.UTC)
 	return start.Unix()
 }

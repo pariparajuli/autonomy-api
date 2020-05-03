@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
-
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/gin-gonic/gin"
+		"github.com/getsentry/sentry-go"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -116,6 +115,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 			c.Error(err)
 		}
 	}
+	s.mongoStore.NearestGoodBehavior(consts.NEARBY_DISTANCE_RANGE, *loc)
 
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {

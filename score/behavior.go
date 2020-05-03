@@ -7,11 +7,11 @@ import (
 )
 
 type NearestGoodBehaviorData struct {
-	TotalCount       int32
-	OfficialWeight   float64
-	OfficialCount    int32
-	CustomizedWeight float64
-	CustomizedCount  int32
+	TotalCount       int32   `json:"totalCount" bson:"totalCount`
+	OfficialWeight   float64 `json:"officialWeight" bson:"officialWeight"`
+	OfficialCount    int32   `json:"officialCount" bson:"officialCount"`
+	CustomizedWeight float64 `json:"customizedWeight" bson:"customizedWeight"`
+	CustomizedCount  int32   `json:"customizedCount" bson:"customizedCount"`
 }
 
 func BehaviorScore(rawDataToday NearestGoodBehaviorData, rawDataYesterday NearestGoodBehaviorData) (float64, float64, float64, float64) {
