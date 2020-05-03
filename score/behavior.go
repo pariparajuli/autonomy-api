@@ -7,36 +7,26 @@ import (
 )
 
 type NearestGoodBehaviorData struct {
-	TotalRecordCount             int32
-	OfficialBehaviorWeight       float64
-	OfficialBehaviorCount        int32
-	CustomizedBehaviorWeight     float64
-	CustomizedBehaviorCount      int32
-	PastTotalRecordCount         int32
-	PastOfficialBehaviorWeight   float64
-	PastOfficialBehaviorCount    int32
-	PastCustomizedBehaviorWeight float64
-	PastCustomizedBehaviorCount  int32
+	TotalCount       int32
+	OfficialWeight   float64
+	OfficialCount    int32
+	CustomizedWeight float64
+	CustomizedCount  int32
 }
 
-func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, float64) {
+func BehaviorScore(rawDataToday NearestGoodBehaviorData, rawDataYesterday NearestGoodBehaviorData) (float64, float64, float64, float64) {
 	// Score Rule:  Self defined weight can not exceed more than 1/2 of weight, if it exceeds 1/2 of weight, it counts as 1/2 of weight
-	topScore := float64(rawData.TotalRecordCount)*schema.TotalOfficialBehaviorWeight + rawData.CustomizedBehaviorWeight
-	nearbyScore := rawData.OfficialBehaviorWeight + rawData.CustomizedBehaviorWeight
-	topScorePast := float64(rawData.PastTotalRecordCount)*schema.TotalOfficialBehaviorWeight + rawData.PastCustomizedBehaviorWeight
-	nearbyScorePast := rawData.PastOfficialBehaviorWeight + rawData.PastCustomizedBehaviorWeight
+	topScore := float64(rawDataToday.TotalCount)*schema.TotalOfficialBehaviorWeight + rawDataToday.CustomizedWeight
+	nearbyScore := rawDataToday.OfficialWeight + rawDataToday.CustomizedWeight
+	topScorePast := float64(rawDataYesterday.TotalCount)*schema.TotalOfficialBehaviorWeight + rawDataYesterday.CustomizedWeight
+
 	if topScore <= 0 && topScorePast <= 0 {
 		return 0, 0, 0, 0
 	}
 
 	if topScore > 0 {
-		if portion := float64(rawData.CustomizedBehaviorWeight) / float64(topScore); portion > 0.5 {
-			nearbyScore = topScore/2 + rawData.OfficialBehaviorWeight
-		}
-	}
-	if topScorePast > 0 {
-		if portion := float64(rawData.CustomizedBehaviorWeight) / float64(topScorePast); portion > 0.5 {
-			nearbyScorePast = topScorePast/2 + rawData.PastOfficialBehaviorWeight
+		if portion := float64(rawDataToday.CustomizedWeight) / float64(topScore); portion > 0.5 {
+			nearbyScore = topScore/2 + rawDataToday.OfficialWeight
 		}
 	}
 	score := float64(0)
@@ -44,31 +34,12 @@ func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, 
 		score = 100 * nearbyScore / topScore
 	}
 
-	scorePast := float64(0)
-	deltaInPercent := float64(100)
-	if topScorePast > 0 {
-		scorePast = 100 * nearbyScorePast / topScorePast
-		deltaInPercent = ((score - scorePast) / scorePast) * 100
+	totalReportedCountPast := float64(rawDataYesterday.CustomizedCount + rawDataYesterday.OfficialCount)
+	totalReportedCount := float64(rawDataToday.OfficialCount + rawDataToday.CustomizedCount)
+	deltaCountInPercent := float64(0)
+	if totalReportedCountPast > 0 {
+		deltaCountInPercent = ((totalReportedCount - totalReportedCountPast) / totalReportedCountPast) * 100
 	}
 
-	totalReportedCount := float64(rawData.OfficialBehaviorCount + rawData.CustomizedBehaviorCount)
-	deltaReportedCountPast := totalReportedCount - (float64(rawData.PastCustomizedBehaviorCount + rawData.PastOfficialBehaviorCount))
-
-	if math.IsNaN(score) {
-		score = 0
-	}
-
-	if math.IsNaN(deltaInPercent) {
-		deltaInPercent = 0
-	}
-
-	if math.IsNaN(totalReportedCount) {
-		totalReportedCount = 0
-	}
-
-	if math.IsNaN(deltaReportedCountPast) {
-		deltaReportedCountPast = 0
-	}
-
-	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast
+	return score, deltaCountInPercent, totalReportedCount, totalReportedCountPast
 }
