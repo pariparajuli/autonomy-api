@@ -399,16 +399,19 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 	}
 
 	var userSumData sumData
-	err = cur.Decode(&userSumData)
-	if nil != err {
-		log.WithFields(log.Fields{
-			"prefix":   mongoLogPrefix,
-			"distance": meter,
-			"lat":      loc.Latitude,
-			"lng":      loc.Longitude,
-			"error":    err,
-		}).Error("decode nearby user count")
-		return distribution, 0, err
+
+	if cur.Next(ctx) {
+		err = cur.Decode(&userSumData)
+		if nil != err {
+			log.WithFields(log.Fields{
+				"prefix":   mongoLogPrefix,
+				"distance": meter,
+				"lat":      loc.Latitude,
+				"lng":      loc.Longitude,
+				"error":    err,
+			}).Error("decode nearby user count")
+			return distribution, 0, err
+		}
 	}
 
 	log.WithFields(log.Fields{
