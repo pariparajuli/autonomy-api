@@ -29,7 +29,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
 
-	officialSymptomsCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
+	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		BehaviorDelta:  float64(behaviorDelta),
 		ConfirmedCount: float64(confirmedCount),
 		ConfirmedDelta: float64(confirmDiffPercent),
+		SymptomCount:   officialSymptomCount + float64(len(customSymptoms)),
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
 				Yesterday: float64(confirmedCount - confirmDiff),
@@ -56,7 +57,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 			},
 			Symptoms: schema.SymptomDetail{
 				TotalPeople:        userCount,
-				Symptoms:           officialSymptomsCount,
+				Symptoms:           officialSymptomDistribution,
 				CustomSymptomCount: float64(len(customSymptoms)),
 			},
 			Behaviors: schema.BehaviorDetail{

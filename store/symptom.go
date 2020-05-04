@@ -23,7 +23,7 @@ type Symptom interface {
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
 	NearestSymptomScore(distInMeter int, location schema.Location) (float64, float64, int, int, error)
-	NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, error)
+	NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, float64, error)
 }
 
 func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
@@ -233,7 +233,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	return score, scoreDelta, totalSymptom, symptomDelta, nil
 }
 
-func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, error) {
+func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, float64, error) {
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -309,7 +309,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 			"lng":      loc.Longitude,
 			"error":    err,
 		}).Error("aggregate nearby symptoms")
-		return schema.SymptomDistribution{}, 0, err
+		return schema.SymptomDistribution{}, 0, 0, err
 	}
 
 	type data struct {
@@ -320,6 +320,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 
 	var d data
 	distribution := make(schema.SymptomDistribution)
+	var symptomCount float64
 
 	for cur.Next(ctx) {
 		if err = cur.Decode(&d); err != nil {
@@ -330,11 +331,12 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 				"lng":      loc.Longitude,
 				"error":    err,
 			}).Error("decode nearby official symptoms")
-			return schema.SymptomDistribution{}, 0, err
+			return schema.SymptomDistribution{}, 0, 0, err
 		}
 
 		for _, s := range d.Symptoms {
 			distribution[s.ID]++
+			symptomCount++
 		}
 	}
 
@@ -391,7 +393,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 			"lng":      loc.Longitude,
 			"error":    err,
 		}).Error("sum nearby user")
-		return schema.SymptomDistribution{}, 0, err
+		return schema.SymptomDistribution{}, 0, 0, err
 	}
 
 	type sumData struct {
@@ -410,15 +412,16 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 				"lng":      loc.Longitude,
 				"error":    err,
 			}).Error("decode nearby user count")
-			return distribution, 0, err
+			return distribution, 0, 0, err
 		}
 	}
 
 	log.WithFields(log.Fields{
-		"prefix":               mongoLogPrefix,
-		"user_count":           userSumData.Total,
-		"symptom_distribution": distribution,
+		"prefix":                        mongoLogPrefix,
+		"user_count":                    userSumData.Total,
+		"official_symptom_distribution": distribution,
+		"official_symptom_count":        symptomCount,
 	}).Debug("near symptom info")
 
-	return distribution, float64(userSumData.Total), nil
+	return distribution, symptomCount, float64(userSumData.Total), nil
 }
