@@ -39,7 +39,8 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
-	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
+	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location, true)
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"prefix": mongoLogPrefix,
