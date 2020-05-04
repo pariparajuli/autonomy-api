@@ -53,7 +53,6 @@ func TestCurrentAreaProfile(t *testing.T) {
 	m.EXPECT().NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.BehaviorCount), int(metric.BehaviorDelta), nil).Times(1)
 	m.EXPECT().NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.SymptomCount), int(metric.SymptomDelta), nil).Times(1)
 	m.EXPECT().GetConfirm(gomock.Any()).Return(int(metric.ConfirmedCount), int(metric.ConfirmedDelta), nil).Times(1)
-	m.EXPECT().ConfirmScore(gomock.Any()).Return(metric.Score, nil).Times(1)
 	m.EXPECT().UpdateProfileMetric("1", gomock.Any()).Return(nil).Times(1)
 
 	gin.SetMode(gin.TestMode)

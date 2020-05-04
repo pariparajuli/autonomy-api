@@ -78,7 +78,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 		for _, profile := range profiles {
 			if profile.ScoreCoefficient != nil {
-				metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+				metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 			}
 
 			if err := s.mongo.UpdateProfilePOIMetric(profile.AccountNumber, id, metric); err != nil {
@@ -102,7 +102,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 		}
 
 		if profile.ScoreCoefficient != nil {
-			metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+			metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 		}
 
 		if err := s.mongo.UpdateProfileMetric(accountNumber, &metric); err != nil {

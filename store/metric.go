@@ -39,12 +39,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		return nil, err
 	}
 
-	confirmedCount, confirmedDelta, err := m.GetConfirm(location)
-	if err != nil {
-		return nil, err
-	}
-
-	confirmedScore, err := m.ConfirmScore(location)
+	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetConfirm(location)
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +47,20 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	return &schema.Metric{
 		BehaviorCount:  float64(behaviorCount),
 		BehaviorDelta:  float64(behaviorDelta),
-		BehaviorScore:  float64(behaviorScore),
 		ConfirmedCount: float64(confirmedCount),
-		ConfirmedDelta: float64(confirmedDelta),
-		ConfirmedScore: float64(confirmedScore),
+		ConfirmedDelta: float64(confirmDiffPercent),
 		Details: schema.Details{
+			Confirm: schema.ConfirmDetail{
+				Yesterday: float64(confirmedCount - confirmDiff),
+				Today:     float64(confirmedCount),
+			},
 			Symptoms: schema.SymptomDetail{
 				TotalPeople:        userCount,
 				Symptoms:           officialSymptomsCount,
 				CustomSymptomCount: float64(len(customSymptoms)),
+			},
+			Behaviors: schema.BehaviorDetail{
+				Score: behaviorScore,
 			},
 		},
 	}, nil
@@ -91,6 +91,7 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 
 	if coefficient != nil {
 		scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
+		scoreUtil.ConfirmScore(metric)
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
 			metric.SymptomCount,
@@ -99,8 +100,9 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		)
 	} else {
 		scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
+		scoreUtil.ConfirmScore(metric)
 
-		scoreUtil.DefaultTotalScore(metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+		scoreUtil.DefaultTotalScore(metric.SymptomCount, metric.BehaviorCount, metric.ConfirmedCount)
 	}
 
 	if err := m.UpdateProfileMetric(accountNumber, metric); err != nil {

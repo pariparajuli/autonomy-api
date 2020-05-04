@@ -16,7 +16,6 @@ import (
 const (
 	ConfirmCollection  = "confirm"
 	RecordNotExistCode = -1
-	confirmCriteria    = 10
 )
 
 var (
@@ -32,13 +31,10 @@ type ConfirmUpdater interface {
 type ConfirmGetter interface {
 	// Read confirm count, return with current count, number of difference compare to
 	// yesterday, error
-	GetConfirm(schema.Location) (int, int, error)
+	GetConfirm(schema.Location) (int, int, float64, error)
 
 	// total confirm of a country, return with latest total, previous day total, error
 	TotalConfirm(schema.Location) (int, int, error)
-
-	// score of confirm cases
-	ConfirmScore(schema.Location) (float64, error)
 }
 
 type ConfirmOperator interface {
@@ -155,7 +151,7 @@ func countUpdateCommand(count, diff int, updateTime int64) bson.M {
 	}
 }
 
-func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
+func (m mongoDB) GetConfirm(loc schema.Location) (int, int, float64, error) {
 	c := m.client.Database(m.database).Collection(ConfirmCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -168,7 +164,7 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 			"error":  err,
 		}).Error("get geo info")
 
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 
 	if len(geos) == 0 {
@@ -178,7 +174,7 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 			"loc":    loc.Longitude,
 		}).Warn("empty geo info")
 
-		return 0, 0, ErrEmptyGeo
+		return 0, 0, 0, ErrEmptyGeo
 	}
 
 	info := geos[0]
@@ -221,12 +217,17 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 
 		if err == mongo.ErrNoDocuments {
 			log.WithError(err).Error("no documents found")
-			return 0, 0, nil
+			return 0, 0, 0, nil
 		}
 		log.WithError(err).Error("other mongodb errors")
-		return RecordNotExistCode, RecordNotExistCode, err
+		return RecordNotExistCode, RecordNotExistCode, 0, err
 	}
-	return latest.Count, latest.DiffYesterday, nil
+
+	percent := float64(0)
+	if latest.Count != 0 {
+		percent = float64(latest.DiffYesterday) / float64(latest.Count)
+	}
+	return latest.Count, latest.DiffYesterday, percent, nil
 }
 
 func (m mongoDB) TotalConfirm(loc schema.Location) (int, int, error) {
@@ -323,38 +324,4 @@ func (m mongoDB) TotalConfirm(loc schema.Location) (int, int, error) {
 	}).Info("total confirm")
 
 	return total, prev, nil
-}
-
-func (m mongoDB) ConfirmScore(loc schema.Location) (float64, error) {
-	current, delta, err := m.GetConfirm(loc)
-	if nil != err {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"lat":    loc.Latitude,
-			"lng":    loc.Longitude,
-			"error":  err,
-		}).Error("get confirm count")
-
-		return 0, err
-	}
-
-	log.WithFields(log.Fields{
-		"prefix":            mongoLogPrefix,
-		"lat":               loc.Latitude,
-		"lng":               loc.Longitude,
-		"current_confirmed": current,
-		"prev_confirmed":    delta,
-	}).Debug("get confirm count")
-
-	return confirmScore(delta), nil
-}
-
-func confirmScore(delta int) float64 {
-	// equal or more than that criteria get 0 score
-	if delta >= confirmCriteria {
-		return 0
-	}
-
-	// in between 0 - 10 people, each increased confirm case deduct 5 points
-	return float64(100 - 5*delta)
 }

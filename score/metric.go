@@ -48,7 +48,7 @@ func CalculateMetric(rawMetrics schema.Metric, oldMetric *schema.Metric) (*schem
 	metric := rawMetrics
 	SymptomScore(schema.DefaultSymptomWeights, &metric, oldMetric)
 
-	totalScore := DefaultTotalScore(metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+	totalScore := DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 	metric.Score = totalScore
 
 	return &metric, nil

@@ -88,7 +88,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 
 	if profile.ScoreCoefficient != nil {
 		profilePOIScore = scoreUtil.TotalScoreV1(*profile.ScoreCoefficient,
-			poi.Metric.SymptomScore, poi.Metric.BehaviorScore, poi.Metric.ConfirmedScore)
+			poi.Metric.Details.Symptoms.Score, poi.Metric.Details.Behaviors.Score, poi.Metric.Details.Confirm.Score)
 	}
 
 	poiDesc := schema.ProfilePOI{

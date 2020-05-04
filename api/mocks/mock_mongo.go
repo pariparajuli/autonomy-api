@@ -136,21 +136,6 @@ func (mr *MockMongoStoreMockRecorder) CollectRawMetrics(arg0 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectRawMetrics", reflect.TypeOf((*MockMongoStore)(nil).CollectRawMetrics), arg0)
 }
 
-// ConfirmScore mocks base method
-func (m *MockMongoStore) ConfirmScore(arg0 schema.Location) (float64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConfirmScore", arg0)
-	ret0, _ := ret[0].(float64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ConfirmScore indicates an expected call of ConfirmScore
-func (mr *MockMongoStoreMockRecorder) ConfirmScore(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmScore", reflect.TypeOf((*MockMongoStore)(nil).ConfirmScore), arg0)
-}
-
 // CreateAccount mocks base method
 func (m *MockMongoStore) CreateAccount(arg0 *schema.Account) error {
 	m.ctrl.T.Helper()
@@ -238,13 +223,14 @@ func (mr *MockMongoStoreMockRecorder) DeletePOI(arg0, arg1 interface{}) *gomock.
 }
 
 // GetConfirm mocks base method
-func (m *MockMongoStore) GetConfirm(arg0 schema.Location) (int, int, error) {
+func (m *MockMongoStore) GetConfirm(arg0 schema.Location) (int, int, float64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfirm", arg0)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret2, _ := ret[2].(float64)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // GetConfirm indicates an expected call of GetConfirm
