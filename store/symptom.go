@@ -118,7 +118,7 @@ func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Loc
 	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	log.Debug(fmt.Sprintf("AreaCustomizedSymptomList location long:%d, lat: %d ", location.Longitude, location.Latitude))
+	log.Debug(fmt.Sprintf("AreaCustomizedSymptomList location long:%f, lat: %f ", location.Longitude, location.Latitude))
 	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), nonEmptyArray})
 	if nil != err {
 		log.WithField("prefix", mongoLogPrefix).Errorf("area  customized symptom list with error: %s", err)
