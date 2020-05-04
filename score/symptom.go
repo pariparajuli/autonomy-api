@@ -28,8 +28,8 @@ func SymptomScore(weights schema.SymptomWeights, metric, oldMetric *schema.Metri
 
 	// update score
 	if details.TotalPeople > 0 && (details.MaxScorePerPerson) > 0 {
-		metric.SymptomCount = 100 - 100*(details.SymptomTotal/(details.TotalPeople*details.MaxScorePerPerson))
-		details.Score = metric.SymptomCount
+		metric.SymptomCount = metric.SymptomCount
+		details.Score = 100 - 100*(details.SymptomTotal/(details.TotalPeople*details.MaxScorePerPerson))
 	}
 
 	// update delta
