@@ -116,6 +116,12 @@ func (s *Server) getProfileFormula(c *gin.Context) {
 		return
 	}
 
+	symptoms, err := s.mongoStore.ListOfficialSymptoms()
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
 	if coefficient == nil {
 		isDefaultFormula = true
 		coefficient = &schema.ScoreCoefficient{
@@ -126,9 +132,31 @@ func (s *Server) getProfileFormula(c *gin.Context) {
 		}
 	}
 
+	type SymptomWeightsRepresentation struct {
+		Symptom schema.Symptom `json:"symptom"`
+		Weight  float64        `json:"weight"`
+	}
+
+	SymptomWeightsRepresentationList := make([]SymptomWeightsRepresentation, 0)
+
+	for _, s := range symptoms {
+		if weight, ok := coefficient.SymptomWeights[s.ID]; ok {
+			SymptomWeightsRepresentationList = append(SymptomWeightsRepresentationList, SymptomWeightsRepresentation{
+				Symptom: s,
+				Weight:  weight,
+			})
+		}
+
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"is_default":  isDefaultFormula,
-		"coefficient": coefficient,
+		"is_default": isDefaultFormula,
+		"coefficient": map[string]interface{}{
+			"symptoms":        coefficient.Symptoms,
+			"behaviors":       coefficient.Behaviors,
+			"confirms":        coefficient.Confirms,
+			"symptom_weights": SymptomWeightsRepresentationList,
+		},
 	})
 }
 
