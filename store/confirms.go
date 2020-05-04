@@ -235,7 +235,7 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, float64, error) {
 		"latest_count":   latest.Count,
 		"previous_count": latest.Count - latest.DiffYesterday,
 		"change_percent": percent,
-	})
+	}).Debug("get confirm data")
 
 	return latest.Count, latest.DiffYesterday, percent, nil
 }
