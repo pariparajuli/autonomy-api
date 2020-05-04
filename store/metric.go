@@ -34,7 +34,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		return nil, err
 	}
 
-	customSymptoms, err := m.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, location)
+	customSymptoms, err := m.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
 		return nil, err
 	}
