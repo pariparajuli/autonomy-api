@@ -473,7 +473,7 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 	}
 
 	groupAll := bson.D{
-		{"group", bson.M{
+		{"$group", bson.M{
 			"_id": "$account_number",
 			"official": bson.M{
 				"$first": "$official_symptoms",
