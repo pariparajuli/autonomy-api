@@ -120,7 +120,7 @@ func migrateMongo() error {
 		fmt.Println("failed to set up collection `behavior`: ", err)
 		return err
 	}
-	if err := BehaviorListToEmptyArray(client); err != nil {
+	if err := BehaviorListNullToEmptyArray(client); err != nil {
 		fmt.Println("failed to convert null to empty array in  `behavior` list : ", err)
 		return err
 	}
