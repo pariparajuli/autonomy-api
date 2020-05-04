@@ -152,6 +152,39 @@ func (s *Server) updateProfileFormula(c *gin.Context) {
 		return
 	}
 
+	profile, err := s.mongoStore.GetProfile(accountNumber)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	profile.Metric.Score = scoreUtil.TotalScoreV1(params.Coefficient,
+		profile.Metric.SymptomScore,
+		profile.Metric.BehaviorScore,
+		profile.Metric.ConfirmedScore,
+	)
+
+	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	for _, profilePOI := range profile.PointsOfInterest {
+		poi, err := s.mongoStore.GetPOI(profilePOI.ID)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+
+		metric := poi.Metric
+		metric.Score = scoreUtil.TotalScoreV1(params.Coefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+
+		if err := s.mongoStore.UpdateProfilePOIMetric(profile.AccountNumber, poi.ID, metric); err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }
 
@@ -162,6 +195,38 @@ func (s *Server) resetProfileFormula(c *gin.Context) {
 	if err := s.mongoStore.ResetProfileCoefficient(accountNumber); err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
+	}
+
+	profile, err := s.mongoStore.GetProfile(accountNumber)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	profile.Metric.Score = scoreUtil.DefaultTotalScore(
+		profile.Metric.SymptomScore,
+		profile.Metric.BehaviorScore,
+		profile.Metric.ConfirmedScore,
+	)
+
+	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	for _, profilePOI := range profile.PointsOfInterest {
+		poi, err := s.mongoStore.GetPOI(profilePOI.ID)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
+
+		metric := poi.Metric
+
+		if err := s.mongoStore.UpdateProfilePOIMetric(profile.AccountNumber, poi.ID, metric); err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
