@@ -150,8 +150,9 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	}
 
 	if coefficient != nil {
-		scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
-		scoreUtil.ConfirmScore(metric)
+		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
+		//scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
+		//	scoreUtil.ConfirmScore(metric)
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
 			metric.Details.Symptoms.Score,
@@ -159,8 +160,9 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 			metric.Details.Confirm.Score,
 		)
 	} else {
-		scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
-		scoreUtil.ConfirmScore(metric)
+		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
+		//	scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
+		//	scoreUtil.ConfirmScore(metric)
 
 		scoreUtil.DefaultTotalScore(
 			metric.Details.Symptoms.Score,

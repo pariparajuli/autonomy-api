@@ -14,7 +14,7 @@ func SymptomScore(weights schema.SymptomWeights, metric, oldMetric *schema.Metri
 			details.MaxScorePerPerson += v
 		}
 	}
-
+	//	log.Info(fmt.Sprintf("SymptomScore : metrics:%v", len(details.Symptoms)))
 	details.MaxScorePerPerson += details.CustomSymptomCount
 
 	var w float64
@@ -24,6 +24,7 @@ func SymptomScore(weights schema.SymptomWeights, metric, oldMetric *schema.Metri
 			w = schema.DefaultSymptomWeights[k]
 		}
 		details.SymptomTotal += w * float64(v)
+		//log.Info(fmt.Sprintf("SymptomScore : k :%v w :%v , v:%v, symptomTotal:%v", k, w, v, details.SymptomTotal))
 	}
 
 	// update score
