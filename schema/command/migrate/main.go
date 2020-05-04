@@ -120,6 +120,10 @@ func migrateMongo() error {
 		fmt.Println("failed to set up collection `behavior`: ", err)
 		return err
 	}
+	if err := BehaviorListToEmptyArray(client); err != nil {
+		fmt.Println("failed to convert null to empty array in  `behavior` list : ", err)
+		return err
+	}
 
 	if err := setupCollectionSymptom(ctx, client); err != nil {
 		fmt.Println("failed to set up collection `symptom`: ", err)
@@ -261,5 +265,24 @@ func setupCollectionSymptomReport(client *mongo.Client) error {
 		fmt.Println("mongodb create locationIndex with error: ", err)
 		return err
 	}
+	return nil
+}
+
+func BehaviorListNullToEmptyArray(client *mongo.Client) error {
+	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
+	filter := bson.D{{"official_behaviors", bson.M{"$type": 10}}}
+	update := bson.D{{"$set", bson.D{{"official_behaviors", []schema.Behavior{}}}}}
+	result, err := c.UpdateMany(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Migration: replace Official Behavior List with Empty Array result:", result.MatchedCount)
+	filter = bson.D{{"customized_behaviors", bson.M{"$type": 10}}}
+	update = bson.D{{"$set", bson.D{{"customized_behaviors", []schema.Behavior{}}}}}
+	result, err = c.UpdateMany(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Migration: replace Customized Behavior List with Empty Array result:", result.MatchedCount)
 	return nil
 }

@@ -22,7 +22,7 @@ type Metric interface {
 }
 
 func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, error) {
-	behaviorData, err := m.NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, location)
+	behaviorToday, behaviorYesterday, err := m.NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, location)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"prefix": mongoLogPrefix,
@@ -31,12 +31,13 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		return nil, err
 	} else {
 		log.WithFields(log.Fields{
-			"prefix":   mongoLogPrefix,
-			"behavior": behaviorData,
+			"prefix":            mongoLogPrefix,
+			"behaviorToday":     behaviorToday,
+			"behaviorYesterday": behaviorYesterday,
 		}).Debug("nearest good behavior")
 	}
 
-	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
+	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {

@@ -31,7 +31,7 @@ const (
 type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
-	NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, error)
+	NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, score.NearestGoodBehaviorData, error)
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior() ([]schema.Behavior, error)
@@ -79,6 +79,12 @@ func (m *mongoDB) CreateBehavior(behavior schema.Behavior) (string, error) {
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
 func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
+	if 0 == len(data.OfficialBehaviors) {
+		data.OfficialBehaviors = []schema.Behavior{}
+	}
+	if 0 == len(data.CustomizedBehaviors) {
+		data.CustomizedBehaviors = []schema.Behavior{}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)
@@ -152,7 +158,7 @@ func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Lo
 }
 
 // NearestGoodBehavior returns NearestGoodBehaviorData which caculates from location within distInMeter distance
-func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, error) {
+func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, score.NearestGoodBehaviorData, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -163,80 +169,59 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 	timeStageToday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin}}}}
 
 	sortStage := bson.D{{"$sort", bson.D{{"ts", -1}}}}
-	projectEmptyArrayStage := bson.D{{"$project", bson.M{
-		"profile_id":           1,
-		"account_number":       1,
-		"official_behaviors":   bson.M{"$ifNull": bson.A{"$official_behaviors", bson.A{}}},
-		"customized_behaviors": bson.M{"$ifNull": bson.A{"$customized_behaviors", bson.A{}}},
-		"location":             1,
-		"official_weight":      1,
-		"customized_weight":    1,
-		"ts":                   1,
-	}}}
-
 	timeStageYesterday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin - 86400, "$lt": todayBegin}}}}
 	groupStage := bson.D{{"$group", bson.D{
 		{"_id", "$profile_id"},
 		{"account_number", bson.D{{"$first", "$account_number"}}},
-		{"default_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
-		{"self_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
-		{"default_weight", bson.D{{"$first", "$official_weight"}}},
-		{"self_defined_weight", bson.D{{"$first", "$customized_weight"}}},
+		{"official_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
+		{"customized_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
+		{"official_weight", bson.D{{"$first", "$official_weight"}}},
+		{"customized_weight", bson.D{{"$first", "$customized_weight"}}},
 	}}}
 	groupMergeStage := bson.D{{"$group", bson.D{
 		{"_id", 1},
-		{"totalDCount", bson.D{{"$sum", "$default_count"}}},
-		{"totalSCount", bson.D{{"$sum", "$self_count"}}},
-		{"totalDWeight", bson.D{{"$sum", "$official_weight"}}},
-		{"totalSWeight", bson.D{{"$sum", "$customized_weight"}}},
-		{"totalRecord", bson.D{{"$sum", 1}}},
+		{"officialCount", bson.D{{"$sum", "$official_count"}}},
+		{"customizedCount", bson.D{{"$sum", "$customized_count"}}},
+		{"officialWeight", bson.D{{"$sum", "$official_weight"}}},
+		{"customizedWeight", bson.D{{"$sum", "$customized_weight"}}},
+		{"totalCount", bson.D{{"$sum", 1}}},
 	}}}
 
-	var rawData score.NearestGoodBehaviorData
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, projectEmptyArrayStage, groupStage, groupMergeStage})
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return score.NearestGoodBehaviorData{}, err
+		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 	}
 
-	var result bson.M
+	var resultToday score.NearestGoodBehaviorData
 	if cursor.Next(ctx) {
-		if err := cursor.Decode(&result); nil == err {
-			rawData.OfficialBehaviorWeight, _ = result["totalDWeight"].(float64)
-			rawData.OfficialBehaviorCount, _ = result["totalDCount"].(int32)
-			rawData.CustomizedBehaviorCount, _ = result["totalSCount"].(int32)
-			rawData.CustomizedBehaviorWeight, _ = result["totalSWeight"].(float64)
-			rawData.TotalRecordCount, _ = result["totalRecord"].(int32)
-		} else {
+		if err := cursor.Decode(&resultToday); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-			return rawData, err
+			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 		}
 	}
 
 	// Previous day
-	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, projectEmptyArrayStage, groupStage, groupMergeStage})
+	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, groupStage, groupMergeStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return score.NearestGoodBehaviorData{}, err
+		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 	}
-	var resultsYesterday bson.M
+	var resultYesterday score.NearestGoodBehaviorData
 	if cursorYesterday.Next(ctx) {
-		if err := cursorYesterday.Decode(&resultsYesterday); nil == err {
-			rawData.PastTotalRecordCount, _ = resultsYesterday["totalRecord"].(int32)
-			rawData.PastOfficialBehaviorWeight, _ = resultsYesterday["totalDWeight"].(float64)
-			rawData.PastOfficialBehaviorCount, _ = resultsYesterday["totalDCount"].(int32)
-			rawData.PastCustomizedBehaviorCount, _ = resultsYesterday["totalSCount"].(int32)
-			rawData.PastCustomizedBehaviorWeight, _ = resultsYesterday["totalSWeight"].(float64)
-		} else {
+		if err := cursorYesterday.Decode(&resultYesterday); err != nil {
 			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-			return rawData, err
+			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 		}
 	}
-	return rawData, nil
+	log.Debug(fmt.Sprintf("TotalCount:%v OfficialWeight:%v,OfficialCount:%v, CustimizedWeight:%v, CustimizedCount:%v, TotalCountYesterday:%v, OfficialWeightYesterday:%v, OfficialCountYesterday:%v, CustimizedWeightYesterday:%v, CustimizedCountYesterday:%v",
+		resultToday.TotalCount, resultToday.OfficialWeight, resultToday.OfficialCount, resultToday.CustomizedWeight, resultToday.CustomizedCount,
+		resultYesterday.TotalCount, resultYesterday.OfficialWeight, resultYesterday.OfficialCount, resultYesterday.CustomizedWeight, resultYesterday.CustomizedCount))
+	return resultToday, resultYesterday, nil
 }
 
 func todayStartAt() int64 {
-	curTime := time.Now()
+	curTime := time.Now().UTC()
 	start := time.Date(curTime.Year(), curTime.Month(), curTime.Day(), 0, 0, 0, 0, time.UTC)
 	return start.Unix()
 }
