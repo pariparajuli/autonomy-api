@@ -18,10 +18,10 @@ type SymptomDetail struct {
 	SymptomTotal       float64             `json:"total_weight" bson:"total_weight"`
 	TotalPeople        float64             `json:"total_people" bson:"total_people"`
 	MaxScorePerPerson  float64             `json:"max_weight" bson:"max_weight"`
-	CustomizedWeight   float32             `json:"customized_weight" bson:"customized_weight"`
+	CustomizedWeight   float64             `json:"customized_weight" bson:"customized_weight"`
 	Score              float64             `json:"score" bson:"score"`
 	Symptoms           SymptomDistribution `json:"-" bson:"symptoms"`
-	CustomSymptomCount float64             `json:"-" bson:"custom_symptom_count"`
+	CustomSymptomCount float64             `json:"custom_symptom_count" bson:"custom_symptom_count"`
 }
 
 type Details struct {

@@ -2,9 +2,10 @@ package store
 
 import (
 	"fmt"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
@@ -38,38 +39,17 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
-
-	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location, true)
-	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", officialSymptomDistribution, officialSymptomCount, totalPeopleReport))
-
+	// Symptom
+	symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
+	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", symptomToday.WeightDistribution, symptomToday.OfficialCount, symptomToday.UserCount))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"prefix": mongoLogPrefix,
 			"error":  err,
-		}).Error("nearest official symptom info")
+		}).Error("NearestSymptomScore outcome")
 		return nil, err
-	} else {
-		log.WithFields(log.Fields{
-			"prefix":        mongoLogPrefix,
-			"distribution":  officialSymptomDistribution,
-			"symptom_count": officialSymptomCount,
-			"user_count":    userCount,
-		}).Debug("nearest official symptom info")
 	}
-
-	customSymptoms, err := m.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, location)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("nearest custom symptom info")
-		return nil, err
-	} else {
-		log.WithFields(log.Fields{
-			"prefix":        mongoLogPrefix,
-			"symptom_count": len(customSymptoms),
-		}).Debug("nearest customized symptom info")
-	}
+	// symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(symptomToday, symptomYesterday)
 
 	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetConfirm(location)
 	if err != nil {
@@ -93,23 +73,30 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		BehaviorDelta:  float64(behaviorDelta),
 		ConfirmedCount: float64(confirmedCount),
 		ConfirmedDelta: float64(confirmDiffPercent),
-		SymptomCount:   officialSymptomCount + float64(len(customSymptoms)),
+		//	SymptomCount:   sOfficialCount + sCustomizedCount,
+		//		SymptomDelta:   sDeltaInPercent,
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
 				Yesterday: float64(confirmedCount - confirmDiff),
 				Today:     float64(confirmedCount),
 			},
 			Symptoms: schema.SymptomDetail{
-				TotalPeople:        userCount,
-				Symptoms:           officialSymptomDistribution,
-				CustomSymptomCount: float64(len(customSymptoms)),
+				SymptomDataToday: symptomToday,
+				SymptomDataToday: symptomYesterday,
+				//SymptomTotal:       sTotalweight,
+				//TotalPeople:        symptomToday.UserCount,
+				//MaxScorePerPerson:  sMaxScorePerPerson,
+				//CustomizedWeight:   sCustomizedCount,
+				//CustomSymptomCount: sCustomizedCount,
+				//Symptoms:           symptomToday.WeightDistribution,
+				//	Score: symptomScore,
 			},
 			Behaviors: schema.BehaviorDetail{
 				BehaviorTotal:           behaviorCount,
 				TotalPeople:             totalPeopleReport,
 				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
 				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
-				Score:                   behaviorScore,
+				Score: behaviorScore,
 			},
 		},
 	}, nil
@@ -153,6 +140,17 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
 		//scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
 		//	scoreUtil.ConfirmScore(metric)
+		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, symptomToday, symptomYesterday)
+
+		p.Metric.Details.Symptomsl{
+			SymptomTotal:       sTotalweight,
+			TotalPeople:        symptomToday.UserCount,
+			MaxScorePerPerson:  sMaxScorePerPerson,
+			CustomizedWeight:   sCustomizedCount,
+			CustomSymptomCount: sCustomizedCount,
+			Symptoms:           symptomToday.WeightDistribution,
+			Score: symptomScore,
+		},
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
 			metric.Details.Symptoms.Score,
@@ -162,8 +160,17 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	} else {
 		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
 		//	scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
-		//	scoreUtil.ConfirmScore(metric)
-
+		scoreUtil.ConfirmScore(metric)
+		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(schema.DefaultSymptomWeights, symptomToday, symptomYesterday)
+		p.Metric.Details.Symptomsl{
+			SymptomTotal:       sTotalweight,
+			TotalPeople:        symptomToday.UserCount,
+			MaxScorePerPerson:  sMaxScorePerPerson,
+			CustomizedWeight:   sCustomizedCount,
+			CustomSymptomCount: sCustomizedCount,
+			Symptoms:           symptomToday.WeightDistribution,
+			Score: symptomScore,
+		},
 		scoreUtil.DefaultTotalScore(
 			metric.Details.Symptoms.Score,
 			metric.Details.Behaviors.Score,

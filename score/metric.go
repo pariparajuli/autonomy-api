@@ -46,7 +46,7 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 
 func CalculateMetric(rawMetrics schema.Metric, oldMetric *schema.Metric) (*schema.Metric, error) {
 	metric := rawMetrics
-	SymptomScore(schema.DefaultSymptomWeights, &metric, oldMetric)
+	//SymptomScore(schema.DefaultSymptomWeights, &metric, oldMetric)
 	ConfirmScore(&metric)
 
 	totalScore := DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)

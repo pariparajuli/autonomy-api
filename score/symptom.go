@@ -1,40 +1,52 @@
 package score
 
 import (
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-func SymptomScore(weights schema.SymptomWeights, metric, oldMetric *schema.Metric) {
-	details := &metric.Details.Symptoms
-	for k, v := range schema.DefaultSymptomWeights {
-		// in case key is missing in custom weights
-		if cv, ok := weights[k]; ok {
-			details.MaxScorePerPerson += cv
-		} else {
-			details.MaxScorePerPerson += v
-		}
-	}
-	//	log.Info(fmt.Sprintf("SymptomScore : metrics:%v", len(details.Symptoms)))
-	details.MaxScorePerPerson += details.CustomSymptomCount
+type NearestSymptomData struct {
+	UserCount          float64                    `json:"userCount" bson:"userCount`
+	OfficialCount      float64                    `json:"officialCount" bson:"officialCount"`
+	CustomizedCount    float64                    `json:"customizedCount" bson:"customizedCount"`
+	WeightDistribution schema.SymptomDistribution `json:"weight_distribution" beson:"weight_distribution"`
+}
 
+func SymptomScore(weights schema.SymptomWeights, today, yesterday NearestSymptomData) (float64, float64, float64, float64, float64, float64) {
+	countYesterday := yesterday.OfficialCount + yesterday.CustomizedCount
+	countToday := today.OfficialCount + today.CustomizedCount
+	// Today
+	maxScorePerPerson := float64(0) // Max Score,
+	for _, v := range weights {
+		maxScorePerPerson = maxScorePerPerson + v
+	}
+
+	totalOfficialWeight := float64(0)
 	var w float64
 	var ok bool
-	for k, v := range details.Symptoms {
+	for k, v := range today.WeightDistribution {
 		if w, ok = weights[k]; !ok {
 			w = schema.DefaultSymptomWeights[k]
 		}
-		details.SymptomTotal += w * float64(v)
-		//log.Info(fmt.Sprintf("SymptomScore : k :%v w :%v , v:%v, symptomTotal:%v", k, w, v, details.SymptomTotal))
+		totalOfficialWeight += w * float64(v)
+		log.Info(fmt.Sprintf("SymptomScore : k :%v w :%v , v:%v, symptomTotal:%v", k, w, v, totalOfficialWeight))
+	}
+	totalWeight := totalOfficialWeight + today.CustomizedCount*1
+	score := float64(100)
+	if today.OfficialCount*maxScorePerPerson > 0 {
+		score = 100 - 100*(totalWeight/(today.OfficialCount*maxScorePerPerson)+today.CustomizedCount)
+	} else if today.CustomizedCount > 0 {
+		score = 100 - 100*(totalWeight/today.CustomizedCount)
 	}
 
-	// update score
-	if details.TotalPeople > 0 && (details.MaxScorePerPerson) > 0 {
-		metric.SymptomCount = metric.SymptomCount
-		details.Score = 100 - 100*(details.SymptomTotal/(details.TotalPeople*details.MaxScorePerPerson))
-	}
+	// deltaCount in percent
+	deltaInPercent := float64(100)
 
-	// update delta
-	if oldMetric != nil && metric.SymptomCount > 0 {
-		metric.SymptomDelta = (metric.SymptomCount - oldMetric.SymptomCount) / metric.SymptomCount
+	if countYesterday > 0 {
+		deltaInPercent = ((countToday - countYesterday) / countYesterday) / 100
 	}
+	return score, totalWeight, maxScorePerPerson, deltaInPercent, today.OfficialCount, today.CustomizedCount * 1
 }
