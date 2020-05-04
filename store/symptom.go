@@ -408,8 +408,14 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 			"lng":      loc.Longitude,
 			"error":    err,
 		}).Error("decode nearby user count")
-		return schema.SymptomDistribution{}, 0, err
+		return distribution, 0, err
 	}
+
+	log.WithFields(log.Fields{
+		"prefix":               mongoLogPrefix,
+		"user_count":           userSumData.Total,
+		"symptom_distribution": distribution,
+	}).Debug("near symptom info")
 
 	return distribution, float64(userSumData.Total), nil
 }
