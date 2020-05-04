@@ -37,9 +37,10 @@ func SymptomScore(weights schema.SymptomWeights, today, yesterday NearestSymptom
 	totalWeight := totalOfficialWeight + today.CustomizedCount*1
 	score := float64(100)
 	if today.OfficialCount*maxScorePerPerson > 0 {
-		score = 100 - 100*(totalWeight/((today.OfficialCount*maxScorePerPerson)+today.CustomizedCount))
+		de := (today.UserCount * maxScorePerPerson) + today.CustomizedCount
+		score = 100 * (1 - (totalWeight / de))
 	} else if today.CustomizedCount > 0 {
-		score = 100 - 100*(totalWeight/today.CustomizedCount)
+		score = 100 * (1 - (totalWeight / today.CustomizedCount))
 	}
 
 	// deltaCount in percent

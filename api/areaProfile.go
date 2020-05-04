@@ -53,18 +53,17 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 		}
 
 		// FIXME: return cached result directly if possible; otherwise get coefficient and run SyncAccountMetrics
-		/*
-			metricLastUpdate := time.Unix(metric.LastUpdate, 0)
-			var coefficient *schema.ScoreCoefficient
-			if time.Since(metricLastUpdate) >= metricUpdateInterval {
-				// will sync with coefficient = nil
-			} else if coefficient = profile.ScoreCoefficient; coefficient != nil && coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 {
-				// will sync with coefficient = profile.ScoreCoefficient
-			} else {
-				c.JSON(http.StatusOK, metric)
-				return
-			}*/
-		coefficient := profile.ScoreCoefficient
+
+		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
+		var coefficient *schema.ScoreCoefficient
+		if time.Since(metricLastUpdate) >= metricUpdateInterval {
+			// will sync with coefficient = nil
+		} else if coefficient = profile.ScoreCoefficient; coefficient != nil && coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 {
+			// will sync with coefficient = profile.ScoreCoefficient
+		} else {
+			c.JSON(http.StatusOK, metric)
+			return
+		}
 		m, err := s.mongoStore.SyncAccountMetrics(account.AccountNumber, coefficient, location)
 		if err != nil {
 			c.Error(err)
