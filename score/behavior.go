@@ -39,5 +39,5 @@ func BehaviorScore(rawDataToday NearestGoodBehaviorData, rawDataYesterday Neares
 		deltaCountInPercent = ((totalReportedCount - totalReportedCountPast) / totalReportedCountPast) * 100
 	}
 
-	return score, deltaCountInPercent, totalReportedCount, totalReportedCountPast
+	return score, deltaCountInPercent, totalReportedCount, float64(rawDataToday.TotalCount)
 }
