@@ -159,9 +159,9 @@ func (s *Server) updateProfileFormula(c *gin.Context) {
 	}
 
 	profile.Metric.Score = scoreUtil.TotalScoreV1(params.Coefficient,
-		profile.Metric.SymptomScore,
-		profile.Metric.BehaviorScore,
-		profile.Metric.ConfirmedScore,
+		profile.Metric.Details.Symptoms.Score,
+		profile.Metric.Details.Behaviors.Score,
+		profile.Metric.Details.Confirm.Score,
 	)
 
 	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
@@ -177,7 +177,7 @@ func (s *Server) updateProfileFormula(c *gin.Context) {
 		}
 
 		metric := poi.Metric
-		metric.Score = scoreUtil.TotalScoreV1(params.Coefficient, metric.SymptomScore, metric.BehaviorScore, metric.ConfirmedScore)
+		metric.Score = scoreUtil.TotalScoreV1(params.Coefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 
 		if err := s.mongoStore.UpdateProfilePOIMetric(profile.AccountNumber, poi.ID, metric); err != nil {
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
@@ -204,9 +204,9 @@ func (s *Server) resetProfileFormula(c *gin.Context) {
 	}
 
 	profile.Metric.Score = scoreUtil.DefaultTotalScore(
-		profile.Metric.SymptomScore,
-		profile.Metric.BehaviorScore,
-		profile.Metric.ConfirmedScore,
+		profile.Metric.Details.Symptoms.Score,
+		profile.Metric.Details.Behaviors.Score,
+		profile.Metric.Details.Confirm.Score,
 	)
 
 	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
