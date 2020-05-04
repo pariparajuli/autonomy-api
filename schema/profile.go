@@ -26,11 +26,10 @@ var (
 
 // ScoreCoefficient is structure for all customized weights for calculating personal score
 type ScoreCoefficient struct {
-	Symptoms  float64   `json:"symptoms" bson:"symptoms"`
-	Behaviors float64   `json:"behaviors" bson:"behaviors"`
-	Confirms  float64   `json:"confirms" bson:"confirms"`
-	UpdatedAt time.Time `json:"-" bson:"updated_at"`
-
+	Symptoms       float64        `json:"symptoms" bson:"symptoms"`
+	Behaviors      float64        `json:"behaviors" bson:"behaviors"`
+	Confirms       float64        `json:"confirms" bson:"confirms"`
+	UpdatedAt      time.Time      `json:"-" bson:"updated_at"`
 	SymptomWeights SymptomWeights `json:"symptom_weights" bson:"symptom_weights"`
 }
 

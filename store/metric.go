@@ -37,7 +37,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		}).Debug("nearest good behavior")
 	}
 
-	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
+	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
@@ -103,7 +103,11 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				CustomSymptomCount: float64(len(customSymptoms)),
 			},
 			Behaviors: schema.BehaviorDetail{
-				Score: behaviorScore,
+				BehaviorTotal:           behaviorCount,
+				TotalPeople:             totalPeopleReport,
+				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
+				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
+				Score:                   behaviorScore,
 			},
 		},
 	}, nil
