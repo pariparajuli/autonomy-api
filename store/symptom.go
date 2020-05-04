@@ -230,18 +230,18 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 		OfficialSymptom = OfficialSymptom + len(result.OfficialSymptoms)
 		CustomizedSymptom = CustomizedSymptom + len(result.OfficialSymptoms)
 		for _, s := range result.OfficialSymptoms {
-			value, ok := officialDistribution[schema.SymptomType(s.ID)]
+			value, ok := officialDistributionYesterday[schema.SymptomType(s.ID)]
 			if !ok {
-				officialDistribution[s.ID] = 1
+				officialDistributionYesterday[s.ID] = 1
 			} else {
-				officialDistribution[s.ID] = value + 1
+				officialDistributionYesterday[s.ID] = value + 1
 			}
 		}
 		dataYesterday = score.NearestSymptomData{
 			UserCount:          float64(userCount),
 			OfficialCount:      float64(OfficialSymptom),
 			CustomizedCount:    float64(CustomizedSymptom),
-			WeightDistribution: officialDistribution,
+			WeightDistribution: officialDistributionYesterday,
 		}
 	}
 

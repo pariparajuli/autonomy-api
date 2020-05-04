@@ -39,17 +39,6 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
-	// Symptom
-	symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
-	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", symptomToday.WeightDistribution, symptomToday.OfficialCount, symptomToday.UserCount))
-	if err != nil {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("NearestSymptomScore outcome")
-		return nil, err
-	}
-	// symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(symptomToday, symptomYesterday)
 
 	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetConfirm(location)
 	if err != nil {
@@ -80,17 +69,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				Yesterday: float64(confirmedCount - confirmDiff),
 				Today:     float64(confirmedCount),
 			},
-			Symptoms: schema.SymptomDetail{
-				SymptomDataToday: symptomToday,
-				SymptomDataToday: symptomYesterday,
-				//SymptomTotal:       sTotalweight,
-				//TotalPeople:        symptomToday.UserCount,
-				//MaxScorePerPerson:  sMaxScorePerPerson,
-				//CustomizedWeight:   sCustomizedCount,
-				//CustomSymptomCount: sCustomizedCount,
-				//Symptoms:           symptomToday.WeightDistribution,
-				//	Score: symptomScore,
-			},
+			Symptoms: schema.SymptomDetail{},
 			Behaviors: schema.BehaviorDetail{
 				BehaviorTotal:           behaviorCount,
 				TotalPeople:             totalPeopleReport,
@@ -135,22 +114,34 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	if err != nil {
 		return nil, err
 	}
+	symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
+	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", symptomToday.WeightDistribution, symptomToday.OfficialCount, symptomToday.UserCount))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("NearestSymptomScore outcome")
+		return nil, err
+	}
 
 	if coefficient != nil {
 		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
 		//scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
 		//	scoreUtil.ConfirmScore(metric)
-		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, symptomToday, symptomYesterday)
+		// Symptom
 
-		p.Metric.Details.Symptomsl{
+		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, symptomToday, symptomYesterday)
+		p.Metric.SymptomDelta = sDeltaInPercent
+		p.Metric.SymptomCount = sOfficialCount + sCustomizedCount
+		p.Metric.Details.Symptoms = schema.SymptomDetail{
 			SymptomTotal:       sTotalweight,
 			TotalPeople:        symptomToday.UserCount,
 			MaxScorePerPerson:  sMaxScorePerPerson,
 			CustomizedWeight:   sCustomizedCount,
 			CustomSymptomCount: sCustomizedCount,
 			Symptoms:           symptomToday.WeightDistribution,
-			Score: symptomScore,
-		},
+			Score:              symptomScore,
+		}
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
 			metric.Details.Symptoms.Score,
@@ -162,15 +153,17 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		//	scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
 		scoreUtil.ConfirmScore(metric)
 		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount := scoreUtil.SymptomScore(schema.DefaultSymptomWeights, symptomToday, symptomYesterday)
-		p.Metric.Details.Symptomsl{
+		p.Metric.SymptomDelta = sDeltaInPercent
+		p.Metric.SymptomCount = sOfficialCount + sCustomizedCount
+		p.Metric.Details.Symptoms = schema.SymptomDetail{
 			SymptomTotal:       sTotalweight,
 			TotalPeople:        symptomToday.UserCount,
 			MaxScorePerPerson:  sMaxScorePerPerson,
 			CustomizedWeight:   sCustomizedCount,
 			CustomSymptomCount: sCustomizedCount,
 			Symptoms:           symptomToday.WeightDistribution,
-			Score: symptomScore,
-		},
+			Score:              symptomScore,
+		}
 		scoreUtil.DefaultTotalScore(
 			metric.Details.Symptoms.Score,
 			metric.Details.Behaviors.Score,

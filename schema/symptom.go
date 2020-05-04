@@ -2,8 +2,6 @@ package schema
 
 import (
 	"encoding/json"
-
-	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 type SymptomType string
@@ -66,15 +64,13 @@ var Symptoms = []Symptom{
 
 // SymptomReportData the struct to store symptom data and score
 type SymptomReportData struct {
-	ProfileID            string                   `json:"profile_id" bson:"profile_id"`
-	AccountNumber        string                   `json:"account_number" bson:"account_number"`
-	OfficialSymptoms     []Symptom                `json:"official_symptoms" bson:"official_symptoms"`
-	CustomizedSymptoms   []Symptom                `json:"customized_symptoms" bson:"customized_symptoms"`
-	Location             GeoJSON                  `json:"location" bson:"location"`
-	Timestamp            int64                    `json:"ts" bson:"ts"`
-	SymptomScore         float64                  `json:"score" bson:"score"`
-	SymptomDataToday     score.NearestSymptomData `json:"-" bson:"-"`
-	SymptomDataYesterday score.NearestSymptomData `json:"-" bson:"-"`
+	ProfileID          string    `json:"profile_id" bson:"profile_id"`
+	AccountNumber      string    `json:"account_number" bson:"account_number"`
+	OfficialSymptoms   []Symptom `json:"official_symptoms" bson:"official_symptoms"`
+	CustomizedSymptoms []Symptom `json:"customized_symptoms" bson:"customized_symptoms"`
+	Location           GeoJSON   `json:"location" bson:"location"`
+	Timestamp          int64     `json:"ts" bson:"ts"`
+	SymptomScore       float64   `json:"score" bson:"score"`
 }
 
 type SymptomDistribution map[SymptomType]int
