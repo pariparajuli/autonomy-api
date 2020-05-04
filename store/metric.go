@@ -24,24 +24,65 @@ type Metric interface {
 func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, error) {
 	behaviorData, err := m.NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, location)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("nearest good behavior")
 		return nil, err
+	} else {
+		log.WithFields(log.Fields{
+			"prefix":   mongoLogPrefix,
+			"behavior": behaviorData,
+		}).Debug("nearest good behavior")
 	}
 
 	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorData)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("nearest official symptom info")
 		return nil, err
+	} else {
+		log.WithFields(log.Fields{
+			"prefix":        mongoLogPrefix,
+			"distribution":  officialSymptomDistribution,
+			"symptom_count": officialSymptomCount,
+			"user_count":    userCount,
+		}).Debug("nearest official symptom info")
 	}
 
 	customSymptoms, err := m.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("nearest custom symptom info")
 		return nil, err
+	} else {
+		log.WithFields(log.Fields{
+			"prefix":        mongoLogPrefix,
+			"symptom_count": len(customSymptoms),
+		}).Debug("nearest customized symptom info")
 	}
 
 	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetConfirm(location)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("confirm info")
 		return nil, err
+	} else {
+		log.WithFields(log.Fields{
+			"prefix":         mongoLogPrefix,
+			"latest_count":   confirmedCount,
+			"diff_yesterday": confirmDiff,
+			"percent":        confirmDiffPercent,
+		}).Debug("nearest official symptom info")
+
 	}
 
 	return &schema.Metric{
@@ -82,8 +123,19 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	var metric *schema.Metric
 	rawMetrics, err := m.CollectRawMetrics(location)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix":         mongoLogPrefix,
+			"account_number": accountNumber,
+			"error":          err,
+		}).Error("collect raw metrics")
 		return nil, err
 	}
+
+	log.WithFields(log.Fields{
+		"prefix":         mongoLogPrefix,
+		"account_number": accountNumber,
+		"raw_metrics":    rawMetrics,
+	}).Debug("collect raw metrics")
 
 	metric, err = scoreUtil.CalculateMetric(*rawMetrics, &p.Metric)
 	if err != nil {
