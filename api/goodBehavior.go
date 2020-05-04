@@ -101,7 +101,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		OfficialWeight:      behaviorWeight,
 		CustomizedWeight:    selfDefinedWeight,
 		Location:            schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		Timestamp:           time.Now().UTC().Unix(),
+		Timestamp:           time.Now().UTC().UnixNano(),
 	}
 
 	err = s.mongoStore.GoodBehaviorSave(&data)

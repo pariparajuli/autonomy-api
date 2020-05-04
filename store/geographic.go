@@ -72,7 +72,7 @@ func (m *mongoDB) AddGeographic(accountNumber string, latitude float64, longitud
 			Type:        "Point",
 			Coordinates: []float64{longitude, latitude},
 		},
-		Timestamp: now.Unix(),
+		Timestamp: now.UnixNano(),
 	}
 
 	if _, err = c.InsertOne(ctx, current); nil != err {
