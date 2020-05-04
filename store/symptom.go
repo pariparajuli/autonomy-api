@@ -288,7 +288,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 	}
 
 	todayBeginTime := todayStartAt()
-	latestSymptomUpdatedToday := bson.D{
+	updateToday := bson.D{
 		{"$match", bson.M{"ts": bson.M{"$gte": todayBeginTime}}},
 	}
 
@@ -298,7 +298,7 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 		nonEmptyArray,
 		nonNil,
 		latestSymptoms,
-		latestSymptomUpdatedToday,
+		updateToday,
 	})
 
 	if nil != err {
@@ -320,7 +320,6 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 
 	var d data
 	distribution := make(schema.SymptomDistribution)
-	var users int
 
 	for cur.Next(ctx) {
 		if err = cur.Decode(&d); err != nil {
@@ -337,8 +336,80 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 		for _, s := range d.Symptoms {
 			distribution[s.ID]++
 		}
-		users++
 	}
 
-	return distribution, float64(users), nil
+	joinGeographic := bson.D{
+		{"$lookup", bson.M{
+			"from":         schema.GeographicCollection,
+			"localField":   "account_number",
+			"foreignField": "account_number",
+			"as":           "geographic",
+		}},
+	}
+
+	geoDataExist := bson.D{
+		{"$match", bson.M{
+			"geographic": bson.M{
+				"$exists": true,
+				"$ne":     bson.A{},
+			},
+		}},
+	}
+
+	latestGeo := bson.D{
+		{"$project", bson.M{
+			"account_number": 1,
+			"ts": bson.M{
+				"$arrayElemAt": bson.A{"$geographic.ts", -1},
+			},
+		}},
+	}
+
+	sumUser := bson.D{
+		{"$group", bson.M{
+			"_id": nil,
+			"total": bson.M{
+				"$sum": 1,
+			},
+		}},
+	}
+
+	cur, err = c.Aggregate(ctx, mongo.Pipeline{
+		geoNear,
+		joinGeographic,
+		geoDataExist,
+		latestGeo,
+		updateToday,
+		sumUser,
+	})
+
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":   mongoLogPrefix,
+			"distance": meter,
+			"lat":      loc.Latitude,
+			"lng":      loc.Longitude,
+			"error":    err,
+		}).Error("sum nearby user")
+		return schema.SymptomDistribution{}, 0, err
+	}
+
+	type sumData struct {
+		Total int `bson:"total"`
+	}
+
+	var userSumData sumData
+	err = cur.Decode(&userSumData)
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":   mongoLogPrefix,
+			"distance": meter,
+			"lat":      loc.Latitude,
+			"lng":      loc.Longitude,
+			"error":    err,
+		}).Error("decode nearby user count")
+		return schema.SymptomDistribution{}, 0, err
+	}
+
+	return distribution, float64(userSumData.Total), nil
 }
