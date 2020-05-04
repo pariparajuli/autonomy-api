@@ -152,15 +152,18 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		scoreUtil.ConfirmScore(metric)
 
 		metric.Score = scoreUtil.TotalScoreV1(*coefficient,
-			metric.SymptomCount,
-			metric.BehaviorCount,
-			metric.ConfirmedCount,
+			metric.Details.Symptoms.Score,
+			metric.Details.Behaviors.Score,
+			metric.Details.Confirm.Score,
 		)
 	} else {
 		scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
 		scoreUtil.ConfirmScore(metric)
 
-		scoreUtil.DefaultTotalScore(metric.SymptomCount, metric.BehaviorCount, metric.ConfirmedCount)
+		scoreUtil.DefaultTotalScore(
+			metric.Details.Symptoms.Score,
+			metric.Details.Behaviors.Score,
+			metric.Details.Confirm.Score)
 	}
 
 	if err := m.UpdateProfileMetric(accountNumber, metric); err != nil {
