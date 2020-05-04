@@ -268,7 +268,7 @@ func setupCollectionSymptomReport(client *mongo.Client) error {
 	return nil
 }
 
-func BehaviorListToEmptyArray(client *mongo.Client) error {
+func BehaviorListNullToEmptyArray(client *mongo.Client) error {
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
 	filter := bson.D{{"official_behaviors", bson.M{"$type": 10}}}
 	update := bson.D{{"$set", bson.D{{"official_behaviors", []schema.Behavior{}}}}}

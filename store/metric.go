@@ -31,15 +31,13 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		return nil, err
 	} else {
 		log.WithFields(log.Fields{
-			"prefix":   mongoLogPrefix,
-			"behavior": behaviorData,
+			"prefix":            mongoLogPrefix,
+			"behaviorToday":     behaviorToday,
+			"behaviorYesterday": behaviorYesterday,
 		}).Debug("nearest good behavior")
 	}
 
-	behaviorScore, behaviorDelta, behaviorCount, behaviorCountPast := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
-	if 0 == behaviorDelta && (behaviorCount != behaviorCountPast) {
-		// TODO: if backend has to do anything but not front-end
-	}
+	behaviorScore, behaviorDelta, behaviorCount, _ := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearOfficialSymptomInfo(consts.NEARBY_DISTANCE_RANGE, location)
 	if err != nil {
