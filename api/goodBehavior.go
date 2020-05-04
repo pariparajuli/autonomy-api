@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 	"time"
-	
-	"github.com/gin-gonic/gin"
+
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -102,7 +101,7 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		OfficialWeight:      behaviorWeight,
 		CustomizedWeight:    selfDefinedWeight,
 		Location:            schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		Timestamp:           time.Now().UTC().UnixNano(),
+		Timestamp:           time.Now().UTC().Unix(),
 	}
 
 	err = s.mongoStore.GoodBehaviorSave(&data)
