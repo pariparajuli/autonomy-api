@@ -117,7 +117,6 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 			c.Error(err)
 		}
 	}
-	s.mongoStore.NearestGoodBehavior(consts.NEARBY_DISTANCE_RANGE, *loc)
 
 	accts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if nil == err {
