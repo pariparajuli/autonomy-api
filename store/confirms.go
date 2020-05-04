@@ -227,6 +227,16 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, float64, error) {
 	if latest.Count != 0 {
 		percent = float64(latest.DiffYesterday) / float64(latest.Count)
 	}
+
+	log.WithFields(log.Fields{
+		"prefix":         mongoLogPrefix,
+		"county":         county,
+		"country":        country,
+		"latest_count":   latest.Count,
+		"previous_count": latest.Count - latest.DiffYesterday,
+		"change_percent": percent,
+	})
+
 	return latest.Count, latest.DiffYesterday, percent, nil
 }
 
