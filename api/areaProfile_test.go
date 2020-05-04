@@ -50,7 +50,7 @@ func TestCurrentAreaProfile(t *testing.T) {
 			Coordinates: []float64{1.1, 2.2},
 		},
 	}, nil).Times(1)
-	m.EXPECT().NearestGoodBehaviorScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.BehaviorCount), int(metric.BehaviorDelta), nil).Times(1)
+	m.EXPECT().NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.BehaviorCount), int(metric.BehaviorDelta), nil).Times(1)
 	m.EXPECT().NearestSymptomScore(consts.CORHORT_DISTANCE_RANGE, gomock.Any()).Return(metric.Score, 2.2, int(metric.SymptomCount), int(metric.SymptomDelta), nil).Times(1)
 	m.EXPECT().GetConfirm(gomock.Any()).Return(int(metric.ConfirmedCount), int(metric.ConfirmedDelta), nil).Times(1)
 	m.EXPECT().UpdateProfileMetric("1", gomock.Any()).Return(nil).Times(1)
