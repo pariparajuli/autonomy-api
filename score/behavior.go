@@ -1,6 +1,8 @@
 package score
 
 import (
+	"math"
+
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -51,5 +53,22 @@ func BehaviorScore(rawData NearestGoodBehaviorData) (float64, float64, float64, 
 
 	totalReportedCount := float64(rawData.OfficialBehaviorCount + rawData.CustomizedBehaviorCount)
 	deltaReportedCountPast := totalReportedCount - (float64(rawData.PastCustomizedBehaviorCount + rawData.PastOfficialBehaviorCount))
+
+	if math.IsNaN(score) {
+		score = 0
+	}
+
+	if math.IsNaN(deltaInPercent) {
+		deltaInPercent = 0
+	}
+
+	if math.IsNaN(totalReportedCount) {
+		totalReportedCount = 0
+	}
+
+	if math.IsNaN(deltaReportedCountPast) {
+		deltaReportedCountPast = 0
+	}
+
 	return score, deltaInPercent, totalReportedCount, deltaReportedCountPast
 }
