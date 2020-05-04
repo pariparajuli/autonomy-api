@@ -97,7 +97,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		Location:           schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		CustomizedSymptoms: customized,
 		SymptomScore:       symptomScore,
-		Timestamp:          time.Now().UTC().UnixNano(),
+		Timestamp:          time.Now().UTC().Unix(),
 	}
 
 	err = s.mongoStore.SymptomReportSave(&data)
