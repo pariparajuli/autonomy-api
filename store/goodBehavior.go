@@ -214,7 +214,7 @@ func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location)
 			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
 		}
 	}
-	log.Debug(fmt.Sprintf("TotalCount:%v OfficialWeight:%v,OfficialCount:%v, CustimizedWeight:%v, CustimizedCount:%v, TotalCountYesterday:%v, OfficialWeightYesterday:%v, OfficialCountYesterday:%v, CustimizedWeightYesterday:%v, CustimizedCountYesterday:%v",
+	log.Debug(fmt.Sprintf("NearestGoodBehavior TotalCount:%v OfficialWeight:%v,OfficialCount:%v, CustimizedWeight:%v, CustimizedCount:%v, TotalCountYesterday:%v, OfficialWeightYesterday:%v, OfficialCountYesterday:%v, CustimizedWeightYesterday:%v, CustimizedCountYesterday:%v",
 		resultToday.TotalCount, resultToday.OfficialWeight, resultToday.OfficialCount, resultToday.CustomizedWeight, resultToday.CustomizedCount,
 		resultYesterday.TotalCount, resultYesterday.OfficialWeight, resultYesterday.OfficialCount, resultYesterday.CustomizedWeight, resultYesterday.CustomizedCount))
 	return resultToday, resultYesterday, nil

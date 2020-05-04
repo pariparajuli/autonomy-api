@@ -206,7 +206,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location,
 			} else {
 				officialDistribution[s.ID] = value + 1
 			}
-			log.Info(fmt.Sprintf("NearestSymptomScore: ID:%s count:%v", s.ID))
+			//log.Info(fmt.Sprintf("NearestSymptomScore: ID:%s count:%v", s.ID, officialDistribution[s.ID]))
 		}
 	}
 	return officialDistribution, float64(totalSymptom), float64(userCount), nil

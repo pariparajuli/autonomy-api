@@ -1,10 +1,10 @@
 package store
 
 import (
-	"time"
-
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
@@ -40,6 +40,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location, true)
+	//log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", officialSymptomDistribution, officialSymptomCount, totalPeopleReport))
 
 	if err != nil {
 		log.WithFields(log.Fields{
