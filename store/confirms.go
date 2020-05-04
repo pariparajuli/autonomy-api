@@ -187,14 +187,22 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, error) {
 		"info":   info,
 	}).Debug("geo info")
 
-	var county, country string
+	var county, country, l1, l3 string
 	for _, a := range info.AddressComponents {
 		if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_1" {
-			county = a.LongName
+			l1 = a.LongName
+		} else if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_3" {
+			l3 = a.LongName
 		} else if len(a.Types) > 0 && a.Types[0] == "country" {
 			country = utils.EnNameToKey(a.ShortName)
 			break
 		}
+	}
+
+	if l1 != "" {
+		county = l1
+	} else {
+		county = l3
 	}
 
 	country = utils.EnNameToKey(country)
