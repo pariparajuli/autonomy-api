@@ -40,7 +40,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	officialSymptomDistribution, officialSymptomCount, userCount, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location, true)
-	//log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", officialSymptomDistribution, officialSymptomCount, totalPeopleReport))
+	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", officialSymptomDistribution, officialSymptomCount, totalPeopleReport))
 
 	if err != nil {
 		log.WithFields(log.Fields{
