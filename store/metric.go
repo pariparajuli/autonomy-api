@@ -156,6 +156,7 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		CustomizedWeight:   sCustomizedCount,
 		CustomSymptomCount: sCustomizedCount,
 		Symptoms:           symptomToday.WeightDistribution,
+		Score:              symptomScore,
 	}
 	log.WithFields(log.Fields{
 		"prefix":             mongoLogPrefix,
