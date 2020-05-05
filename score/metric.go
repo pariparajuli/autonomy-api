@@ -46,7 +46,21 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 
 func CalculateMetric(rawMetrics schema.Metric, oldMetric *schema.Metric) (*schema.Metric, error) {
 	metric := rawMetrics
-	SymptomScore(schema.DefaultSymptomWeights, rawMetrics.Details.Symptoms.TodayData, rawMetrics.Details.Symptoms.YesterdayData)
+	symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount :=
+		SymptomScore(schema.DefaultSymptomWeights, rawMetrics.Details.Symptoms.TodayData, rawMetrics.Details.Symptoms.YesterdayData)
+	metric.Details.Symptoms.Score = symptomScore
+	metric.SymptomDelta = sDeltaInPercent
+	metric.SymptomCount = sOfficialCount + sCustomizedCount
+	metric.Details.Symptoms = schema.SymptomDetail{
+		SymptomTotal:       sTotalweight,
+		TotalPeople:        rawMetrics.Details.Symptoms.TodayData.UserCount,
+		Symptoms:           rawMetrics.Details.Symptoms.TodayData.WeightDistribution,
+		MaxScorePerPerson:  sMaxScorePerPerson,
+		CustomizedWeight:   sCustomizedCount,
+		CustomSymptomCount: sCustomizedCount,
+		Score:              symptomScore,
+	}
+
 	ConfirmScore(&metric)
 
 	totalScore := DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)

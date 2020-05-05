@@ -101,11 +101,13 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
-		if profile.ScoreCoefficient != nil {
-			metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
+		loc := schema.Location{
+			Latitude:  profile.Location.Coordinates[1],
+			Longitude: profile.Location.Coordinates[0],
 		}
 
-		if err := s.mongo.UpdateProfileMetric(accountNumber, &metric); err != nil {
+		metric, err := s.mongo.SyncAccountMetrics(accountNumber, profile.ScoreCoefficient, loc)
+		if err != nil {
 			return nil, err
 		}
 
