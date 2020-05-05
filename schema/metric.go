@@ -10,7 +10,7 @@ type BehaviorDetail struct {
 	BehaviorTotal           float64 `json:"behavior_total" bson:"behavior_total"`
 	TotalPeople             float64 `json:"total_people" bson:"total_people"`
 	MaxScorePerPerson       float64 `json:"max_score_per_person" bson:"max_score_per_person"`
-	CustomizedBehaviorTotal float64 `json:"behavior_customized_total" bson:"behavior_customized_total`
+	CustomizedBehaviorTotal float64 `json:"behavior_customized_total" bson:"behavior_customized_total"`
 	Score                   float64 `json:"score" bson:"score"`
 }
 
@@ -26,10 +26,10 @@ type SymptomDetail struct {
 	YesterdayData      NearestSymptomData  `json:"-"  bson:"-"`
 }
 type NearestSymptomData struct {
-	UserCount          float64             `json:"userCount" bson:"userCount`
+	UserCount          float64             `json:"userCount" bson:"userCount"`
 	OfficialCount      float64             `json:"officialCount" bson:"officialCount"`
 	CustomizedCount    float64             `json:"customizedCount" bson:"customizedCount"`
-	WeightDistribution SymptomDistribution `json:"weight_distribution" beson:"weight_distribution"`
+	WeightDistribution SymptomDistribution `json:"weight_distribution" bson:"weight_distribution"`
 }
 
 type Details struct {
