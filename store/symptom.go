@@ -533,14 +533,6 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 			return 0, err
 		}
 
-		// log.WithFields(log.Fields{
-		// 	"prefix":         mongoLogPrefix,
-		// 	"account_number": data.AccountNumber,
-		// 	"official":       data.Official,
-		// 	"customized":     data.Customized,
-		// 	"timestamp":      data.Timestamp,
-		// }).Debug("found account data")
-
 		officialCount += len(data.Official)
 		customizedCount += len(data.Customized)
 	}
