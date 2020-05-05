@@ -34,8 +34,10 @@ func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error)
 		return []string{}, nil
 	}
 
+	total := 0
+
 	// iterate
-	for cur.Next(ctx) {
+	for cur.Next(ctx) && total < count {
 		err = cur.Decode(&record)
 		if nil != err {
 			log.WithField("prefix", mongoLogPrefix).Errorf("nearest count decode record with error: %s", err)
@@ -44,7 +46,7 @@ func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error)
 		ids = append(ids, record.ID)
 	}
 
-	log.WithField("prefix", mongoLogPrefix).Debugf("find nearest accounts: %d", count, len(ids))
+	log.WithField("prefix", mongoLogPrefix).Debugf("nearest count wants %d, get %d", count, total)
 
 	return ids, nil
 }
