@@ -408,8 +408,10 @@ func (m *mongoDB) UpdateProfilePOIMetric(accountNumber string, poiID primitive.O
 		"account_number":        accountNumber,
 		"points_of_interest.id": poiID,
 	}
+
 	update := bson.M{
 		"$set": bson.M{
+			"points_of_interest.$.metric":     metric,
 			"points_of_interest.$.score":      metric.Score,
 			"points_of_interest.$.updated_at": time.Now().UTC(),
 		},

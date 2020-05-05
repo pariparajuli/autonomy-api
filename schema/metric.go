@@ -46,6 +46,6 @@ type Metric struct {
 	BehaviorCount  float64 `json:"behavior" bson:"behavior"`
 	BehaviorDelta  float64 `json:"behavior_delta" bson:"behavior_delta"`
 	Score          float64 `json:"score" bson:"score"`
-	LastUpdate     int64   `bson:"last_update"`
+	LastUpdate     int64   `json:"last_update" bson:"last_update"`
 	Details        Details `json:"details" bson:"details"`
 }

@@ -16,15 +16,24 @@ const (
 )
 
 func (s *Server) singleAreaProfile(c *gin.Context) {
+	accountNumber := c.GetString("requester")
+
+	profile, err := s.mongoStore.GetProfile(accountNumber)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
 	poiID, err := primitive.ObjectIDFromHex(c.Param("poiID"))
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("invalid POI ID"))
 		return
 	}
 
-	metric, err := s.mongoStore.GetPOIMetrics(poiID)
+	metric, err := s.mongoStore.SyncAccountPOIMetrics(accountNumber, profile.ScoreCoefficient, poiID)
 	if err != nil {
-		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("error getting poi"))
+		c.Error(err)
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 

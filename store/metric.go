@@ -19,6 +19,7 @@ const (
 type Metric interface {
 	CollectRawMetrics(location schema.Location) (*schema.Metric, error)
 	SyncAccountMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, location schema.Location) (*schema.Metric, error)
+	SyncAccountPOIMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, poiID primitive.ObjectID) (*schema.Metric, error)
 	SyncPOIMetrics(poiID primitive.ObjectID, location schema.Location) (*schema.Metric, error)
 }
 
@@ -177,6 +178,94 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	}
 
 	return metric, nil
+}
+
+func (m *mongoDB) SyncAccountPOIMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, poiID primitive.ObjectID) (*schema.Metric, error) {
+	profile, err := m.GetProfile(accountNumber)
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix":         mongoLogPrefix,
+			"account_number": accountNumber,
+		}).Error("get profile")
+		return nil, err
+	}
+
+	for _, p := range profile.PointsOfInterest {
+		if p.ID == poiID {
+			poi, err := m.GetPOI(poiID)
+			if err != nil {
+				return nil, ErrPOINotFound
+			}
+			location := schema.Location{
+				Longitude: poi.Location.Coordinates[0],
+				Latitude:  poi.Location.Coordinates[1],
+			}
+			symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
+			log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", symptomToday.WeightDistribution, symptomToday.OfficialCount, symptomToday.UserCount))
+			if err != nil {
+				log.WithFields(log.Fields{
+					"prefix": mongoLogPrefix,
+					"error":  err,
+				}).Error("NearestSymptomScore outcome")
+				return nil, err
+			}
+
+			metric := poi.Metric
+
+			var symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount float64
+			if coefficient != nil {
+				// TODO: Called in both here metic.go and score/metric.go. Decide where to call
+				//scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
+				//	scoreUtil.ConfirmScore(metric)
+				// Symptom
+				symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount = scoreUtil.SymptomScore(profile.ScoreCoefficient.SymptomWeights, symptomToday, symptomYesterday)
+				metric.Details.Symptoms.Score = symptomScore
+				metric.Score = scoreUtil.TotalScoreV1(*coefficient,
+					metric.Details.Symptoms.Score,
+					metric.Details.Behaviors.Score,
+					metric.Details.Confirm.Score,
+				)
+			} else {
+				// TODO: Called in both here metic.go and score/metric.go. Decide where to call
+				//	scoreUtil.SymptomScore(schema.DefaultSymptomWeights, metric, &p.Metric)
+				scoreUtil.ConfirmScore(&metric)
+				symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount = scoreUtil.SymptomScore(schema.DefaultSymptomWeights, symptomToday, symptomYesterday)
+				metric.Details.Symptoms.Score = symptomScore
+				scoreUtil.DefaultTotalScore(
+					metric.Details.Symptoms.Score,
+					metric.Details.Behaviors.Score,
+					metric.Details.Confirm.Score)
+			}
+			metric.SymptomDelta = sDeltaInPercent
+			metric.SymptomCount = sOfficialCount + sCustomizedCount
+			metric.Details.Symptoms = schema.SymptomDetail{
+				SymptomTotal:       sTotalweight,
+				TotalPeople:        symptomToday.UserCount,
+				MaxScorePerPerson:  sMaxScorePerPerson,
+				CustomizedWeight:   sCustomizedCount,
+				CustomSymptomCount: sCustomizedCount,
+				Symptoms:           symptomToday.WeightDistribution,
+				Score:              symptomScore,
+			}
+			log.WithFields(log.Fields{
+				"prefix":             mongoLogPrefix,
+				"SymptomDelta":       sDeltaInPercent,
+				"SymptomCount":       sOfficialCount + sCustomizedCount,
+				"SymptomTotal":       metric.Details.Symptoms.SymptomTotal,
+				"TotalPeople":        metric.Details.Symptoms.TotalPeople,
+				"MaxScorePerPerson":  metric.Details.Symptoms.MaxScorePerPerson,
+				"CustomizedWeight":   metric.Details.Symptoms.CustomizedWeight,
+				"CustomSymptomCount": metric.Details.Symptoms.CustomSymptomCount,
+			}).Debug("SyncAccountMetrics symptom Info")
+
+			if err := m.UpdateProfilePOIMetric(accountNumber, poiID, metric); err != nil {
+				return nil, err
+			}
+			return &metric, nil
+		}
+	}
+
+	return nil, ErrPOINotFound
 }
 
 func (m *mongoDB) SyncPOIMetrics(poiID primitive.ObjectID, location schema.Location) (*schema.Metric, error) {
