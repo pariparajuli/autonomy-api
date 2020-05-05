@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -94,6 +95,9 @@ func (m *mongoDB) ListOfficialBehavior(lang string) ([]schema.Behavior, error) {
 }
 
 func (m *mongoDB) CreateBehavior(behavior schema.Behavior) (string, error) {
+	if 0 == len(behavior.Name) {
+		return "", errors.New("empty behavior")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)

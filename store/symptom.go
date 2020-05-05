@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +33,9 @@ type Symptom interface {
 }
 
 func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
+	if 0 == len(symptom.Name) {
+		return "", errors.New("empty symptom")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	c := m.client.Database(m.database)
