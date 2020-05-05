@@ -15,8 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/score"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var localizedSymptoms map[string][]schema.Symptom = map[string][]schema.Symptom{}
@@ -27,7 +25,7 @@ type Symptom interface {
 	SymptomReportSave(data *schema.SymptomReportData) error
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
-	NearestSymptomScore(distInMeter int, location schema.Location) (score.NearestSymptomData, score.NearestSymptomData, error)
+	NearestSymptomScore(distInMeter int, location schema.Location) (schema.NearestSymptomData, schema.NearestSymptomData, error)
 	NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, float64, error)
 }
 
@@ -182,7 +180,7 @@ func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Loc
 }
 
 // NearestGoodBehaviorScore return  the total symptom score and delta score of users within distInMeter range
-func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (score.NearestSymptomData, score.NearestSymptomData, error) {
+func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (schema.NearestSymptomData, schema.NearestSymptomData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db := m.client.Database(m.database)
@@ -217,12 +215,12 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageToday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest symptom score")
-		return score.NearestSymptomData{}, score.NearestSymptomData{}, err
+		return schema.NearestSymptomData{}, schema.NearestSymptomData{}, err
 	}
 	userCount := int32(0)
 	OfficialSymptom := 0
 	CustomizedSymptom := 0
-	var dataToday score.NearestSymptomData
+	var dataToday schema.NearestSymptomData
 	for cursor.Next(ctx) {
 		var result schema.SymptomReportData
 		if err := cursor.Decode(&result); err != nil {
@@ -240,7 +238,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 				officialDistribution[s.ID] = value + 1
 			}
 		}
-		dataToday = score.NearestSymptomData{
+		dataToday = schema.NearestSymptomData{
 			UserCount:          float64(userCount),
 			OfficialCount:      float64(OfficialSymptom),
 			CustomizedCount:    float64(CustomizedSymptom),
@@ -252,12 +250,12 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 	cursor, err = collection.Aggregate(ctx, mongo.Pipeline{geoStage, timeStageYesterday, sortStage, groupStage})
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest symptom score")
-		return score.NearestSymptomData{}, score.NearestSymptomData{}, err
+		return schema.NearestSymptomData{}, schema.NearestSymptomData{}, err
 	}
 	userCount = 0
 	OfficialSymptom = 0
 	CustomizedSymptom = 0
-	var dataYesterday score.NearestSymptomData
+	var dataYesterday schema.NearestSymptomData
 	for cursor.Next(ctx) {
 		var result schema.SymptomReportData
 		if err := cursor.Decode(&result); err != nil {
@@ -275,7 +273,7 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 				officialDistributionYesterday[s.ID] = value + 1
 			}
 		}
-		dataYesterday = score.NearestSymptomData{
+		dataYesterday = schema.NearestSymptomData{
 			UserCount:          float64(userCount),
 			OfficialCount:      float64(OfficialSymptom),
 			CustomizedCount:    float64(CustomizedSymptom),

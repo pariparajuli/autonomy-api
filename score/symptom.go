@@ -8,14 +8,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-type NearestSymptomData struct {
-	UserCount          float64                    `json:"userCount" bson:"userCount`
-	OfficialCount      float64                    `json:"officialCount" bson:"officialCount"`
-	CustomizedCount    float64                    `json:"customizedCount" bson:"customizedCount"`
-	WeightDistribution schema.SymptomDistribution `json:"weight_distribution" beson:"weight_distribution"`
-}
-
-func SymptomScore(weights schema.SymptomWeights, today, yesterday NearestSymptomData) (float64, float64, float64, float64, float64, float64) {
+func SymptomScore(weights schema.SymptomWeights, today, yesterday schema.NearestSymptomData) (float64, float64, float64, float64, float64, float64) {
 	countYesterday := yesterday.OfficialCount + yesterday.CustomizedCount
 	countToday := today.OfficialCount + today.CustomizedCount
 	// Today

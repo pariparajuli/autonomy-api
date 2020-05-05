@@ -22,6 +22,14 @@ type SymptomDetail struct {
 	Score              float64             `json:"score" bson:"score"`
 	Symptoms           SymptomDistribution `json:"-" bson:"symptoms"`
 	CustomSymptomCount float64             `json:"custom_symptom_count" bson:"custom_symptom_count"`
+	TodayData          NearestSymptomData  `json:"-"  bson:"-"`
+	YesterdayData      NearestSymptomData  `json:"-"  bson:"-"`
+}
+type NearestSymptomData struct {
+	UserCount          float64             `json:"userCount" bson:"userCount`
+	OfficialCount      float64             `json:"officialCount" bson:"officialCount"`
+	CustomizedCount    float64             `json:"customizedCount" bson:"customizedCount"`
+	WeightDistribution SymptomDistribution `json:"weight_distribution" beson:"weight_distribution"`
 }
 
 type Details struct {

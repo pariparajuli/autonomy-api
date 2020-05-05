@@ -56,6 +56,7 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 
 		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
 		var coefficient *schema.ScoreCoefficient
+
 		if time.Since(metricLastUpdate) >= metricUpdateInterval {
 			// will sync with coefficient = nil
 		} else if coefficient = profile.ScoreCoefficient; coefficient != nil && coefficient.UpdatedAt.Sub(metricLastUpdate) > 0 {
@@ -64,6 +65,7 @@ func (s *Server) currentAreaProfile(c *gin.Context) {
 			c.JSON(http.StatusOK, metric)
 			return
 		}
+
 		m, err := s.mongoStore.SyncAccountMetrics(account.AccountNumber, coefficient, location)
 		if err != nil {
 			c.Error(err)
