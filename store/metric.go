@@ -133,7 +133,7 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 	if coefficient != nil {
 		// TODO: Called in both here metic.go and score/metric.go. Decide where to call
 		// scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, metric, &p.Metric)
-		//scoreUtil.ConfirmScore(metric)
+		// scoreUtil.ConfirmScore(metric)
 		// Symptom
 		symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount =
 			scoreUtil.SymptomScore(p.ScoreCoefficient.SymptomWeights, rawMetrics.Details.Symptoms.TodayData, rawMetrics.Details.Symptoms.YesterdayData)
@@ -162,6 +162,7 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		CustomizedWeight:   sCustomizedCount,
 		CustomSymptomCount: sCustomizedCount,
 		Score:              symptomScore,
+		TodayData:          rawMetrics.Details.Symptoms.TodayData,
 	}
 	log.WithFields(log.Fields{
 		"prefix":             mongoLogPrefix,
