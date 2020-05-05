@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var localizedSymptoms map[string][]schema.Symptom = map[string][]schema.Symptom{}
