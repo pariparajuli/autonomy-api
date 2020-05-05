@@ -1,0 +1,45 @@
+symptoms:
+  fever:
+    name: 發燒
+    desc: 體溫超過 100ºF (38ºC)
+  cough:
+    name: 乾咳
+    desc: 咳嗽但沒有痰
+  fatigue:
+    name: 疲勞或四肢無力
+    desc: 不正常的身體軟弱無力
+  breath:
+    name: 呼吸急促
+    desc: 呼吸困難，難以吸到空氣
+  nasal:
+    name: 鼻塞
+    desc: 無法用鼻子呼吸，有異物感
+  throat:
+    name: 喉嚨痛
+    desc: 喉嚨疼痛，癢或發炎
+  chest:
+    name: 胸痛
+    desc: 持續性的胸部疼痛或脹氣
+  face:
+    name: 臉色發白
+    desc: 非由溫度引起的不正常臉色發白
+
+behaviors:
+  clean_hand:
+    name: 經常性清潔手部
+    desc: 以肥皂及水清洗手部達 20 秒，或使用酒精殺菌消毒
+  social_distancing:
+    name: 保持社交距離
+    desc: 避免群眾聚集，在家工作，在公共場合保持 1.5 公尺的安全距離
+  touch_face:
+    name: 避免用手碰觸臉部
+    desc: 避免用手接觸眼、口、鼻，特別是未經清潔消毒的手
+  wear_mask:
+    name: 戴上口罩
+    desc: 在公共場所或是無法維持社交距離的地方戴上口罩
+  covering_coughs:
+    name: 咳嗽、打噴嚏時，掩住口鼻
+    desc: 咳嗽或是打噴嚏時，以手肘或是衛生紙掩住口鼻
+  clean_surface:
+    name: 勤於清潔、消毒物品表面
+    desc: 對於會以手碰觸的物品例如燈具開關、桌面、鍵盤、門把，於固定時間以酒精消毒一次

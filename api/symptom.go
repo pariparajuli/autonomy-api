@@ -33,6 +33,21 @@ func (s *Server) createSymptom(c *gin.Context) {
 
 func (s *Server) getSymptoms(c *gin.Context) {
 	a := c.MustGet("account")
+
+	var params struct {
+		Language string `form:"lang"`
+	}
+
+	if err := c.Bind(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
 	account, ok := a.(*schema.Account)
 	if !ok {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
@@ -44,7 +59,7 @@ func (s *Server) getSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 		return
 	}
-	symptoms, err := s.mongoStore.ListOfficialSymptoms()
+	symptoms, err := s.mongoStore.ListOfficialSymptoms(lang)
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}

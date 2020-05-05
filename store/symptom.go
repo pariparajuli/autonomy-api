@@ -5,21 +5,25 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
+
+var localizedSymptoms map[string][]schema.Symptom = map[string][]schema.Symptom{}
 
 type Symptom interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
-	ListOfficialSymptoms() ([]schema.Symptom, error)
+	ListOfficialSymptoms(string) ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
@@ -50,9 +54,16 @@ func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
 	return string(symptom.ID), nil
 }
 
-func (m *mongoDB) ListOfficialSymptoms() ([]schema.Symptom, error) {
+func (m *mongoDB) ListOfficialSymptoms(lang string) ([]schema.Symptom, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
+
+	lang = strings.ReplaceAll(strings.ToLower(lang), "-", "_")
+
+	if symptoms, ok := localizedSymptoms[lang]; ok {
+		return symptoms, nil
+	}
+
 	c := m.client.Database(m.database)
 
 	query := bson.M{"source": schema.OfficialSymptom}
@@ -62,10 +73,37 @@ func (m *mongoDB) ListOfficialSymptoms() ([]schema.Symptom, error) {
 		return nil, err
 	}
 
+	loc := utils.NewLocalizer(lang)
+
 	symptoms := make([]schema.Symptom, 0)
-	if err := cursor.All(ctx, &symptoms); err != nil {
-		return nil, err
+
+	for cursor.Next(ctx) {
+		var s schema.Symptom
+		if err := cursor.Decode(&s); err != nil {
+			return nil, err
+		}
+
+		if name, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: fmt.Sprintf("symptoms.%s.name", s.ID),
+		}); err == nil {
+			s.Name = name
+		} else {
+			log.WithError(err).Warnf("can not decode name")
+		}
+
+		if desc, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: fmt.Sprintf("symptoms.%s.desc", s.ID),
+		}); err == nil {
+			s.Desc = desc
+		} else {
+			log.WithError(err).Warnf("can not decode description")
+		}
+
+		symptoms = append(symptoms, s)
 	}
+
+	localizedSymptoms[lang] = symptoms
+
 	return symptoms, nil
 }
 

@@ -110,13 +110,27 @@ func (s *Server) getProfileFormula(c *gin.Context) {
 	var isDefaultFormula bool
 	accountNumber := c.GetString("requester")
 
+	var params struct {
+		Language string `form:"lang"`
+	}
+
+	if err := c.Bind(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
 	coefficient, err := s.mongoStore.GetProfileCoefficient(accountNumber)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
 
-	symptoms, err := s.mongoStore.ListOfficialSymptoms()
+	symptoms, err := s.mongoStore.ListOfficialSymptoms(lang)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return

@@ -39,13 +39,29 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
+
+	var params struct {
+		Language string `form:"lang"`
+	}
+
+	if err := c.Bind(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
 	var loc *schema.Location
 	loc = account.Profile.State.LastLocation
 	if nil == loc {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 		return
 	}
-	behaviors, err := s.mongoStore.ListOfficialBehavior()
+
+	behaviors, err := s.mongoStore.ListOfficialBehavior(lang)
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 		return

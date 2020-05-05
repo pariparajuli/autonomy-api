@@ -33,6 +33,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/muesli/reflow v0.1.0 // indirect
+	github.com/nicksnyder/go-i18n/v2 v2.0.3
 	github.com/peterh/liner v1.2.0 // indirect
 	github.com/rogpeppe/godef v1.1.2 // indirect
 	github.com/securego/gosec v0.0.0-20200401082031-e946c8c39989 // indirect
@@ -56,9 +57,11 @@ require (
 	golang.org/x/arch v0.0.0-20200312215426-ff8b605520f4 // indirect
 	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0 // indirect
 	golang.org/x/sys v0.0.0-20200428200454-593003d681fa // indirect
+	golang.org/x/text v0.3.2
 	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
 	golang.org/x/tools/gopls v0.4.0 // indirect
 	googlemaps.github.io/maps v0.0.0-20200130222743-aef6b08443c7
+	gopkg.in/yaml.v2 v2.2.8
 )
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20190309152529-a9b748bb0e02

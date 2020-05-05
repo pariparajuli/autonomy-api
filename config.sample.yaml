@@ -8,6 +8,8 @@ jwt:
   password:
 log:
   level: debug
+i18n:
+  dir: /Users/jimyeh/Code/bitmark-inc/autonomy-api/i18n
 bitmarksdk:
   token:
   network: testnet

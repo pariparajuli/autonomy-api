@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 const (
@@ -27,6 +30,8 @@ const (
 	CustomizedBehavior BehaviorSource = "customized"
 )
 
+var localizedBehaviors map[string][]schema.Behavior = map[string][]schema.Behavior{}
+
 // GoodBehaviorReport save a GoodBehaviorData into Database
 type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
@@ -34,12 +39,19 @@ type GoodBehaviorReport interface {
 	NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, score.NearestGoodBehaviorData, error)
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
-	ListOfficialBehavior() ([]schema.Behavior, error)
+	ListOfficialBehavior(string) ([]schema.Behavior, error)
 }
 
-func (m *mongoDB) ListOfficialBehavior() ([]schema.Behavior, error) {
+func (m *mongoDB) ListOfficialBehavior(lang string) ([]schema.Behavior, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
+
+	lang = strings.ReplaceAll(strings.ToLower(lang), "-", "_")
+
+	if behaviors, ok := localizedBehaviors[lang]; ok {
+		return behaviors, nil
+	}
+
 	c := m.client.Database(m.database)
 
 	query := bson.M{"source": schema.OfficialBehavior}
@@ -49,9 +61,33 @@ func (m *mongoDB) ListOfficialBehavior() ([]schema.Behavior, error) {
 		return nil, err
 	}
 
+	loc := utils.NewLocalizer(lang)
+
 	behaviors := make([]schema.Behavior, 0)
-	if err := cursor.All(ctx, &behaviors); err != nil {
-		return nil, err
+
+	for cursor.Next(ctx) {
+		var b schema.Behavior
+		if err := cursor.Decode(&b); err != nil {
+			return nil, err
+		}
+
+		if name, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: fmt.Sprintf("behaviors.%s.name", b.ID),
+		}); err == nil {
+			b.Name = name
+		} else {
+			log.WithError(err).Warnf("can not decode name")
+		}
+
+		if desc, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: fmt.Sprintf("behaviors.%s.desc", b.ID),
+		}); err == nil {
+			b.Desc = desc
+		} else {
+			log.WithError(err).Warnf("can not decode description")
+		}
+
+		behaviors = append(behaviors, b)
 	}
 
 	return behaviors, nil

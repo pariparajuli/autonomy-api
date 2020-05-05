@@ -26,6 +26,7 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/api"
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
+	"github.com/bitmark-inc/autonomy-api/utils"
 
 	bitmarksdk "github.com/bitmark-inc/bitmark-sdk-go"
 	"github.com/bitmark-inc/bitmark-sdk-go/account"
@@ -117,6 +118,8 @@ func main() {
 	loadConfig(configFile)
 
 	initLog()
+
+	utils.InitI18NBundle()
 
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
