@@ -1,12 +1,12 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
-
+	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
@@ -100,6 +100,10 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 
 	if err := c.BindJSON(&params); err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+	if 0 == len(params.Behaviors) {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, errors.New(errorMessageMap[1010]))
 		return
 	}
 	official, customized, err := s.getBehaviors(params.Behaviors)
