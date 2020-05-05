@@ -507,11 +507,8 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 
 	if nil != err {
 		log.WithFields(log.Fields{
-			"prefix":   mongoLogPrefix,
-			"distance": meter,
-			"lat":      loc.Latitude,
-			"lng":      loc.Longitude,
-			"error":    err,
+			"prefix": mongoLogPrefix,
+			"error":  err,
 		}).Error("aggregate nearby symptoms")
 		return 0, err
 	}
@@ -530,11 +527,8 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 		err = cur.Decode(&data)
 		if nil != err {
 			log.WithFields(log.Fields{
-				"prefix":   mongoLogPrefix,
-				"distance": meter,
-				"lat":      loc.Latitude,
-				"lng":      loc.Longitude,
-				"error":    err,
+				"prefix": mongoLogPrefix,
+				"error":  err,
 			}).Error("decode aggregated symptoms")
 			return 0, err
 		}
