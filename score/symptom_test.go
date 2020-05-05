@@ -10,7 +10,7 @@ import (
 )
 
 func TestSymptomScoreWhenDoTwice(t *testing.T) {
-	yesterday := score.NearestSymptomData{
+	yesterday := schema.NearestSymptomData{
 		UserCount:       1,
 		OfficialCount:   2,
 		CustomizedCount: 3,
@@ -26,7 +26,7 @@ func TestSymptomScoreWhenDoTwice(t *testing.T) {
 		},
 	}
 
-	today := score.NearestSymptomData{
+	today := schema.NearestSymptomData{
 		UserCount:       2,
 		OfficialCount:   3,
 		CustomizedCount: 4,
