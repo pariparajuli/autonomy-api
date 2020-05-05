@@ -232,8 +232,8 @@ func (s *Server) setupRouter() *gin.Engine {
 	debugRoute := apiRoute.Group("/debug")
 	debugRoute.Use(s.recognizeAccountMiddleware())
 	{
-		debugRoute.GET("", s.currentDebug)
-		debugRoute.GET("/:poiID", s.singleDebug)
+		debugRoute.GET("", s.currentAreaDebugData)
+		debugRoute.GET("/:poiID", s.poiDebugData)
 	}
 
 	return r

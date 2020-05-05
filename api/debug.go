@@ -12,7 +12,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-func (s *Server) currentDebug(c *gin.Context) {
+func (s *Server) currentAreaDebugData(c *gin.Context) {
 	account, ok := c.MustGet("account").(*schema.Account)
 	if !ok {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
@@ -53,7 +53,7 @@ func (s *Server) currentDebug(c *gin.Context) {
 			return
 		}
 
-		nearAccounts, err := s.mongoStore.NearestCount(consts.NEARBY_DISTANCE_RANGE, loc)
+		nearAccounts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, loc)
 		if err != nil {
 			c.Error(err)
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
@@ -79,7 +79,7 @@ func (s *Server) currentDebug(c *gin.Context) {
 	c.JSON(http.StatusOK, debug)
 }
 
-func (s *Server) singleDebug(c *gin.Context) {
+func (s *Server) poiDebugData(c *gin.Context) {
 	poiID, err := primitive.ObjectIDFromHex(c.Param("poiID"))
 	if err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, fmt.Errorf("invalid POI ID"))
@@ -120,7 +120,7 @@ func (s *Server) singleDebug(c *gin.Context) {
 			return
 		}
 
-		nearAccounts, err := s.mongoStore.NearestCount(consts.NEARBY_DISTANCE_RANGE, loc)
+		nearAccounts, err := s.mongoStore.NearestDistance(consts.NEARBY_DISTANCE_RANGE, loc)
 		if err != nil {
 			c.Error(err)
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
