@@ -29,6 +29,7 @@ type Symptom interface {
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
 	NearestSymptomScore(distInMeter int, location schema.Location) (schema.NearestSymptomData, schema.NearestSymptomData, error)
 	NearOfficialSymptomInfo(meter int, loc schema.Location) (schema.SymptomDistribution, float64, float64, error)
+	SymptomCount(meter int, loc schema.Location) (int, error)
 }
 
 func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
@@ -478,4 +479,108 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 	}).Debug("near symptom info")
 
 	return distribution, symptomCount, float64(userSumData.Total), nil
+}
+
+func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
+	log.WithFields(log.Fields{
+		"prefix":   mongoLogPrefix,
+		"distance": meter,
+		"lat":      loc.Latitude,
+		"lng":      loc.Longitude,
+	}).Info("get symptom count")
+
+	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	geoNear := bson.D{
+		{"$geoNear", bson.M{
+			"near": bson.M{
+				"type":        "Point",
+				"coordinates": bson.A{loc.Longitude, loc.Latitude},
+			},
+			"distanceField": "dist",
+			"maxDistance":   meter,
+			"spherical":     true,
+			"includeLocs":   "location",
+		}},
+	}
+
+	todayBeginTime := todayStartAt()
+	addedToday := bson.D{
+		{"$match", bson.M{
+			"ts": bson.M{
+				"$gte": todayBeginTime - 86400,
+			},
+		}},
+	}
+
+	latestFirst := bson.D{
+		{"$sort", bson.M{
+			"ts": -1,
+		}},
+	}
+
+	groupAll := bson.D{
+		{"$group", bson.M{
+			"_id": "$account_number",
+			"official": bson.M{
+				"$first": "$official_symptoms",
+			},
+			"customized": bson.M{
+				"$first": "$customized_symptoms",
+			},
+			"ts": bson.M{
+				"$first": "$ts",
+			},
+		}},
+	}
+
+	cur, err := c.Aggregate(ctx, mongo.Pipeline{
+		geoNear,
+		addedToday,
+		latestFirst,
+		groupAll,
+	})
+
+	if nil != err {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("aggregate nearby symptoms")
+		return 0, err
+	}
+
+	type aggregatedData struct {
+		AccountNumber string           `bson:"_id"`
+		Official      []schema.Symptom `bson:"official"`
+		Customized    []schema.Symptom `bson:"customized"`
+		Timestamp     int64            `bson:"ts"`
+	}
+
+	var data aggregatedData
+	var officialCount, customizedCount int
+
+	for cur.Next(ctx) {
+		err = cur.Decode(&data)
+		if nil != err {
+			log.WithFields(log.Fields{
+				"prefix": mongoLogPrefix,
+				"error":  err,
+			}).Error("decode aggregated symptoms")
+			return 0, err
+		}
+
+		officialCount += len(data.Official)
+		customizedCount += len(data.Customized)
+	}
+
+	log.WithFields(log.Fields{
+		"prefix":           mongoLogPrefix,
+		"timestamp":        todayBeginTime,
+		"official_count":   officialCount,
+		"customized_count": customizedCount,
+	}).Debug("aggregated symptoms")
+
+	return officialCount + customizedCount, nil
 }

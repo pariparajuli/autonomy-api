@@ -17,12 +17,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/bitmark-inc/bitmark-sdk-go/account"
+
+	"github.com/bitmark-inc/autonomy-api/external/aqi"
 	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
 	"github.com/bitmark-inc/autonomy-api/store"
-	"github.com/bitmark-inc/bitmark-sdk-go/account"
 )
 
 var log *logrus.Entry
@@ -54,6 +56,9 @@ type Server struct {
 
 	// http client for calling external services
 	httpClient *http.Client
+
+	// air quality index client
+	aqiClient aqi.AQI
 }
 
 // NewServer new instance of server
@@ -62,7 +67,9 @@ func NewServer(
 	mongoClient *mongo.Client,
 	jwtKey *rsa.PrivateKey,
 	bitmarkAccount *account.AccountV2,
-	geoClient geoinfo.GeoInfo) *Server {
+	geoClient geoinfo.GeoInfo,
+	aqiClient aqi.AQI,
+) *Server {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -87,6 +94,7 @@ func NewServer(
 		oneSignalClient: onesignal.NewClient(httpClient),
 		geoClient:       geoClient,
 		cadenceClient:   cadence.NewClient(),
+		aqiClient:       aqiClient,
 	}
 }
 
@@ -219,6 +227,13 @@ func (s *Server) setupRouter() *gin.Engine {
 	historyRoute.Use(s.recognizeAccountMiddleware())
 	{
 		historyRoute.GET("/:reportType", s.getHistory)
+	}
+
+	debugRoute := apiRoute.Group("/debug")
+	debugRoute.Use(s.recognizeAccountMiddleware())
+	{
+		debugRoute.GET("", s.currentAreaDebugData)
+		debugRoute.GET("/:poiID", s.poiDebugData)
 	}
 
 	return r

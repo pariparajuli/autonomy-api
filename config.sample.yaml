@@ -40,3 +40,5 @@ clients:
     minimum_client_version: 1
 map:
   key:
+aqi:
+  key:

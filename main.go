@@ -25,6 +25,7 @@ import (
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/bitmark-inc/autonomy-api/api"
+	"github.com/bitmark-inc/autonomy-api/external/aqi"
 	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/utils"
 
@@ -187,13 +188,16 @@ func main() {
 		log.Panicf("get geo client with error: %s", err)
 	}
 
+	aqiClient := aqi.New(viper.GetString("aqi.key"), "")
+
 	// Init http server
 	server = api.NewServer(
 		ormDB,
 		mongoClient,
 		jwtPrivateKey,
 		globalAccount,
-		geoClient)
+		geoClient,
+		aqiClient)
 	log.WithField("prefix", "init").Info("Initialized http server")
 
 	// Remove initial context
