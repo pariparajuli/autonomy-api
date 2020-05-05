@@ -44,6 +44,7 @@ func (m *mongoDB) NearestCount(count int, loc schema.Location) ([]string, error)
 			return []string{}, fmt.Errorf("decode mongo record with error: %s", err)
 		}
 		ids = append(ids, record.ID)
+		total++
 	}
 
 	log.WithField("prefix", mongoLogPrefix).Debugf("nearest count wants %d, get %d", count, total)
