@@ -19,8 +19,9 @@ const (
 )
 
 type historyQueryParams struct {
-	Before int64 `form:"before"`
-	Limit  int64 `form:"limit"`
+	Before   int64  `form:"before"`
+	Limit    int64  `form:"limit"`
+	Language string `form:"lang"`
 }
 
 func (s *Server) getHistory(c *gin.Context) {
@@ -58,16 +59,22 @@ func (s *Server) getHistory(c *gin.Context) {
 		return
 	}
 
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
 	switch c.Param("reportType") {
 	case reportTypeSymptoms:
-		records, err := s.mongoStore.GetReportedSymptoms(account.AccountNumber, before, limit)
+		records, err := s.mongoStore.GetReportedSymptoms(account.AccountNumber, before, limit, lang)
 		if err != nil {
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{"symptoms_history": records})
 	case reportTypeBehaviors:
-		records, err := s.mongoStore.GetReportedBehaviors(account.AccountNumber, before, limit)
+		records, err := s.mongoStore.GetReportedBehaviors(account.AccountNumber, before, limit, lang)
 		if err != nil {
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 			return
