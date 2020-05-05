@@ -444,7 +444,14 @@ func (m *mongoDB) NearOfficialSymptomInfo(meter int, loc schema.Location) (schem
 }
 
 func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
-	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	log.WithFields(log.Fields{
+		"prefix":   mongoLogPrefix,
+		"distance": meter,
+		"lat":      loc.Latitude,
+		"lng":      loc.Longitude,
+	}).Info("get symptom count")
+
+	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -463,7 +470,11 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 
 	todayBeginTime := todayStartAt()
 	addedToday := bson.D{
-		{"$match", bson.M{"ts": bson.M{"$gte": todayBeginTime}}},
+		{"$match", bson.M{
+			"ts": bson.M{
+				"$gte": todayBeginTime - 86400,
+			},
+		}},
 	}
 
 	latestFirst := bson.D{
@@ -480,6 +491,9 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 			},
 			"customized": bson.M{
 				"$first": "$customized_symptoms",
+			},
+			"ts": bson.M{
+				"$first": "$ts",
 			},
 		}},
 	}
@@ -506,6 +520,7 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 		AccountNumber string           `bson:"_id"`
 		Official      []schema.Symptom `bson:"official"`
 		Customized    []schema.Symptom `bson:"customized"`
+		Timestamp     int64            `bson:"ts"`
 	}
 
 	var data aggregatedData
@@ -523,12 +538,22 @@ func (m *mongoDB) SymptomCount(meter int, loc schema.Location) (int, error) {
 			}).Error("decode aggregated symptoms")
 			return 0, err
 		}
+
+		// log.WithFields(log.Fields{
+		// 	"prefix":         mongoLogPrefix,
+		// 	"account_number": data.AccountNumber,
+		// 	"official":       data.Official,
+		// 	"customized":     data.Customized,
+		// 	"timestamp":      data.Timestamp,
+		// }).Debug("found account data")
+
 		officialCount += len(data.Official)
 		customizedCount += len(data.Customized)
 	}
 
 	log.WithFields(log.Fields{
 		"prefix":           mongoLogPrefix,
+		"timestamp":        todayBeginTime,
 		"official_count":   officialCount,
 		"customized_count": customizedCount,
 	}).Debug("aggregated symptoms")
