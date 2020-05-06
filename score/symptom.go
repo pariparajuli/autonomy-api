@@ -11,10 +11,15 @@ import (
 func SymptomScore(weights schema.SymptomWeights, today, yesterday schema.NearestSymptomData) (float64, float64, float64, float64, float64, float64) {
 	countYesterday := yesterday.OfficialCount + yesterday.CustomizedCount
 	countToday := today.OfficialCount + today.CustomizedCount
+
 	// Today
 	maxScorePerPerson := float64(0) // Max Score,
 	for _, v := range weights {
 		maxScorePerPerson = maxScorePerPerson + v
+	}
+
+	if countYesterday <= 0 && countToday <= 0 {
+		return 100, 0, maxScorePerPerson, 0, 0, 0
 	}
 
 	totalOfficialWeight := float64(0)
