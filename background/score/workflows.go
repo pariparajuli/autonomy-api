@@ -102,8 +102,10 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 	var metric schema.Metric
 	err := workflow.ExecuteActivity(ctx, s.CalculateAccountStateActivity, accountNumber).Get(ctx, &metric)
 	if err != nil {
-		logger.Error("Fail to update account state", zap.Error(err))
-		sentry.CaptureException(err)
+		if err != ErrInvalidLocation {
+			logger.Error("Fail to update account state", zap.Error(err))
+			sentry.CaptureException(err)
+		}
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
