@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	// "github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
-	// "github.com/bitmark-inc/autonomy-api/utils"
 )
 
 type userPOI struct {
