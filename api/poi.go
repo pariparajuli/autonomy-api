@@ -52,7 +52,6 @@ func (s *Server) addPOI(c *gin.Context) {
 
 	metric, err := s.mongoStore.SyncAccountPOIMetrics(account.AccountNumber, profile.ScoreCoefficient, poi.ID)
 	if err != nil {
-		c.Error(err)
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
