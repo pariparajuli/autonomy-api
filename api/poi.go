@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 type userPOI struct {
@@ -46,15 +44,20 @@ func (s *Server) addPOI(c *gin.Context) {
 		return
 	}
 
-	poiID := poi.ID.Hex()
-	go func() {
-		if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, []primitive.ObjectID{poi.ID}); err != nil {
-			sentry.CaptureException(err)
-		}
-	}()
+	profile, err := s.mongoStore.GetProfile(account.AccountNumber)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
 
-	body.ID = poiID
-	body.Score = poi.Metric.Score
+	metric, err := s.mongoStore.SyncAccountPOIMetrics(account.AccountNumber, profile.ScoreCoefficient, poi.ID)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
+		return
+	}
+
+	body.ID = poi.ID.Hex()
+	body.Score = metric.Score
 	c.JSON(http.StatusOK, body)
 }
 
@@ -118,7 +121,7 @@ func (s *Server) updatePOIOrder(c *gin.Context) {
 		Order []string `json:"order"`
 	}
 
-	if err := c.BindJSON((&params)); err != nil {
+	if err := c.BindJSON(&params); err != nil {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
 		return
 	}

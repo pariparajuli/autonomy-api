@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
 )
 
 var (
@@ -65,11 +64,6 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		}
 	}
 
-	profile, err := m.GetProfile(accountNumber)
-	if err != nil {
-		return nil, err
-	}
-
 	if time.Since(time.Unix(poi.Metric.LastUpdate, 0)) > metricUpdateInterval {
 		newMetric, err := m.SyncPOIMetrics(poi.ID, schema.Location{
 			Latitude:  lat,
@@ -83,19 +77,10 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		}
 	}
 
-	// the default score for a POI is calculated from RefreshPOIMetrics
-	profilePOIScore := poi.Metric.Score
-
-	if profile.ScoreCoefficient != nil {
-		profilePOIScore = scoreUtil.TotalScoreV1(*profile.ScoreCoefficient,
-			poi.Metric.Details.Symptoms.Score, poi.Metric.Details.Behaviors.Score, poi.Metric.Details.Confirm.Score)
-	}
-
 	poiDesc := schema.ProfilePOI{
 		ID:        poi.ID,
 		Alias:     alias,
 		Address:   address,
-		Score:     profilePOIScore,
 		UpdatedAt: time.Now().UTC(),
 	}
 
