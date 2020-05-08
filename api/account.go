@@ -10,7 +10,7 @@ import (
 
 	scoreWorker "github.com/bitmark-inc/autonomy-api/background/score"
 	"github.com/bitmark-inc/autonomy-api/schema"
-	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 // accountRegister is the API for register a new account
@@ -139,9 +139,9 @@ func (s *Server) getProfileFormula(c *gin.Context) {
 	if coefficient == nil {
 		isDefaultFormula = true
 		coefficient = &schema.ScoreCoefficient{
-			Symptoms:       scoreUtil.DefaultScoreV1SymptomCoefficient,
-			Behaviors:      scoreUtil.DefaultScoreV1BehaviorCoefficient,
-			Confirms:       scoreUtil.DefaultScoreV1ConfirmCoefficient,
+			Symptoms:       score.DefaultScoreV1SymptomCoefficient,
+			Behaviors:      score.DefaultScoreV1BehaviorCoefficient,
+			Confirms:       score.DefaultScoreV1ConfirmCoefficient,
 			SymptomWeights: schema.DefaultSymptomWeights,
 		}
 	}

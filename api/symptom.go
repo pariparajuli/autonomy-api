@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 	"time"
-	
-	"github.com/gin-gonic/gin"
+
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
@@ -111,7 +111,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		return
 	}
 	totalSymptoms := append(official, customized...)
-	symptomScore := score(totalSymptoms)
+	symptomScore := calculateSymptomScore(totalSymptoms)
 	data := schema.SymptomReportData{
 		ProfileID:          account.Profile.ID.String(),
 		AccountNumber:      account.Profile.AccountNumber,
@@ -160,7 +160,7 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	return
 }
 
-func score(symptoms []schema.Symptom) float64 {
+func calculateSymptomScore(symptoms []schema.Symptom) float64 {
 	var sum float64 = 0
 	for _, symptom := range symptoms {
 		sum = sum + symptom.Weight

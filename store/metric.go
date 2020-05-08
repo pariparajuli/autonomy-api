@@ -9,7 +9,7 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
-	scoreUtil "github.com/bitmark-inc/autonomy-api/score"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 const (
@@ -42,7 +42,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		}).Debug("nearest good behavior")
 	}
 
-	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := scoreUtil.BehaviorScore(behaviorToday, behaviorYesterday)
+	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := score.BehaviorScore(behaviorToday, behaviorYesterday)
 
 	// Processing symptoms data
 	symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
@@ -117,7 +117,7 @@ func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.S
 		"raw_metrics":    rawMetrics,
 	}).Debug("collect raw metrics")
 
-	metric := scoreUtil.CalculateMetric(*rawMetrics, coefficient)
+	metric := score.CalculateMetric(*rawMetrics, coefficient)
 
 	if err := m.UpdateProfileMetric(accountNumber, metric); err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (m *mongoDB) SyncAccountPOIMetrics(accountNumber string, coefficient *schem
 				"raw_metrics":    rawMetrics,
 			}).Debug("collect raw metrics")
 
-			metric := scoreUtil.CalculateMetric(*rawMetrics, coefficient)
+			metric := score.CalculateMetric(*rawMetrics, coefficient)
 
 			if err := m.UpdateProfilePOIMetric(accountNumber, poiID, metric); err != nil {
 				return nil, err
@@ -181,7 +181,7 @@ func (m *mongoDB) SyncPOIMetrics(poiID primitive.ObjectID, location schema.Locat
 		return nil, err
 	}
 
-	metric := scoreUtil.CalculateMetric(*rawMetrics, nil)
+	metric := score.CalculateMetric(*rawMetrics, nil)
 	if err != nil {
 		return nil, err
 	}
