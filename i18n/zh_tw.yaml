@@ -23,6 +23,8 @@ symptoms:
   face:
     name: 臉色發白
     desc: 非由溫度引起的不正常臉色發白
+  insomnia:
+    name: 失眠
 
 behaviors:
   clean_hand:

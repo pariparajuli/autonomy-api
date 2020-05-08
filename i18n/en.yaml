@@ -23,29 +23,37 @@ symptoms:
   face:
     name: Bluish lips or face
     desc: Not caused by cold exposure
+  insomnia:
+    name: Insomnia
 
 behaviors:
   clean_hand:
     name: Frequent hand cleaning
-    desc: Washing hands thoroughly with soap and water for at least 20 seconds or applying
+    desc:
+      Washing hands thoroughly with soap and water for at least 20 seconds or applying
       an alcohol-based hand sanitizer
   social_distancing:
     name: Social & physical distancing
-    desc: Avoiding crowds, working from home, and maintaining at least 6 feet of distance
+    desc:
+      Avoiding crowds, working from home, and maintaining at least 6 feet of distance
       from others whenever possibl
   touch_face:
     name: Avoiding touching face
-    desc: Restraining from touching your eyes, nose, or mouth, especially with unwashed
+    desc:
+      Restraining from touching your eyes, nose, or mouth, especially with unwashed
       hands.
   wear_mask:
     name: Wearing a face mask or covering
-    desc: Covering your nose and mouth when in public or whenever social distancing
+    desc:
+      Covering your nose and mouth when in public or whenever social distancing
       measures are difficult to maintain.
   covering_coughs:
     name: Covering coughs and sneezes
-    desc: Covering your mouth with the inside of your elbow or a tissue whenever you
+    desc:
+      Covering your mouth with the inside of your elbow or a tissue whenever you
       cough or sneeze.
   clean_surface:
     name: Cleaing and disinfecting surfaces
-    desc: Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs,
+    desc:
+      Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs,
       tables, light switches, and keyboards.
