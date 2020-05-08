@@ -114,14 +114,14 @@ func (s *Server) getSymptomsV2(c *gin.Context) {
 		return
 	}
 
-	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
-	if err != nil {
-		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
-		return
-	}
-
 	if params.All {
 		suggested, err := s.mongoStore.ListSuggestedSymptoms(lang)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+			return
+		}
+
+		customized, err := s.mongoStore.ListCustomizedSymptoms()
 		if err != nil {
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 			return
@@ -131,6 +131,12 @@ func (s *Server) getSymptomsV2(c *gin.Context) {
 		all = append(all, customized...)
 
 		c.JSON(http.StatusOK, gin.H{"symptoms": all})
+		return
+	}
+
+	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
 
