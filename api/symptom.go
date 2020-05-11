@@ -127,10 +127,11 @@ func (s *Server) getSymptomsV2(c *gin.Context) {
 			return
 		}
 
-		all := append(official, suggested...)
-		all = append(all, customized...)
-
-		c.JSON(http.StatusOK, gin.H{"symptoms": all})
+		c.JSON(http.StatusOK, gin.H{
+			"official_symptoms":   official,
+			"suggested_symptoms":  suggested,
+			"customized_symptoms": customized,
+		})
 		return
 	}
 
