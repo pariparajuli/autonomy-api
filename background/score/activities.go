@@ -51,7 +51,9 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 		return nil, err
 	}
 
-	return score.CalculateMetric(*rawMetrics, &poi.Metric)
+	metric := score.CalculateMetric(*rawMetrics, nil)
+
+	return &metric, nil
 }
 
 // RefreshLocationStateActivity updates the metrics as well as the score if the POI id
