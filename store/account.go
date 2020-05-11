@@ -27,7 +27,7 @@ type MongoAccount interface {
 	GetProfilesByPOI(id string) ([]schema.Profile, error)
 	AppendPOIToAccountProfile(accountNumber string, desc schema.ProfilePOI) error
 
-	UpdateProfileMetric(accountNumber string, metric *schema.Metric) error
+	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
 	UpdateProfilePOIMetric(accountNumber string, poiID primitive.ObjectID, metric schema.Metric) error
 	GetProfileCoefficient(accountNumber string) (*schema.ScoreCoefficient, error)
 	UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error
@@ -372,7 +372,7 @@ func (m *mongoDB) ResetProfileCoefficient(accountNumber string) error {
 	return err
 }
 
-func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric *schema.Metric) error {
+func (m *mongoDB) UpdateProfileMetric(accountNumber string, metric schema.Metric) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

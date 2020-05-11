@@ -6,7 +6,7 @@ const (
 	confirmCriteria = 10
 )
 
-func ConfirmScore(metric *schema.Metric) {
+func CalculateConfirmScore(metric *schema.Metric) {
 	details := &metric.Details.Confirm
 	delta := details.Today - details.Yesterday
 

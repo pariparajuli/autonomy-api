@@ -175,5 +175,6 @@ func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, a
 		return nil, err
 	}
 
-	return score.CalculateMetric(*rawMetrics, &profile.Metric)
+	metric := score.CalculateMetric(*rawMetrics, nil)
+	return &metric, nil
 }

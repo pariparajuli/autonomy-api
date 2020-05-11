@@ -206,7 +206,7 @@ func (s *Server) updateProfileFormula(c *gin.Context) {
 		profile.Metric.Details.Confirm.Score,
 	)
 
-	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
+	if err := s.mongoStore.UpdateProfileMetric(accountNumber, profile.Metric); err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}
@@ -251,7 +251,7 @@ func (s *Server) resetProfileFormula(c *gin.Context) {
 		profile.Metric.Details.Confirm.Score,
 	)
 
-	if err := s.mongoStore.UpdateProfileMetric(accountNumber, &profile.Metric); err != nil {
+	if err := s.mongoStore.UpdateProfileMetric(accountNumber, profile.Metric); err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 		return
 	}

@@ -44,27 +44,18 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 	return oldScoreMod != newScoreMod
 }
 
-func CalculateMetric(rawMetrics schema.Metric, oldMetric *schema.Metric) (*schema.Metric, error) {
+// CalculateMetric will calculate, summarize and return a metric based on collected raw metrics
+func CalculateMetric(rawMetrics schema.Metric, coefficient *schema.ScoreCoefficient) schema.Metric {
 	metric := rawMetrics
-	symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount :=
-		SymptomScore(schema.DefaultSymptomWeights, rawMetrics.Details.Symptoms.TodayData, rawMetrics.Details.Symptoms.YesterdayData)
-	metric.Details.Symptoms.Score = symptomScore
-	metric.SymptomDelta = sDeltaInPercent
-	metric.SymptomCount = sOfficialCount + sCustomizedCount
-	metric.Details.Symptoms = schema.SymptomDetail{
-		SymptomTotal:       sTotalweight,
-		TotalPeople:        rawMetrics.Details.Symptoms.TodayData.UserCount,
-		Symptoms:           rawMetrics.Details.Symptoms.TodayData.WeightDistribution,
-		MaxScorePerPerson:  sMaxScorePerPerson,
-		CustomizedWeight:   sCustomizedCount,
-		CustomSymptomCount: sCustomizedCount,
-		Score:              symptomScore,
+	CalculateConfirmScore(&metric)
+
+	if coefficient != nil {
+		metric = CalculateSymptomScore(coefficient.SymptomWeights, metric)
+		metric.Score = TotalScoreV1(*coefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
+	} else {
+		metric = CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
+		metric.Score = DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 	}
 
-	ConfirmScore(&metric)
-
-	totalScore := DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
-	metric.Score = totalScore
-
-	return &metric, nil
+	return metric
 }

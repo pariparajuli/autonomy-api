@@ -8,6 +8,29 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
+func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) schema.Metric {
+	today := metric.Details.Symptoms.TodayData
+	yesterday := metric.Details.Symptoms.YesterdayData
+
+	symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount :=
+		SymptomScore(weights, today, yesterday)
+
+	metric.SymptomDelta = sDeltaInPercent
+	metric.SymptomCount = sOfficialCount + sCustomizedCount
+	metric.Details.Symptoms = schema.SymptomDetail{
+		SymptomTotal:       sTotalweight,
+		TotalPeople:        metric.Details.Symptoms.TodayData.UserCount,
+		Symptoms:           metric.Details.Symptoms.TodayData.WeightDistribution,
+		MaxScorePerPerson:  sMaxScorePerPerson,
+		CustomizedWeight:   sCustomizedCount,
+		CustomSymptomCount: sCustomizedCount,
+		Score:              symptomScore,
+		TodayData:          metric.Details.Symptoms.TodayData,
+	}
+
+	return metric
+}
+
 func SymptomScore(weights schema.SymptomWeights, today, yesterday schema.NearestSymptomData) (float64, float64, float64, float64, float64, float64) {
 	countYesterday := yesterday.OfficialCount + yesterday.CustomizedCount
 	countToday := today.OfficialCount + today.CustomizedCount
