@@ -135,8 +135,6 @@ func (s *Server) setupRouter() *gin.Engine {
 	apiRoute.Use(s.authMiddleware())
 	apiRoute.Use(s.updateGeoPositionMiddleware)
 
-	apiV2Route := apiRoute.Group("/v2")
-
 	accountRoute := apiRoute.Group("/accounts")
 	{
 		accountRoute.POST("", s.accountRegister)
@@ -210,13 +208,10 @@ func (s *Server) setupRouter() *gin.Engine {
 	r.GET("/healthz", s.healthz)
 
 	symptomRoute := apiRoute.Group("/symptoms")
-	symptomV2Route := apiV2Route.Group("/symptoms")
 	symptomRoute.Use(s.recognizeAccountMiddleware())
-	symptomV2Route.Use(s.recognizeAccountMiddleware())
 	{
 		symptomRoute.POST("", s.createSymptom)
 		symptomRoute.GET("", s.getSymptoms)
-		symptomV2Route.GET("", s.getSymptomsV2)
 		symptomRoute.POST("/report", s.reportSymptoms)
 	}
 
@@ -239,6 +234,14 @@ func (s *Server) setupRouter() *gin.Engine {
 	{
 		debugRoute.GET("", s.currentAreaDebugData)
 		debugRoute.GET("/:poiID", s.poiDebugData)
+	}
+
+	apiV2Route := apiRoute.Group("/v2")
+
+	symptomV2Route := apiV2Route.Group("/symptoms")
+	symptomV2Route.Use(s.recognizeAccountMiddleware())
+	{
+		symptomV2Route.GET("", s.getSymptomsV2)
 	}
 
 	return r
