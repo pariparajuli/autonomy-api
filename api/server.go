@@ -244,6 +244,12 @@ func (s *Server) setupRouter() *gin.Engine {
 		symptomV2Route.GET("", s.getSymptomsV2)
 	}
 
+	behaviorV2Route := apiV2Route.Group("/behaviors")
+	behaviorV2Route.Use(s.recognizeAccountMiddleware())
+	{
+		behaviorV2Route.GET("", s.getBehaviorsV2)
+	}
+
 	return r
 }
 
