@@ -8,20 +8,21 @@ type SymptomType string
 
 // SymptomFromID is a map which key is Symptom.ID and value is a object of Symptom
 var SymptomFromID = map[SymptomType]Symptom{
-	SymptomType(Fever):   Symptoms[0],
-	SymptomType(Cough):   Symptoms[1],
-	SymptomType(Fatigue): Symptoms[2],
-	SymptomType(Breath):  Symptoms[3],
-	SymptomType(Nasal):   Symptoms[4],
-	SymptomType(Throat):  Symptoms[5],
-	SymptomType(Chest):   Symptoms[6],
-	SymptomType(Face):    Symptoms[7],
+	SymptomType(Fever):   COVID19Symptoms[0],
+	SymptomType(Cough):   COVID19Symptoms[1],
+	SymptomType(Fatigue): COVID19Symptoms[2],
+	SymptomType(Breath):  COVID19Symptoms[3],
+	SymptomType(Nasal):   COVID19Symptoms[4],
+	SymptomType(Throat):  COVID19Symptoms[5],
+	SymptomType(Chest):   COVID19Symptoms[6],
+	SymptomType(Face):    COVID19Symptoms[7],
 }
 
 type SymptomSource string
 
 const (
 	OfficialSymptom   SymptomSource = "official"
+	SuggestedSymptom  SymptomSource = "suggested"
 	CustomizedSymptom SymptomSource = "customized"
 )
 
@@ -51,7 +52,7 @@ type Symptom struct {
 }
 
 // The system defined symptoms. The list will be inserted into database by migration function
-var Symptoms = []Symptom{
+var COVID19Symptoms = []Symptom{
 	{Fever, "Fever", "Body temperature above 100ºF (38ºC)", OfficialSymptom, 2},
 	{Cough, "Dry cough", "Without mucous or phlegm (rattling)", OfficialSymptom, 2},
 	{Fatigue, "Fatigue or tiredness", "Unusual lack of energy or feeling run down", OfficialSymptom, 1},
@@ -60,6 +61,10 @@ var Symptoms = []Symptom{
 	{Throat, "Sore throat", "Throat pain, scratchiness, or irritation", OfficialSymptom, 1},
 	{Chest, "Chest pain", "Persistent pain or pressure in the chest", OfficialSymptom, 1},
 	{Face, "Bluish lips or face", "Not caused by cold exposure", OfficialSymptom, 1},
+}
+
+var GeneralSymptoms = []Symptom{
+	{ID: "insomnia", Name: "Insomnia", Source: SuggestedSymptom, Weight: 1},
 }
 
 // SymptomReportData the struct to store symptom data and score

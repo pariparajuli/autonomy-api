@@ -78,6 +78,74 @@ func (s *Server) getSymptoms(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"symptoms": symptoms})
 }
 
+func (s *Server) getSymptomsV2(c *gin.Context) {
+	a := c.MustGet("account")
+
+	var params struct {
+		Language string `form:"lang"`
+		All      bool   `form:"all"`
+	}
+
+	if err := c.Bind(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
+	account, ok := a.(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+	var loc *schema.Location
+	loc = account.Profile.State.LastLocation
+	if nil == loc {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+		return
+	}
+
+	official, err := s.mongoStore.ListOfficialSymptoms(lang)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	if params.All {
+		suggested, err := s.mongoStore.ListSuggestedSymptoms(lang)
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+			return
+		}
+
+		customized, err := s.mongoStore.ListCustomizedSymptoms()
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+			return
+		}
+
+		all := append(official, suggested...)
+		all = append(all, customized...)
+
+		c.JSON(http.StatusOK, gin.H{"symptoms": all})
+		return
+	}
+
+	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"official_symptoms":     official,
+		"neighborhood_symptoms": customized,
+	})
+}
+
 func (s *Server) reportSymptoms(c *gin.Context) {
 	a := c.MustGet("account")
 	account, ok := a.(*schema.Account)

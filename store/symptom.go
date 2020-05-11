@@ -20,10 +20,13 @@ import (
 )
 
 var localizedSymptoms map[string][]schema.Symptom = map[string][]schema.Symptom{}
+var localizedSuggestedSymptoms map[string][]schema.Symptom = map[string][]schema.Symptom{}
 
 type Symptom interface {
 	CreateSymptom(symptom schema.Symptom) (string, error)
 	ListOfficialSymptoms(string) ([]schema.Symptom, error)
+	ListSuggestedSymptoms(lang string) ([]schema.Symptom, error)
+	ListCustomizedSymptoms() ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
 	AreaCustomizedSymptomList(distInMeter int, location schema.Location) ([]schema.Symptom, error)
 	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
@@ -107,6 +110,74 @@ func (m *mongoDB) ListOfficialSymptoms(lang string) ([]schema.Symptom, error) {
 	}
 
 	localizedSymptoms[lang] = symptoms
+
+	return symptoms, nil
+}
+
+func (m *mongoDB) ListSuggestedSymptoms(lang string) ([]schema.Symptom, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	lang = strings.ReplaceAll(strings.ToLower(lang), "-", "_")
+
+	if symptoms, ok := localizedSuggestedSymptoms[lang]; ok {
+		return symptoms, nil
+	}
+
+	c := m.client.Database(m.database)
+
+	query := bson.M{"source": schema.SuggestedSymptom}
+
+	cursor, err := c.Collection(schema.SymptomCollection).Find(ctx, query, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
+	}
+
+	loc := utils.NewLocalizer(lang)
+
+	symptoms := make([]schema.Symptom, 0)
+
+	for cursor.Next(ctx) {
+		var s schema.Symptom
+		if err := cursor.Decode(&s); err != nil {
+			return nil, err
+		}
+
+		if name, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: fmt.Sprintf("symptoms.%s.name", s.ID),
+		}); err == nil {
+			s.Name = name
+		} else {
+			log.WithError(err).Warnf("can not decode name")
+		}
+
+		symptoms = append(symptoms, s)
+	}
+
+	localizedSuggestedSymptoms[lang] = symptoms
+
+	return symptoms, nil
+}
+
+func (m *mongoDB) ListCustomizedSymptoms() ([]schema.Symptom, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database)
+	query := bson.M{"source": schema.CustomizedSymptom}
+	cursor, err := c.Collection(schema.SymptomCollection).Find(ctx, query, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
+	}
+
+	symptoms := make([]schema.Symptom, 0)
+	for cursor.Next(ctx) {
+		var s schema.Symptom
+		if err := cursor.Decode(&s); err != nil {
+			return nil, err
+		}
+		symptoms = append(symptoms, s)
+	}
 
 	return symptoms, nil
 }

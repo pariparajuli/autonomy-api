@@ -236,6 +236,14 @@ func (s *Server) setupRouter() *gin.Engine {
 		debugRoute.GET("/:poiID", s.poiDebugData)
 	}
 
+	apiV2Route := apiRoute.Group("/v2")
+
+	symptomV2Route := apiV2Route.Group("/symptoms")
+	symptomV2Route.Use(s.recognizeAccountMiddleware())
+	{
+		symptomV2Route.GET("", s.getSymptomsV2)
+	}
+
 	return r
 }
 
