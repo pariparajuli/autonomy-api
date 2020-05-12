@@ -24,13 +24,6 @@ const (
 	DuplicateKeyCode = 11000
 )
 
-type BehaviorSource string
-
-const (
-	OfficialBehavior   BehaviorSource = "official"
-	CustomizedBehavior BehaviorSource = "customized"
-)
-
 var localizedBehaviors map[string][]schema.Behavior = map[string][]schema.Behavior{}
 
 // GoodBehaviorReport save a GoodBehaviorData into Database
@@ -41,6 +34,7 @@ type GoodBehaviorReport interface {
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior(string) ([]schema.Behavior, error)
+	ListCustomizedBehaviors() ([]schema.Behavior, error)
 }
 
 func (m *mongoDB) ListOfficialBehavior(lang string) ([]schema.Behavior, error) {
@@ -89,6 +83,29 @@ func (m *mongoDB) ListOfficialBehavior(lang string) ([]schema.Behavior, error) {
 		}
 
 		behaviors = append(behaviors, b)
+	}
+
+	return behaviors, nil
+}
+
+func (m *mongoDB) ListCustomizedBehaviors() ([]schema.Behavior, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database)
+	query := bson.M{"source": schema.CustomizedBehavior}
+	cursor, err := c.Collection(schema.BehaviorCollection).Find(ctx, query, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
+	}
+
+	behaviors := make([]schema.Behavior, 0)
+	for cursor.Next(ctx) {
+		var s schema.Behavior
+		if err := cursor.Decode(&s); err != nil {
+			return nil, err
+		}
+		behaviors = append(behaviors, s)
 	}
 
 	return behaviors, nil
@@ -190,7 +207,7 @@ func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Lo
 			cbMap[behavior.ID] = behavior
 		}
 	}
-	var cBehaviors []schema.Behavior
+	cBehaviors := make([]schema.Behavior, 0)
 	for _, b := range cbMap {
 		cBehaviors = append(cBehaviors, b)
 	}

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/getsentry/sentry-go"
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -78,6 +78,68 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"behaviors": behaviors})
+}
+
+func (s *Server) getBehaviorsV2(c *gin.Context) {
+	a := c.MustGet("account")
+
+	var params struct {
+		Language string `form:"lang"`
+		All      bool   `form:"all"`
+	}
+
+	if err := c.Bind(&params); err != nil {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, err)
+		return
+	}
+
+	lang := "en"
+	if params.Language != "" {
+		lang = params.Language
+	}
+
+	account, ok := a.(*schema.Account)
+	if !ok {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+	var loc *schema.Location
+	loc = account.Profile.State.LastLocation
+	if nil == loc {
+		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
+		return
+	}
+
+	official, err := s.mongoStore.ListOfficialBehavior(lang)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	if params.All {
+		customized, err := s.mongoStore.ListCustomizedBehaviors()
+		if err != nil {
+			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"official_behaviors":   official,
+			"customized_behaviors": customized,
+		})
+		return
+	}
+
+	customized, err := s.mongoStore.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	if err != nil {
+		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"official_behaviors":     official,
+		"neighborhood_behaviors": customized,
+	})
 }
 
 func (s *Server) reportBehaviors(c *gin.Context) {
