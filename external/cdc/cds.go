@@ -22,33 +22,13 @@ const (
 	CDSTimeseriesByDateFile   CovidSource = "timeSeriesByDateFile"
 )
 
-type CDSData struct {
-	Name           string         `json:"name" bson:"name"`
-	City           string         `json:"city" bson:"city"`
-	County         string         `json:"county" bson:"county"`
-	State          string         `json:"state" bson:"state"`
-	Country        string         `json:"country" bson:"country"`
-	Level          string         `json:"level" bson:"level"`
-	CountryID      string         `json:"countryId" bson:"countryId"`
-	StateID        string         `json:"stateId" bson:"stateId"`
-	CountyID       string         `json:"countyId" bson:"countyId"`
-	Location       schema.GeoJSON `json:"location" bson:"location"`
-	Timezone       []string       `json:"tz" bson:"tz"`
-	Cases          float64        `json:"cases" bson:"cases"`
-	Deaths         float64        `json:"deaths" bson:"deaths"`
-	Recovered      float64        `json:"recovered" bson:"recovered"`
-	ReportTime     int64          `json:"report_ts" bson:"report_ts"`
-	UpdateTime     int64          `json:"update" , bson:"update"`
-	ReportTimeDate string         `json:"report_date" bson:"report_date"`
-}
-
 type CDS struct {
 	Country     string
 	Level       string
 	CDSDataType CovidSource
 	DataFile    *os.File
 	URL         string
-	Result      []CDSData
+	Result      []schema.CDSData
 }
 
 func (c *CDS) Run() (int, error) {
@@ -57,7 +37,7 @@ func (c *CDS) Run() (int, error) {
 		return 0, err
 	}
 	count := 0
-	updateRecords := []CDSData{}
+	updateRecords := []schema.CDSData{}
 	sourceData := make([]interface{}, 0)
 
 	err = json.Unmarshal(data, &sourceData)
@@ -68,7 +48,7 @@ func (c *CDS) Run() (int, error) {
 	}
 
 	for _, value := range sourceData {
-		record := CDSData{}
+		record := schema.CDSData{}
 		object := value.(map[string]interface{})
 		name, ok := object["name"].(string)
 		if ok && len(name) > 0 && strings.Contains(name, c.Country) { // Country

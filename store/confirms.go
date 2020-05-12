@@ -26,6 +26,7 @@ type ConfirmCountyCount map[string]int
 
 type ConfirmUpdater interface {
 	UpdateOrInsertConfirm(confirms ConfirmCountyCount, country string)
+	CreateCDSData(result []schema.CDSData, country string) error
 }
 
 type ConfirmGetter interface {

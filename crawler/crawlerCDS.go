@@ -16,13 +16,16 @@ type cdsCrawler struct {
 func (c cdsCrawler) Run() {
 	count, err := c.countryCDC.Run()
 	if nil != err {
-		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "error": err}).Error("data from CDC")
+		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "error": err}).Error("data from CDS")
 	}
 	cdc, ok := c.countryCDC.(*cdc.CDS)
 	if ok {
-		//c.mongoStore.UpdateOrInsertConfirm(cdc.Result, c.country)
-		log.Info(cdc.Result)
-		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "count": count}).Debug("data from CDC")
+		err = c.mongoStore.CreateCDSData(cdc.Result, cdc.Country)
+		if err != nil {
+			log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "error": err}).Error("create CDS data")
+			return
+		}
+		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "count": count}).Debug("data from CDS")
 	} else {
 		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "count": count}).Error("get TW data  from CDC failed!")
 	}
