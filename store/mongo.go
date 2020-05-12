@@ -30,6 +30,7 @@ type MongoStore interface {
 	Geographic
 	Metric
 	ConfirmCDS
+	AcknowledgementMetrics
 }
 
 // Closer - close db connection
