@@ -26,14 +26,12 @@ type ConfirmCountyCount map[string]int
 
 type ConfirmUpdater interface {
 	UpdateOrInsertConfirm(confirms ConfirmCountyCount, country string)
-	CreateCDSData(result []schema.CDSData, country string) error
 }
 
 type ConfirmGetter interface {
 	// Read confirm count, return with current count, number of difference compare to
 	// yesterday, error
-	GetConfirm(schema.Location) (int, int, float64, error)
-
+	GetConfirm(loc schema.Location) (float64, float64, float64, error)
 	// total confirm of a country, return with latest total, previous day total, error
 	TotalConfirm(schema.Location) (int, int, error)
 }
@@ -152,7 +150,7 @@ func countUpdateCommand(count, diff int, updateTime int64) bson.M {
 	}
 }
 
-func (m mongoDB) GetConfirm(loc schema.Location) (int, int, float64, error) {
+func (m mongoDB) GetConfirm(loc schema.Location) (float64, float64, float64, error) {
 	c := m.client.Database(m.database).Collection(ConfirmCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -238,7 +236,7 @@ func (m mongoDB) GetConfirm(loc schema.Location) (int, int, float64, error) {
 		"change_percent": percent,
 	}).Debug("get confirm data")
 
-	return latest.Count, latest.DiffYesterday, percent, nil
+	return float64(latest.Count), float64(latest.DiffYesterday), percent, nil
 }
 
 func (m mongoDB) TotalConfirm(loc schema.Location) (int, int, error) {

@@ -56,7 +56,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	// Processing confirmed case data
-	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetConfirm(location)
+	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetCDSConfirm(location)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"prefix": mongoLogPrefix,
@@ -69,21 +69,21 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 			"latest_count":   confirmedCount,
 			"diff_yesterday": confirmDiff,
 			"percent":        confirmDiffPercent,
-		}).Debug("nearest official symptom info")
+		}).Debug("confirm metric")
 
 	}
 
 	return &schema.Metric{
 		BehaviorCount:  float64(behaviorCount),
 		BehaviorDelta:  float64(behaviorDelta),
-		ConfirmedCount: float64(confirmedCount),
-		ConfirmedDelta: float64(confirmDiffPercent),
+		ConfirmedCount: confirmedCount,
+		ConfirmedDelta: confirmDiffPercent,
 		//	SymptomCount:   sOfficialCount + sCustomizedCount,
 		//		SymptomDelta:   sDeltaInPercent,
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
-				Yesterday: float64(confirmedCount - confirmDiff),
-				Today:     float64(confirmedCount),
+				Yesterday: confirmedCount - confirmDiff,
+				Today:     confirmedCount,
 			},
 			Symptoms: schema.SymptomDetail{
 				TodayData:     symptomToday,
@@ -94,7 +94,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				TotalPeople:             totalPeopleReport,
 				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
 				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
-				Score:                   behaviorScore,
+				Score: behaviorScore,
 			},
 		},
 	}, nil
