@@ -135,6 +135,11 @@ func migrateMongo() error {
 		return err
 	}
 
+	if err := setupCDSConfirmCollection(client); err != nil {
+		fmt.Println("failed to set up collection `cds confirm`: ", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -184,10 +189,7 @@ func setupCollectionBehavior(ctx context.Context, client *mongo.Client) error {
 func setupCollectionBehaviorReport(client *mongo.Client) error {
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
 	idAndTs := mongo.IndexModel{
-		Keys: bson.M{
-			"profile_id": 1,
-			"ts":         1,
-		},
+		Keys:    bson.D{{"profile_id", 1}, {"ts", 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	_, err := c.Indexes().CreateOne(context.Background(), idAndTs)
@@ -253,10 +255,7 @@ func setupCollectionSymptom(ctx context.Context, client *mongo.Client) error {
 func setupCollectionSymptomReport(client *mongo.Client) error {
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomReportCollection)
 	idAndTs := mongo.IndexModel{
-		Keys: bson.M{
-			"profile_id": 1,
-			"ts":         1,
-		},
+		Keys:    bson.D{{"profile_id", 1}, {"ts", 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	_, err := c.Indexes().CreateOne(context.Background(), idAndTs)
@@ -295,5 +294,28 @@ func BehaviorListNullToEmptyArray(client *mongo.Client) error {
 		return err
 	}
 	fmt.Println("Migration: replace Customized Behavior List with Empty Array result:", result.MatchedCount)
+	return nil
+}
+func setupCDSConfirmCollection(client *mongo.Client) error {
+	db := client.Database(viper.GetString("mongo.database"))
+
+	cdsIndex := mongo.IndexModel{
+		Keys:    bson.D{{"name", 1}, {"report_ts", 1}},
+		Options: options.Index().SetUnique(true),
+	}
+	usCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsUSA)]
+	_, err := db.Collection(usCol).Indexes().CreateOne(context.Background(), cdsIndex)
+
+	if nil != err {
+		fmt.Println("collection", usCol, "mongodb create name and report_ts combined index with error: ", err)
+		return err
+	}
+	twCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsTaiwan)]
+	_, err = db.Collection(twCol).Indexes().CreateOne(context.Background(), cdsIndex)
+
+	if nil != err {
+		fmt.Println("collection", twCol, "mongodb create name and report_ts combined index with error: ", err)
+		return err
+	}
 	return nil
 }
