@@ -103,12 +103,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
-		loc := schema.Location{
-			Latitude:  profile.Location.Coordinates[1],
-			Longitude: profile.Location.Coordinates[0],
-		}
-
-		if err := m.UpdateProfileMetric(accountNumber, metric); err != nil {
+		if err := s.mongo.UpdateProfileMetric(accountNumber, metric); err != nil {
 			return nil, err
 		}
 
@@ -176,6 +171,6 @@ func (s *ScoreUpdateWorker) CalculateAccountStateActivity(ctx context.Context, a
 		return nil, err
 	}
 
-	metric := score.CalculateMetric(*rawMetrics, &profile.ScoreCoefficient)
+	metric := score.CalculateMetric(*rawMetrics, profile.ScoreCoefficient)
 	return &metric, nil
 }
