@@ -27,7 +27,7 @@ type tw struct {
 }
 
 func (t tw) Run() (store.ConfirmCountyCount, error) {
-	data, err := getTwJSON(t.URL)
+	data, err := dataFromURL(t.URL)
 	if nil != err {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (t tw) Run() (store.ConfirmCountyCount, error) {
 	return aggregated, nil
 }
 
-func getTwJSON(url string) ([]byte, error) {
+func dataFromURL(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if nil != err {
 		log.WithFields(log.Fields{
