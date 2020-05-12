@@ -113,6 +113,7 @@ func (c *CDS) Run() (int, error) {
 			record.Timezone = []string{}
 		}
 		record.Cases, ok = object["cases"].(float64)
+
 		if !ok {
 			log.WithFields(log.Fields{"prefix": logPrefix, "name": record.Name}).Warn("cast cases fail")
 			continue
@@ -121,6 +122,7 @@ func (c *CDS) Run() (int, error) {
 		record.Recovered, _ = object["Recovered"].(float64)
 		year, month, day := time.Now().Date()
 		dateString := fmt.Sprintf("%s-%.2s-%.2s", year, int(month), day)
+
 		if len(record.Timezone) > 0 {
 			location, err := time.LoadLocation(record.Timezone[0])
 			if err == nil {
