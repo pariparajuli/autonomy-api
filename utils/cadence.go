@@ -12,7 +12,8 @@ import (
 )
 
 // FIXME: there will be an import cycle if we use `github.com/bitmark-inc/autonomy-api/background/score`
-const TaskListName = "autonomy-score-tasks"
+const ScoreTaskListName = "autonomy-score-tasks"
+const NudgeTaskListName = "autonomy-nudge-tasks"
 
 // TriggerAccountUpdate is a helper function to send a signal to
 // trigger the workflow to update scores.
@@ -22,7 +23,7 @@ func TriggerAccountUpdate(client cadence.CadenceClient, c context.Context, accou
 			fmt.Sprintf("account-state-%s", a), "accountCheckSignal", nil,
 			cadenceClient.StartWorkflowOptions{
 				ID:                           fmt.Sprintf("account-state-%s", a),
-				TaskList:                     TaskListName,
+				TaskList:                     ScoreTaskListName,
 				ExecutionStartToCloseTimeout: time.Hour,
 				WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
 			}, "AccountStateUpdateWorkflow", a); err != nil {
@@ -30,6 +31,20 @@ func TriggerAccountUpdate(client cadence.CadenceClient, c context.Context, accou
 		}
 	}
 	return nil
+}
+
+// TriggerAccountSymptomFollowUpNudge is a helper function to send a signal to
+// trigger symptoms report following up.
+func TriggerAccountSymptomFollowUpNudge(client cadence.CadenceClient, c context.Context, accountNumber string) error {
+	_, err := client.StartWorkflow(c,
+		cadenceClient.StartWorkflowOptions{
+			ID:                           fmt.Sprintf("account-nudge-symptom-follow-up-%s", accountNumber),
+			TaskList:                     NudgeTaskListName,
+			ExecutionStartToCloseTimeout: 24 * time.Hour,
+			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+		}, "SymptomFollowUpNudgeWorkflow", accountNumber)
+
+	return err
 }
 
 // TriggerPOIUpdate is a helper function to send a signal to
@@ -41,7 +56,7 @@ func TriggerPOIUpdate(client cadence.CadenceClient, c context.Context, poiIDs []
 			fmt.Sprintf("poi-state-%s", poiID), "poiCheckSignal", nil,
 			cadenceClient.StartWorkflowOptions{
 				ID:                           fmt.Sprintf("poi-state-%s", poiID),
-				TaskList:                     TaskListName,
+				TaskList:                     ScoreTaskListName,
 				ExecutionStartToCloseTimeout: time.Hour,
 				WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
 			}, "POIStateUpdateWorkflow", poiID); err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
+	workflow "go.uber.org/cadence/.gen/go/shared"
 )
 
 func (s *Server) createSymptom(c *gin.Context) {
@@ -218,6 +219,14 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		go func() {
 			if err := utils.TriggerPOIUpdate(*s.cadenceClient, c, pois); err != nil {
 				sentry.CaptureException(err)
+			}
+		}()
+
+		go func() {
+			if err := utils.TriggerAccountSymptomFollowUpNudge(*s.cadenceClient, c, account.AccountNumber); err != nil {
+				if _, ok := err.(*workflow.WorkflowExecutionAlreadyStartedError); !ok {
+					sentry.CaptureException(err)
+				}
 			}
 		}()
 	} else {

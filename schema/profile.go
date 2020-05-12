@@ -41,6 +41,7 @@ type Profile struct {
 	HealthScore         float64           `bson:"health_score"`
 	Metric              Metric            `bson:"metric"`
 	ScoreCoefficient    *ScoreCoefficient `bson:"score_coefficient"`
+	LastSymptomNudged   time.Time         `bson:"last_symptom_nudged"`
 	PointsOfInterest    []ProfilePOI      `bson:"points_of_interest,omitempty"`
 	CustomizedBehaviors []Behavior        `bson:"customized_behavior"`
 	CustomizedSymptoms  []Symptom         `bson:"customized_symptom"`

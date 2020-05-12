@@ -10,13 +10,19 @@ api:
 score-worker:
 	go build -o bin/score-worker background/command/score-worker/main.go
 
+nudge-worker:
+	go build -o bin/nudge-worker background/command/nudge-worker/main.go
+
 run-api: api
 	./bin/api -c config.yaml
 
 run-score-worker: score-worker
 	./bin/score-worker -c config.yaml
 
-bin: api score-worker
+run-nudge-worker: nudge-worker
+	./bin/nudge-worker -c config.yaml
+
+bin: api score-worker nudge-worker
 
 build-api-image:
 ifndef dist

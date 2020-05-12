@@ -293,3 +293,8 @@ behaviors:
     desc:
       Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs,
       tables, light switches, and keyboards.
+
+notification:
+  symptom_follow_up:
+    heading: Still experiencing symptoms?
+    content: "Tap if you still have the following symptoms you reported yesterday: {{.Symptoms}}."
