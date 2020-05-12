@@ -9,9 +9,9 @@ import (
 	"go.uber.org/cadence/activity"
 	"go.uber.org/zap"
 
-	"github.com/bitmark-inc/autonomy-api/background"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
+	"github.com/spf13/viper"
 )
 
 var ErrInvalidLocation = fmt.Errorf("invalid location")
@@ -130,14 +130,14 @@ func (s *ScoreUpdateWorker) NotifyLocationStateActivity(ctx context.Context, id 
 	}
 
 	if id == "" {
-		return s.Background.NotifyAccountsByTemplate(accounts, background.CURRENT_LOCATION_STATUS_CHANGE,
+		return s.Background.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.new_location_status_change"),
 			map[string]interface{}{
 				"notification_type": "RISK_LEVEL_CHANGED",
 			},
 		)
 	}
 
-	return s.Background.NotifyAccountsByTemplate(accounts, background.SAVED_LOCATION_STATUS_CHANGE,
+	return s.Background.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.saved_location_status_change"),
 		map[string]interface{}{
 			"notification_type": "RISK_LEVEL_CHANGED",
 			"poi_id":            id,
