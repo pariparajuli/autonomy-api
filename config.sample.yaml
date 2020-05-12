@@ -33,6 +33,9 @@ onesignal:
   endpoint: https://onesignal.com
   key:
   appid:
+  template:
+    new_location_status_change:
+    saved_location_status_change:
 clients:
   android:
     minimum_client_version: 1
