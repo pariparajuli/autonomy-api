@@ -1,13 +1,13 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 func (s *Server) getMetrics(c *gin.Context) {
@@ -26,13 +26,8 @@ func (s *Server) getMetrics(c *gin.Context) {
 
 	countToday, countYesterday, err := s.mongoStore.GetPersonalReportCount(c.Param("reportType"), account.AccountNumber)
 	if err != nil {
-		fmt.Println(err)
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
-	}
-	personalDelta := float64(1)
-	if countYesterday > 0 {
-		personalDelta = float64(countToday-countYesterday) / float64(countYesterday)
 	}
 
 	avgToday, avgYesterday, err := s.mongoStore.GetCommunityAvgReportCount(c.Param("reportType"), consts.CORHORT_DISTANCE_RANGE, *loc)
@@ -40,19 +35,15 @@ func (s *Server) getMetrics(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	communityDelta := float64(1)
-	if avgYesterday > 0 {
-		communityDelta = (avgToday - avgYesterday) / avgYesterday
-	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"me": gin.H{
 			"total_today": countToday,
-			"delta":       personalDelta,
+			"delta":       score.ChangeRate(float64(countToday), float64(countYesterday)),
 		},
 		"community": gin.H{
 			"avg_today": avgToday,
-			"delta":     communityDelta,
+			"delta":     score.ChangeRate(float64(avgToday), float64(avgYesterday)),
 		},
 	})
 }
