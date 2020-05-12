@@ -23,8 +23,244 @@ symptoms:
   face:
     name: 臉色發白
     desc: 非由溫度引起的不正常臉色發白
-  insomnia:
+  suggestion_1:
+    name: 腹部脹氣
+  suggestion_2:
+    name: 腹痛
+  suggestion_3:
+    name: 先天性遺傳多毛症
+  suggestion_4:
+    name: 感覺異常
+  suggestion_5:
+    name: 多汗症
+  suggestion_6:
+    name: 汗液
+  suggestion_7:
+    name: 不正常子宮出血
+  suggestion_8:
+    name: 共濟失調
+  suggestion_9:
+    name: 呼吸急促
+  suggestion_10:
+    name: 呼吸緩慢
+  suggestion_11:
+    name: 閉經
+  suggestion_12:
+    name: 焦慮
+  suggestion_13:
+    name: 冷漠
+  suggestion_14:
+    name: 背痛
+  suggestion_15:
+    name: 口臭
+  suggestion_16:
+    name: 水泡
+  suggestion_17:
+    name: 血性精液
+  suggestion_18:
+    name: 血便
+  suggestion_19:
+    name: 血尿
+  suggestion_20:
+    name: 視覺模糊
+  suggestion_21:
+    name: 挫傷
+  suggestion_22:
+    name: 嗝氣
+  suggestion_23:
+    name: 發冷
+  suggestion_24:
+    name: 慢性疼痛
+  suggestion_25:
+    name: 錯亂
+  suggestion_26:
+    name: 驚厥
+  suggestion_27:
+    name: 痰
+  suggestion_28:
+    name: 咳血
+  suggestion_29:
+    name: 食欲不振
+  suggestion_30:
+    name: 畸形
+  suggestion_31:
+    name: 妄想
+  suggestion_32:
+    name: 抑鬱
+  suggestion_33:
+    name: 腹瀉
+  suggestion_34:
+    name: 排尿疼痛
+  suggestion_35:
+    name: 吞嚥障礙
+  suggestion_36:
+    name: 瞳孔散大
+  suggestion_37:
+    name: 膿
+  suggestion_38:
+    name: 頭暈（眩暈）
+  suggestion_39:
+    name: 複視
+  suggestion_40:
+    name: 口乾
+  suggestion_41:
+    name: 耳痛
+  suggestion_42:
+    name: 勃起功能障礙
+  suggestion_43:
+    name: 心悸
+  suggestion_44:
+    name: 先天性遺傳多毛症
+  suggestion_45:
+    name: 多尿症
+  suggestion_46:
+    name: 眼瞼痙攣
+  suggestion_47:
+    name: 昏厥
+  suggestion_48:
+    name: 裡急後重
+  suggestion_49:
+    name: 指甲感染或變形
+  suggestion_50:
+    name: 屁
+  suggestion_51:
+    name: 頻尿症
+  suggestion_52:
+    name: 消化道出血
+  suggestion_53:
+    name: 脫髮
+  suggestion_54:
+    name: 幻覺
+  suggestion_55:
+    name: 頭痛
+  suggestion_56:
+    name: 聽覺障礙
+  suggestion_57:
+    name: 心律不整
+  suggestion_58:
+    name: 胃灼熱
+  suggestion_59:
+    name: 心跳過速
+  suggestion_60:
+    name: 半身不遂
+  suggestion_61:
+    name: 尿瀦留
+  suggestion_62:
+    name: 消化不良
+  suggestion_63:
+    name: 不孕
+  suggestion_64:
+    name: 不自主運動
+  suggestion_65:
+    name: 不自主眼動
+  suggestion_66:
+    name: 尿失禁
+  suggestion_67:
+    name: 癢
+  suggestion_68:
+    name: 關節痛
+  suggestion_69:
+    name: 頭重腳輕
+  suggestion_70:
+    name: 大便失禁
+  suggestion_71:
+    name: 便秘
+  suggestion_72:
+    name: 失語症
+  suggestion_73:
+    name: 嗅覺喪失
+  suggestion_74:
+    name: 味覺障礙
+  suggestion_75:
+    name: 視力受損
+  suggestion_76:
+    name: 書寫障礙
+  suggestion_77:
+    name: 失溫症
+  suggestion_78:
+    name: 心跳過緩
+  suggestion_79:
+    name: 不適
+  suggestion_80:
+    name: 失憶症
+  suggestion_81:
+    name: 抽搐
+  suggestion_82:
+    name: 惡病體質
+  suggestion_83:
+    name: 噁心
+  suggestion_84:
+    name: 神經抽搐
+  suggestion_85:
+    name: 流鼻血
+  suggestion_86:
+    name: 脂肪便
+  suggestion_87:
+    name: 吞嚥痛
+  suggestion_88:
+    name: 性交疼痛
+  suggestion_89:
+    name: 骨盆痛
+  suggestion_90:
+    name: 疹
+  suggestion_91:
+    name: 暫時性肛門痛
+  suggestion_92:
+    name: 失樂症狀
+  suggestion_93:
+    name: 牙關緊閉
+  suggestion_94:
+    name: 耳鳴
+  suggestion_95:
+    name: 鼻漏
+  suggestion_96:
+    name: 坐骨神經痛
+  suggestion_97:
+    name: 胸膜炎
+  suggestion_98:
+    name: 冷顫
+  suggestion_99:
+    name: 皮膚痛
+  suggestion_100:
+    name: 昏睡
+  suggestion_101:
     name: 失眠
+  suggestion_102:
+    name: 聲音太大
+  suggestion_103:
+    name: 呼吸中止
+  suggestion_104:
+    name: 睡眠呼吸中止
+  suggestion_105:
+    name: 水腫
+  suggestion_106:
+    name: 淋巴腺病
+  suggestion_107:
+    name: 口渴
+  suggestion_108:
+    name: 自殺傾向
+  suggestion_109:
+    name: 牙痛
+  suggestion_110:
+    name: 顫抖
+  suggestion_111:
+    name: 尿道分泌物
+  suggestion_112:
+    name: 陰道分泌物
+  suggestion_113:
+    name: 嘔吐
+  suggestion_114:
+    name: 嘔血
+  suggestion_115:
+    name: 虛弱
+  suggestion_116:
+    name: 體重上升
+  suggestion_117:
+    name: 體重下降
+  suggestion_118:
+    name: 傷口
+  suggestion_119:
+    name: 黃疸
 
 behaviors:
   clean_hand:

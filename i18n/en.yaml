@@ -23,8 +23,244 @@ symptoms:
   face:
     name: Bluish lips or face
     desc: Not caused by cold exposure
-  insomnia:
-    name: Insomnia
+  suggestion_1:
+    name: Abdominal bloating
+  suggestion_2:
+    name: Abdominal pain (stomachache)
+  suggestion_3:
+    name: Abnormal amount of body hair growth (hypertrichosis)
+  suggestion_4:
+    name: Abnormal skin tingling, prickling, chilling, burning, or numbness (paresthesia)
+  suggestion_5:
+    name: Abnormal sweating (hyperhidrosis)
+  suggestion_6:
+    name: Abnormal sweating (perspiration)
+  suggestion_7:
+    name: Abnormal vaginal bleeding
+  suggestion_8:
+    name: Abnormal walking (ataxia)
+  suggestion_9:
+    name: Abnormally fast breathing (tachypnea)
+  suggestion_10:
+    name: Abnormally slow breathing (bradypnea)
+  suggestion_11:
+    name: Absence of menstrual period (amenorrhea)
+  suggestion_12:
+    name: Anxiety
+  suggestion_13:
+    name: Apathy
+  suggestion_14:
+    name: Back pain (backache)
+  suggestion_15:
+    name: Bad breath (halitosis)
+  suggestion_16:
+    name: Blister
+  suggestion_17:
+    name: Blood in semen (hematospermia)
+  suggestion_18:
+    name: Blood in stool
+  suggestion_19:
+    name: Blood in urine (hematuria)
+  suggestion_20:
+    name: Blurred vision
+  suggestion_21:
+    name: Bruising (contusions, hematoma)
+  suggestion_22:
+    name: Burping (belching)
+  suggestion_23:
+    name: Chills
+  suggestion_24:
+    name: Chronic pain
+  suggestion_25:
+    name: Confusion
+  suggestion_26:
+    name: Convulsions
+  suggestion_27:
+    name: Coughed up mucous (sputum)
+  suggestion_28:
+    name: Coughing up blood (hemoptysis)
+  suggestion_29:
+    name: Decreased appetite (anorexia)
+  suggestion_30:
+    name: Deformity
+  suggestion_31:
+    name: Delusions
+  suggestion_32:
+    name: Depression
+  suggestion_33:
+    name: Diarrhea
+  suggestion_34:
+    name: Difficult or painful urination (dysuria)
+  suggestion_35:
+    name: Difficulty swallowing (dysphagia)
+  suggestion_36:
+    name: Dilated pupils
+  suggestion_37:
+    name: Discharge of mucous or pus
+  suggestion_38:
+    name: Dizziness (vertigo)
+  suggestion_39:
+    name: Double vision
+  suggestion_40:
+    name: Dry mouth (xerostomia)
+  suggestion_41:
+    name: Ear pain (Earache, otalgia)
+  suggestion_42:
+    name: Erectile dysfunction (impotence)
+  suggestion_43:
+    name: Erratic heartbeat (heart palpitations)
+  suggestion_44:
+    name: Excessive body hair (hirsutism)
+  suggestion_45:
+    name: Excessive urination (polyuria)
+  suggestion_46:
+    name: Eyelid spasms
+  suggestion_47:
+    name: Fainting (loss of consciousness, syncope)
+  suggestion_48:
+    name: Feeling of incomplete defecation (rectal tenesmus)
+  suggestion_49:
+    name: Fingernail / toenail infection or deformity
+  suggestion_50:
+    name: Flatulence (gas)
+  suggestion_51:
+    name: Frequent urination
+  suggestion_52:
+    name: Gastrointestinal bleeding (hemorrhaging)
+  suggestion_53:
+    name: Hair loss (alopecia)
+  suggestion_54:
+    name: Hallucination
+  suggestion_55:
+    name: Headache
+  suggestion_56:
+    name: Hearing loss
+  suggestion_57:
+    name: Heart arrhythmia (cardiac arrhythmia)
+  suggestion_58:
+    name: Heartburn (pyrosis)
+  suggestion_59:
+    name: High resting heart rate (tachycardia)
+  suggestion_60:
+    name: Inability or weakness moving one side of the body
+  suggestion_61:
+    name: Inability to uninate normally (urinary retention)
+  suggestion_62:
+    name: Indigestion (dyspepsia)
+  suggestion_63:
+    name: Infertility
+  suggestion_64:
+    name: Involuntary body movements
+  suggestion_65:
+    name: Involuntary eye movements
+  suggestion_66:
+    name: Involuntary urination (urinary incontinence)
+  suggestion_67:
+    name: Itching
+  suggestion_68:
+    name: Joint pain (arthralgia)
+  suggestion_69:
+    name: Lightheadedness
+  suggestion_70:
+    name: Loss of bowel control (fecal incontinence)
+  suggestion_71:
+    name: Loss of normal bowel movements (constipation)
+  suggestion_72:
+    name: Loss of normal speech (aphasia)
+  suggestion_73:
+    name: Loss of sense of smell (anosmia)
+  suggestion_74:
+    name: Loss of sense of taste (dysgeusia / parageusia)
+  suggestion_75:
+    name: Loss of vision (blindness)
+  suggestion_76:
+    name: Loss or writing ability (dysgraphia)
+  suggestion_77:
+    name: Low body temperature (hypothermia)
+  suggestion_78:
+    name: Low resting heart rate (bradycardia)
+  suggestion_79:
+    name: Malaise
+  suggestion_80:
+    name: Memory loss (amnesia)
+  suggestion_81:
+    name: Muscle cramps
+  suggestion_82:
+    name: Muscle loss (cachexia)
+  suggestion_83:
+    name: Nausea
+  suggestion_84:
+    name: Nervous tics
+  suggestion_85:
+    name: Nosebleed (epistaxis)
+  suggestion_86:
+    name: Oily or fatty feces (steatorrhea)
+  suggestion_87:
+    name: Pain when swallowing (odynophagia)
+  suggestion_88:
+    name: Painful intercourse
+  suggestion_89:
+    name: Pelvic pain
+  suggestion_90:
+    name: Rash
+  suggestion_91:
+    name: Rectal or anal pain (proctologia fugax)
+  suggestion_92:
+    name: Reduced ability to experience pleasure
+  suggestion_93:
+    name: Reduced ability to open the jaws (lockjaw, trismus)
+  suggestion_94:
+    name: Ringing or hissing in ears (tinnitus)
+  suggestion_95:
+    name: Runny nose (rhinorrhea)
+  suggestion_96:
+    name: Sciatica (pain going down the leg from lower back)
+  suggestion_97:
+    name: Sharp chest pains while breathing (pleuritic chest pain)
+  suggestion_98:
+    name: Shivering
+  suggestion_99:
+    name: Skin pain (dermatome)
+  suggestion_100:
+    name: Sleepiness (somnolence)
+  suggestion_101:
+    name: Sleeplessness (insomnia)
+  suggestion_102:
+    name: Sounds are too loud
+  suggestion_103:
+    name: Stopping of breathing (apnea)
+  suggestion_104:
+    name: Stopping of breathing while sleeping (sleep apnea)
+  suggestion_105:
+    name: Swelling (edema)
+  suggestion_106:
+    name: Swollen or painful lymph nodes (lymphadenopathy / adenopathy)
+  suggestion_107:
+    name: Thirst
+  suggestion_108:
+    name: Thoughts of killing yourself (suicidal ideation)
+  suggestion_109:
+    name: Tooth pain (toothache)
+  suggestion_110:
+    name: Tremors
+  suggestion_111:
+    name: Urethral discharge
+  suggestion_112:
+    name: Vaginal discharge
+  suggestion_113:
+    name: Vomiting
+  suggestion_114:
+    name: Vomiting blood (hematemesis)
+  suggestion_115:
+    name: Weakness (muscle weakness)
+  suggestion_116:
+    name: Weight gain
+  suggestion_117:
+    name: Weight loss
+  suggestion_118:
+    name: Wound (laceration)
+  suggestion_119:
+    name: Yellowish or greenish skin (jaundice)
 
 behaviors:
   clean_hand:
