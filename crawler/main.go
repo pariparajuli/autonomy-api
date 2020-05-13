@@ -21,7 +21,8 @@ import (
 const (
 	logPrefix      = "cron"
 	twURL          = "https://od.cdc.gov.tw/eic/Weekly_Age_County_Gender_19CoV.json"
-	defaultTimeout = 10 * time.Second
+	cdsURL         = "https://coronadatascraper.com/data.json"
+	defaultTimeout = 15 * time.Second
 )
 
 type Cron interface {
@@ -104,8 +105,23 @@ func main() {
 		nil,
 	)
 
-	crawler := newCrawler("tw", mStore, cdc.NewTw(twURL))
-	crawler.Run()
+	crawlerTWCDC := newTWCrawler("tw", mStore, cdc.NewTw(twURL))
+	crawlerTWCDC.Run()
+
+	if cancelInitialization != nil {
+		cancelInitialization()
+	}
+
+	crawlerTW := newCDSCrawler("Taiwan", mStore, cdc.NewCDS("Taiwan", "country", cdc.CDSDailyHTTP, nil, cdsURL))
+
+	crawlerTW.Run()
+
+	if cancelInitialization != nil {
+		cancelInitialization()
+	}
+	crawlerUS := newCDSCrawler("United State", mStore, cdc.NewCDS("United State", "county", cdc.CDSDailyHTTP, nil, cdsURL))
+
+	crawlerUS.Run()
 
 	if cancelInitialization != nil {
 		cancelInitialization()

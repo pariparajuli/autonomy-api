@@ -21,15 +21,15 @@ type twCovid struct {
 	ConfirmedCount int    `json:"確定病例數,string"`
 }
 
-type tw struct {
-	mongo store.MongoStore
-	URL   string
+type TWCDC struct {
+	URL    string
+	Result store.ConfirmCountyCount
 }
 
-func (t tw) Run() (store.ConfirmCountyCount, error) {
-	data, err := getTwJSON(t.URL)
+func (t *TWCDC) Run() (int, error) {
+	data, err := dataFromURL(t.URL)
 	if nil != err {
-		return nil, err
+		return 0, err
 	}
 
 	// decode json
@@ -41,15 +41,15 @@ func (t tw) Run() (store.ConfirmCountyCount, error) {
 			"error":    err,
 			"raw json": string(data),
 		}).Error("decode json")
-		return nil, err
+		return 0, err
 	}
 
-	aggregated := aggregateTw(arr)
-
-	return aggregated, nil
+	aggregated, count := aggregateTw(arr)
+	t.Result = aggregated
+	return count, nil
 }
 
-func getTwJSON(url string) ([]byte, error) {
+func dataFromURL(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if nil != err {
 		log.WithFields(log.Fields{
@@ -72,21 +72,23 @@ func getTwJSON(url string) ([]byte, error) {
 	return data, nil
 }
 
-func aggregateTw(data []twCovid) map[string]int {
+func aggregateTw(data []twCovid) (map[string]int, int) {
 	countyMapping := make(map[string]int)
+	count := 0
 	for _, d := range data {
 		if _, ok := countyMapping[d.County]; !ok {
 			countyMapping[d.County] = d.ConfirmedCount
 		} else {
 			countyMapping[d.County] += d.ConfirmedCount
 		}
+		count++
 	}
-	return countyMapping
+	return countyMapping, count
 }
 
 // NewTw - new tw cdc crawler
 func NewTw(url string) CDC {
-	return &tw{
+	return &TWCDC{
 		URL: url,
 	}
 }
