@@ -20,14 +20,14 @@ func (c cdsCrawler) Run() {
 	}
 	cdc, ok := c.countryCDC.(*cdc.CDS)
 	if ok {
-		err = c.mongoStore.CreateCDSData(cdc.Result, cdc.Country)
+		err = c.mongoStore.ReplaceCDS(cdc.Result, cdc.Country)
 		if err != nil {
 			log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "error": err}).Error("create CDS data")
 			return
 		}
-		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "count": count}).Debug("data from CDS")
+		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "data count": count}).Debug("data from CDS")
 	} else {
-		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "count": count}).Error("get TW data  from CDC failed!")
+		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country}).Error("get TW data  from CDC failed!")
 	}
 }
 

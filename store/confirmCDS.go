@@ -40,7 +40,8 @@ type PoliticalGeo struct {
 }
 
 type ConfirmCDS interface {
-	CreateCDSData(result []schema.CDSData, country string) error
+	ReplaceCDS(result []schema.CDSData, country string) error
+	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
 }
 
@@ -49,7 +50,51 @@ var CDSCountyCollectionMatrix = map[CDSCountryType]string{
 	CDSCountryType(CdsTaiwan): "ConfirmTaiwan",
 }
 
-func (m *mongoDB) CreateCDSData(result []schema.CDSData, country string) error {
+func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
+	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
+	if !ok {
+		return errors.New("no cds country availible")
+	}
+	if len(result) <= 0 {
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix}).Debug("no record to update")
+		return nil
+	}
+
+	for _, v := range result {
+		filter := bson.M{"report_ts": result[0].ReportTime}
+		replacement := bson.M{
+			"name":        v.Name,
+			"city":        v.City,
+			"county":      v.County,
+			"state":       v.State,
+			"country":     v.Country,
+			"level":       v.Level,
+			"cases":       v.Cases,
+			"deaths":      v.Deaths,
+			"recovered":   v.Recovered,
+			"report_ts":   v.ReportTime,
+			"update_ts":   v.UpdateTime,
+			"report_date": v.ReportTimeDate,
+			"countryId":   v.CountryID,
+			"stateId":     v.StateID,
+			"countyId":    v.CountyID,
+			"location":    v.Location,
+			"tz":          v.Timezone,
+		}
+		opts := options.Replace().SetUpsert(true)
+		_, err := m.client.Database(m.database).Collection(collection).ReplaceOne(context.Background(), filter, replacement, opts)
+		if err != nil {
+			if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
+				if 1 == len(errs.WriteErrors) && DuplicateKeyCode == errs.WriteErrors[0].Code {
+					log.WithField("prefix", mongoLogPrefix).Warnf("cds update with error: %s", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
 	if !ok {
 		return errors.New("no cds country availible")
