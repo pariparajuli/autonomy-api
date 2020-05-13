@@ -1,11 +1,12 @@
 package schema
 
-import "time"
+import (
+	"time"
+)
 
 type ConfirmDetail struct {
-	Yesterday float64 `json:"yesterday" bson:"yesterday"`
-	Today     float64 `json:"today" bson:"today"`
-	Score     float64 `json:"score" bson:"score"`
+	ContinuousData []CDSScoreDataSet `json:"data" bson:"data"`
+	Score          float64           `json:"score" bson:"score"`
 }
 
 type BehaviorDetail struct {

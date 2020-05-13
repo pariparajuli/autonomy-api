@@ -1,6 +1,11 @@
 package score
 
-import "github.com/bitmark-inc/autonomy-api/schema"
+import (
+	"fmt"
+	"math"
+
+	"github.com/bitmark-inc/autonomy-api/schema"
+)
 
 const (
 	confirmCriteria = 10
@@ -8,17 +13,23 @@ const (
 
 func CalculateConfirmScore(metric *schema.Metric) {
 	details := &metric.Details.Confirm
-	delta := details.Today - details.Yesterday
-
-	// equal or more than that criteria get 0 score
-	if delta >= confirmCriteria {
-		details.Score = 0
+	dataset := details.ContinuousData
+	score := float64(0)
+	if len(dataset) < 14 {
+		metric.Details.Confirm.Score = score
 		return
 	}
-	// in between 0 - 10 people, each increased confirm case deduct 5 points
-	details.Score = 100 - 5*delta
-	if details.Score < 0 {
-		details.Score = 0
+	fraction := float64(0)
+	denominator := float64(0)
+	for idx, val := range dataset {
+		epx := (float64(idx) + 1) / 2
+		fraction = fraction + math.Exp(epx)*val.Cases
+		denominator = denominator + math.Exp(epx)*(val.Cases+1)
 	}
 
+	if denominator > 0 {
+		score = 1 - fraction/denominator
+	}
+	metric.Details.Confirm.Score = score * 100
+	fmt.Println(fmt.Sprintf("score:%f     fraction:%f denominator:%f score:%f", metric.Details.Confirm.Score, fraction, denominator, score))
 }

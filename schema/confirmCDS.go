@@ -19,3 +19,8 @@ type CDSData struct {
 	Location       GeoJSON  `json:"location" bson:"location"`
 	Timezone       []string `json:"tz" bson:"tz"`
 }
+
+type CDSScoreDataSet struct {
+	Name  string  `json:"country" bson:"country"`
+	Cases float64 `json:"cases" bson:"cases"`
+}

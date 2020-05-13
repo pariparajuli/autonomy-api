@@ -33,6 +33,7 @@ type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
+	ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error)
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
@@ -104,15 +105,13 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 		}
 	}
 	if res != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": len(res.InsertedIDs)}).Info("createCDSData Insert data")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": len(res.InsertedIDs)}).Debug("CreateCDSData Insert data")
 	}
 	return nil
 }
 
 func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
-
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("GetCDSConfirm geo info")
-
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	var results []schema.CDSData
@@ -173,4 +172,56 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 	}
 	return 0, 0, 0, ErrInvalidConfirmDataset
 
+}
+
+func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error) {
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	var results []schema.CDSScoreDataSet
+	var c *mongo.Collection
+	var cur *mongo.Cursor
+
+	switch loc.Country { //  Currently this function support only USA data
+	case CdsTaiwan:
+		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num)
+		filter := bson.M{}
+		if lessEqThan > 0 {
+			filter = bson.M{"report_ts": bson.D{{"$lte", lessEqThan}}}
+		}
+		curTW, err := c.Find(context.Background(), filter, opts)
+		if nil != err {
+			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
+			return nil, 0, ErrConfirmDataFetch
+		}
+		cur = curTW
+	case CdsUSA:
+		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num)
+		filter := bson.M{"county": loc.County, "state": loc.State}
+		if lessEqThan > 0 {
+			filter = bson.M{"county": loc.County, "state": loc.State, "report_ts": bson.D{{"$lte", lessEqThan}}}
+		}
+		curUSA, err := c.Find(context.Background(), filter, opts)
+		if nil != err {
+			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
+			return nil, 0, ErrConfirmDataFetch
+		}
+		cur = curUSA
+	default:
+		return nil, 0, errors.New("no supported CDS dataset")
+	}
+	for cur.Next(ctx) {
+		var result schema.CDSScoreDataSet
+		tmp := make([]schema.CDSScoreDataSet, 1)
+		if errDecode := cur.Decode(&result); errDecode != nil {
+			log.WithField("prefix", mongoLogPrefix).Errorf("cds Decode with error: %s", errDecode)
+			return nil, 0, errDecode
+		}
+		tmp[0] = result
+		results = append(tmp, results...)
+	}
+	cur.Close(ctx)
+	return results, len(results), nil
 }
