@@ -286,3 +286,6 @@ notification:
   symptom_follow_up:
     heading: 症狀持續發生嗎?
     content: "點擊回報昨天的這些症狀: {{.Symptoms}}，是否依舊持續出現"
+  symptom_spike:
+    heading: 鄰近位置有症狀飆升
+    content: "在你生活周遭有下列症狀大量增加: {{.Symptoms}}。點擊回報我也有類似的症狀"

@@ -3,7 +3,6 @@ package nudge
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bitmark-inc/autonomy-api/background"
@@ -72,27 +71,8 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 	return nil, nil
 }
 
-// commaSeparatedSymptoms will return a string of symptoms separate by commas
-func commaSeparatedSymptoms(lang string, sourceSymptoms []schema.Symptom) string {
-	loc := utils.NewLocalizer(lang)
-
-	symptomsNames := make([]string, 0)
-
-	for _, s := range sourceSymptoms {
-		if name, err := loc.Localize(&i18n.LocalizeConfig{
-			MessageID: fmt.Sprintf("symptoms.%s.name", s.ID),
-		}); err == nil {
-			symptomsNames = append(symptomsNames, name)
-		} else {
-			symptomsNames = append(symptomsNames, s.Name)
-		}
-	}
-
-	return strings.Join(symptomsNames, ", ")
-}
-
-// SymptomFollowUpMessage returns headings and contents in a map where its keys are languages
-func (n *NudgeWorker) SymptomFollowUpMessage(sourceSymptoms []schema.Symptom) (map[string]string, map[string]string, error) {
+// SymptomListingMessage returns headings and contents in a map where its keys are languages
+func SymptomListingMessage(msgType string, sourceSymptoms []schema.Symptom) (map[string]string, map[string]string, error) {
 	headings := map[string]string{}
 	contents := map[string]string{}
 
@@ -101,7 +81,7 @@ func (n *NudgeWorker) SymptomFollowUpMessage(sourceSymptoms []schema.Symptom) (m
 
 		// translate heading
 		heading, err := loc.Localize(&i18n.LocalizeConfig{
-			MessageID: "notification.symptom_follow_up.heading",
+			MessageID: fmt.Sprintf("notification.%s.heading", msgType),
 		})
 		if err != nil {
 			return nil, nil, err
@@ -111,9 +91,9 @@ func (n *NudgeWorker) SymptomFollowUpMessage(sourceSymptoms []schema.Symptom) (m
 
 		// translate content
 		content, err := loc.Localize(&i18n.LocalizeConfig{
-			MessageID: "notification.symptom_follow_up.content",
+			MessageID: fmt.Sprintf("notification.%s.content", msgType),
 			TemplateData: map[string]interface{}{
-				"Symptoms": commaSeparatedSymptoms(lang, sourceSymptoms),
+				"Symptoms": background.CommaSeparatedSymptoms(lang, sourceSymptoms),
 			},
 		})
 		if err != nil {
@@ -137,9 +117,10 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 		symptomsIDs = append(symptomsIDs, s.ID)
 	}
 
-	headings, contents, err := n.SymptomFollowUpMessage(symptoms)
+	headings, contents, err := SymptomListingMessage("symptom_follow_up", symptoms)
 	if err != nil {
 		logger.Error("can not generate symptoms follow-up message", zap.Error(err))
+		return err
 	}
 
 	if err := n.Background.NotifyAccountByText(accountNumber,
@@ -153,4 +134,30 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 	}
 
 	return n.mongo.UpdateAccountSymptomNudge(accountNumber)
+}
+
+// NotifySymptomSpikeActivity send notifications to accounts those have symptoms spiked around
+func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNumber string, symptoms []schema.Symptom) error {
+	logger := activity.GetLogger(ctx)
+
+	logger.Info("Prepare the message context for following up symptoms", zap.Any("symptoms", symptoms))
+
+	var symptomsIDs = make([]schema.SymptomType, 0)
+	for _, s := range symptoms {
+		symptomsIDs = append(symptomsIDs, s.ID)
+	}
+
+	headings, contents, err := SymptomListingMessage("symptom_spike", symptoms)
+	if err != nil {
+		logger.Error("can not generate symptoms follow-up message", zap.Error(err))
+		return err
+	}
+
+	return n.Background.NotifyAccountByText(accountNumber,
+		headings, contents,
+		map[string]interface{}{
+			"notification_type": "ACCOUNT_SYMPTOM_SPIKE",
+			"symptoms":          symptomsIDs,
+		},
+	)
 }

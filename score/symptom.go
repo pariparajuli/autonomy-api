@@ -2,6 +2,7 @@ package score
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,9 +16,13 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 	symptomScore, sTotalweight, sMaxScorePerPerson, sDeltaInPercent, sOfficialCount, sCustomizedCount :=
 		SymptomScore(weights, today, yesterday)
 
+	spikeList := CheckSymptomSpike(yesterday.WeightDistribution, today.WeightDistribution)
+
 	metric.SymptomDelta = sDeltaInPercent
 	metric.SymptomCount = sOfficialCount + sCustomizedCount
 	metric.Details.Symptoms = schema.SymptomDetail{
+		LastSpikeList:      spikeList,
+		LastSpikeUpdate:    time.Now().UTC(),
 		SymptomTotal:       sTotalweight,
 		TotalPeople:        metric.Details.Symptoms.TodayData.UserCount,
 		Symptoms:           metric.Details.Symptoms.TodayData.WeightDistribution,

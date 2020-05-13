@@ -57,3 +57,46 @@ func (n *NudgeWorker) SymptomFollowUpNudgeWorkflow(ctx workflow.Context, account
 
 	return workflow.NewContinueAsNewError(ctx, n.SymptomFollowUpNudgeWorkflow, accountNumber)
 }
+
+func (n *NudgeWorker) FindNotificationReceiver(accountNumber, poiID string) ([]string, error) {
+	accountNumbers := make([]string, 0)
+
+	if poiID != "" {
+		profiles, err := n.mongo.GetProfilesByPOI(poiID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range profiles {
+			accountNumbers = append(accountNumbers, p.AccountNumber)
+		}
+
+	} else if accountNumber != "" {
+		accountNumbers = append(accountNumbers, accountNumber)
+	}
+	return accountNumbers, nil
+}
+
+func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNumber string, poiID string, symptoms []schema.Symptom) error {
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+
+	logger := workflow.GetLogger(ctx)
+
+	receivers := make([]string, 0)
+	if err := workflow.ExecuteActivity(ctx, n.FindNotificationReceiver, accountNumber, poiID).Get(ctx, &receivers); err != nil {
+		logger.Error("Fail to get notification receivers", zap.Error(err))
+		return err
+	}
+
+	logger.Info("notify symptom spike", zap.Any("receivers", receivers), zap.Any("symptoms", symptoms))
+
+	for _, accountNumber := range receivers {
+		err := workflow.ExecuteActivity(ctx, n.NotifySymptomSpikeActivity, accountNumber, symptoms).Get(ctx, nil)
+		if err != nil {
+			logger.Error("Fail to notify user", zap.Error(err))
+			return err
+		}
+	}
+
+	return nil
+}

@@ -44,6 +44,26 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 	return oldScoreMod != newScoreMod
 }
 
+// CheckSymptomSpike check if there is a spike for symptoms distribution
+// for a given metric data
+func CheckSymptomSpike(yesterdayDistribution, currentDistribution schema.SymptomDistribution) []schema.SymptomType {
+	spikeSymptoms := []schema.SymptomType{}
+
+	for t, c1 := range currentDistribution {
+		if c0, ok := yesterdayDistribution[t]; ok {
+			// check if current symptoms count has 10% more than yesterday
+			if float64(c1)/float64(c0) > 1.1 {
+				spikeSymptoms = append(spikeSymptoms, t)
+			}
+		} else {
+			spikeSymptoms = append(spikeSymptoms, t)
+		}
+
+	}
+
+	return spikeSymptoms
+}
+
 // CalculateMetric will calculate, summarize and return a metric based on collected raw metrics
 func CalculateMetric(rawMetrics schema.Metric, coefficient *schema.ScoreCoefficient) schema.Metric {
 	metric := rawMetrics

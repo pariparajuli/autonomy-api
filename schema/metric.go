@@ -1,5 +1,7 @@
 package schema
 
+import "time"
+
 type ConfirmDetail struct {
 	Yesterday float64 `json:"yesterday" bson:"yesterday"`
 	Today     float64 `json:"today" bson:"today"`
@@ -21,9 +23,11 @@ type SymptomDetail struct {
 	CustomizedWeight   float64             `json:"customized_weight" bson:"customized_weight"`
 	Score              float64             `json:"score" bson:"score"`
 	Symptoms           SymptomDistribution `json:"-" bson:"symptoms"`
+	LastSpikeUpdate    time.Time           `json:"last_spike_update" bson:"last_spike_update"`
+	LastSpikeList      []SymptomType       `json:"last_spike_types" bson:"last_spike_types"`
 	CustomSymptomCount float64             `json:"-" bson:"custom_symptom_count"`
 	TodayData          NearestSymptomData  `json:"today_data"  bson:"today_data"`
-	YesterdayData      NearestSymptomData  `json:"-"  bson:"-"`
+	YesterdayData      NearestSymptomData  `json:"yesterday_data"  bson:"-"`
 }
 type NearestSymptomData struct {
 	UserCount          float64             `json:"user_count" bson:"user_count"`

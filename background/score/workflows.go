@@ -1,12 +1,15 @@
 package score
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	cadenceClient "go.uber.org/cadence/client"
 	"go.uber.org/cadence/workflow"
 	"go.uber.org/zap"
 
+	"github.com/bitmark-inc/autonomy-api/background/nudge"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -55,19 +58,42 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
 	}
 
-	updatedAccounts := make([]string, 0)
-	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, "", id, metric).Get(ctx, &updatedAccounts); err != nil {
+	var na NotificationAccounts
+	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, "", id, metric).Get(ctx, &na); err != nil {
 		logger.Error("Fail to update POI state for accounts.", zap.Error(err))
 		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
 	}
 
-	if len(updatedAccounts) > 0 {
-		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, id, updatedAccounts).Get(ctx, nil)
+	if len(na.StateChangedAccounts) > 0 {
+		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, id, na.StateChangedAccounts).Get(ctx, nil)
 		if err != nil {
-			logger.Error("Fail to notify users", zap.Error(err))
+			logger.Error("Fail to notify users for location state", zap.Error(err))
 			sentry.CaptureException(err)
-			return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
+		}
+	}
+
+	spikeSymptoms := make([]schema.Symptom, 0)
+	if err := workflow.ExecuteActivity(ctx, s.CheckLocationSpikeActivity, metric.Details.Symptoms.LastSpikeList).Get(ctx, &spikeSymptoms); err != nil {
+		logger.Error("Fail to get symptom spike", zap.Error(err))
+		sentry.CaptureException(err)
+		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
+	}
+
+	if len(spikeSymptoms) > 0 {
+		for _, a := range na.SymptomsSpikeAccounts {
+			cwo := workflow.ChildWorkflowOptions{
+				// Do not specify WorkflowID if you want Cadence to generate a unique ID for the child execution.
+				WorkflowID:                   fmt.Sprintf("poi-%s-nudge-symptom-spike-%s", id, a),
+				TaskList:                     nudge.TaskListName,
+				ExecutionStartToCloseTimeout: time.Minute,
+				WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+			}
+
+			if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifySymptomSpikeWorkflow", a, "", spikeSymptoms).Get(ctx, nil); err != nil {
+				logger.Error("NotifySymptomSpikeWorkflow failed.", zap.Error(err))
+				sentry.CaptureException(err)
+			}
 		}
 	}
 
@@ -109,19 +135,42 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
-	updatedAccounts := make([]string, 0)
-	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, accountNumber, "", metric).Get(ctx, &updatedAccounts); err != nil {
+	var na NotificationAccounts
+	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, accountNumber, "", metric).Get(ctx, &na); err != nil {
 		logger.Error("Fail to update POI state for accounts.", zap.Error(err))
 		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
-	if len(updatedAccounts) > 0 {
-		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, "", updatedAccounts).Get(ctx, nil)
+	if len(na.StateChangedAccounts) > 0 {
+		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, "", na.StateChangedAccounts).Get(ctx, nil)
 		if err != nil {
-			logger.Error("Fail to notify users", zap.Error(err))
+			logger.Error("Fail to notify users for location state", zap.Error(err))
 			sentry.CaptureException(err)
-			return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
+		}
+	}
+
+	spikeSymptoms := make([]schema.Symptom, 0)
+	if err := workflow.ExecuteActivity(ctx, s.CheckLocationSpikeActivity, metric.Details.Symptoms.LastSpikeList).Get(ctx, &spikeSymptoms); err != nil {
+		logger.Error("Fail to get symptom spike", zap.Error(err))
+		sentry.CaptureException(err)
+		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
+	}
+
+	if len(spikeSymptoms) > 0 {
+		for _, a := range na.SymptomsSpikeAccounts {
+			cwo := workflow.ChildWorkflowOptions{
+				// Do not specify WorkflowID if you want Cadence to generate a unique ID for the child execution.
+				WorkflowID:                   fmt.Sprintf("account-nudge-symptom-spike-%s", accountNumber),
+				TaskList:                     nudge.TaskListName,
+				ExecutionStartToCloseTimeout: time.Minute,
+				WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+			}
+
+			if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifySymptomSpikeWorkflow", a, "", spikeSymptoms).Get(ctx, nil); err != nil {
+				logger.Error("NotifySymptomSpikeWorkflow failed.", zap.Error(err))
+				sentry.CaptureException(err)
+			}
 		}
 	}
 

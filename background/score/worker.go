@@ -47,6 +47,7 @@ func (s *ScoreUpdateWorker) Register() {
 	activity.RegisterWithOptions(s.RefreshLocationStateActivity, activity.RegisterOptions{Name: "UpdateLocationStateActivity"})
 	activity.RegisterWithOptions(s.NotifyLocationStateActivity, activity.RegisterOptions{Name: "NotifyLocationStateActivity"})
 
+	activity.RegisterWithOptions(s.CheckLocationSpikeActivity, activity.RegisterOptions{Name: "CheckLocationSpikeActivity"})
 }
 
 func (s *ScoreUpdateWorker) Start(service workflowserviceclient.Interface, logger *zap.Logger) {

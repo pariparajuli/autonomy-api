@@ -17,6 +17,12 @@ import (
 var ErrInvalidLocation = fmt.Errorf("invalid location")
 var ErrTooFrequentUpdate = fmt.Errorf("too frequent update")
 
+// NotificationAccounts is a map of notification types and its correlated accounts
+type NotificationAccounts struct {
+	StateChangedAccounts  []string
+	SymptomsSpikeAccounts []string
+}
+
 // CalculatePOIStateActivity calculates metrics by the location of a POI
 func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id string) (*schema.Metric, error) {
 	logger := activity.GetLogger(ctx)
@@ -56,12 +62,27 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 	return &metric, nil
 }
 
+func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spikeSymptomTypes []schema.SymptomType) ([]schema.Symptom, error) {
+	var spikeSymptom []schema.Symptom
+
+	if len(spikeSymptomTypes) > 0 {
+		official, customized, _, err := s.mongo.IDToSymptoms(spikeSymptomTypes)
+		if err != nil {
+			return nil, err
+		}
+		spikeSymptom = append(official, customized...)
+	}
+
+	return spikeSymptom, nil
+}
+
 // RefreshLocationStateActivity updates the metrics as well as the score if the POI id
 // is not provided. Otherwise, it updates the score of POIs in the profile.
 // It will return accounts whose score's color is changed.
-func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, accountNumber, poiID string, metric schema.Metric) ([]string, error) {
+func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, accountNumber, poiID string, metric schema.Metric) (*NotificationAccounts, error) {
 	logger := activity.GetLogger(ctx)
-	updatedAccounts := make([]string, 0)
+	stateChangedAccounts := make([]string, 0)
+	symptomsSpikeAccounts := make([]string, 0)
 
 	if poiID != "" {
 		id, err := primitive.ObjectIDFromHex(poiID)
@@ -79,12 +100,31 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 		}
 
 		for _, profile := range profiles {
+
+			accountLocation := time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))
+
+			accountNow := time.Now().In(accountLocation)
+			accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
+
 			if profile.ScoreCoefficient != nil {
 				metric.Score = score.TotalScoreV1(*profile.ScoreCoefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 			}
 
 			if err := s.mongo.UpdateProfilePOIMetric(profile.AccountNumber, id, metric); err != nil {
 				return nil, err
+			}
+
+			lastSpikeUpdate := profile.PointsOfInterest[0].Metric.Details.Symptoms.LastSpikeUpdate
+			lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
+
+			if currentSpikeLength := len(metric.Details.Symptoms.LastSpikeList); currentSpikeLength > 0 {
+				if accountToday.Sub(lastSpikeDay) == 0 { // spike in the same day
+					if currentSpikeLength > len(profile.PointsOfInterest[0].Metric.Details.Symptoms.LastSpikeList) {
+						symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
+					}
+				} else {
+					symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
+				}
 			}
 
 			var changed bool
@@ -94,7 +134,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 			if changed {
 				logger.Debug("State color changed", zap.Any("old", profile.Metric.Score), zap.Any("new", metric.Score))
-				updatedAccounts = append(updatedAccounts, profile.AccountNumber)
+				stateChangedAccounts = append(stateChangedAccounts, profile.AccountNumber)
 			}
 		}
 	} else { // poiID == ''
@@ -103,8 +143,26 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
+		accountLocation := time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))
+
+		accountNow := time.Now().In(accountLocation)
+		accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
+
 		if err := s.mongo.UpdateProfileMetric(accountNumber, metric); err != nil {
 			return nil, err
+		}
+
+		lastSpikeUpdate := profile.Metric.Details.Symptoms.LastSpikeUpdate
+		lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
+
+		if currentSpikeLength := len(metric.Details.Symptoms.LastSpikeList); currentSpikeLength > 0 {
+			if accountToday.Sub(lastSpikeDay) == 0 { // spike in the same day
+				if currentSpikeLength > len(profile.Metric.Details.Symptoms.LastSpikeList) {
+					symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
+				}
+			} else {
+				symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
+			}
 		}
 
 		var changed bool
@@ -114,10 +172,18 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 		if changed {
 			logger.Debug("State color changed", zap.Any("old", profile.Metric.Score), zap.Any("new", metric.Score))
-			updatedAccounts = append(updatedAccounts, profile.AccountNumber)
+			stateChangedAccounts = append(stateChangedAccounts, profile.AccountNumber)
 		}
 	}
-	return updatedAccounts, nil
+
+	logger.Debug("finish state refreshing",
+		zap.Any("stateChangedAccounts", stateChangedAccounts),
+		zap.Any("symptomsSpikeAccounts", symptomsSpikeAccounts))
+
+	return &NotificationAccounts{
+		StateChangedAccounts:  stateChangedAccounts,
+		SymptomsSpikeAccounts: symptomsSpikeAccounts,
+	}, nil
 }
 
 // NotifyLocationStateActivity is to send notification to end users for notifing the

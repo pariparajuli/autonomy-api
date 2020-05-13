@@ -298,3 +298,6 @@ notification:
   symptom_follow_up:
     heading: Still experiencing symptoms?
     content: "Tap if you still have the following symptoms you reported yesterday: {{.Symptoms}}."
+  symptom_spike:
+    heading: Spike in symptoms in your neighboorhood
+    content: "There has been a recent spike in the following symptoms near you: {{.Symptoms}}. Tap if you’re also experiencing any of these symptoms today."
