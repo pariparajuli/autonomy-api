@@ -249,7 +249,7 @@ func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Loc
 			cbMap[symptom.ID] = symptom
 		}
 	}
-	var cSymptoms []schema.Symptom
+	cSymptoms := make([]schema.Symptom, 0)
 	for _, b := range cbMap {
 		cSymptoms = append(cSymptoms, b)
 	}
