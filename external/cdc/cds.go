@@ -59,6 +59,7 @@ func (c *CDS) Run() (int, error) {
 		record.City, _ = object["city"].(string)
 		record.County, _ = object["county"].(string)
 		record.State, _ = object["state"].(string)
+		record.Country, _ = object["country"].(string)
 		record.CountryID, _ = object["countryId"].(string)
 		record.StateID, _ = object["stateId"].(string)
 		record.CountyID, _ = object["countyId"].(string)
