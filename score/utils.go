@@ -1,9 +1,13 @@
 package score
 
 func ChangeRate(new, old float64) float64 {
-	rate := float64(1)
-	if old > 0 {
-		rate = (new - old) / old
+	if old == 0 {
+		if new == 0 {
+			return float64(0)
+		} else {
+			return float64(100)
+		}
 	}
-	return rate
+
+	return (new - old) / old * 100
 }
