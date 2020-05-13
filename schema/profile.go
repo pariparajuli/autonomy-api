@@ -38,6 +38,7 @@ type Profile struct {
 	ID                  string            `bson:"id"`
 	AccountNumber       string            `bson:"account_number"`
 	Location            *GeoJSON          `bson:"location,omitempty"`
+	Timezone            string            `bson:"timezone"`
 	HealthScore         float64           `bson:"health_score"`
 	Metric              Metric            `bson:"metric"`
 	ScoreCoefficient    *ScoreCoefficient `bson:"score_coefficient"`

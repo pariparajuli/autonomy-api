@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 // MongoAccount - account related operations
@@ -29,6 +30,7 @@ type MongoAccount interface {
 	AppendPOIToAccountProfile(accountNumber string, desc schema.ProfilePOI) error
 
 	UpdateProfileMetric(accountNumber string, metric schema.Metric) error
+	UpdateProfileTimezone(accountNumber string, timezone string) error
 	UpdateProfilePOIMetric(accountNumber string, poiID primitive.ObjectID, metric schema.Metric) error
 	GetProfileCoefficient(accountNumber string) (*schema.ScoreCoefficient, error)
 	UpdateProfileCoefficient(accountNumber string, coefficient schema.ScoreCoefficient) error
@@ -81,6 +83,13 @@ func (s *AutonomyStore) UpdateAccountMetadata(accountNumber string, metadata map
 
 	for k, v := range metadata {
 		a.Profile.Metadata[k] = v
+		if k == "timezone" {
+			if timezone, _ := v.(string); utils.GetLocation(timezone) != nil {
+				if err := s.mongo.UpdateProfileTimezone(accountNumber, timezone); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return s.ormDB.Save(&a.Profile).Error
@@ -361,6 +370,32 @@ func (m *mongoDB) UpdateProfileCoefficient(accountNumber string, coefficient sch
 	update := bson.M{
 		"$set": bson.M{
 			"score_coefficient": coefficient,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errAccountNotFound
+	}
+
+	return nil
+}
+
+// UpdateProfileTimezone updates timezone for an account into mongodb
+func (m *mongoDB) UpdateProfileTimezone(accountNumber string, timezone string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
+	query := bson.M{
+		"account_number": accountNumber,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"timezone": timezone,
 		},
 	}
 
