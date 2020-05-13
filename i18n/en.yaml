@@ -289,7 +289,7 @@ behaviors:
       Covering your mouth with the inside of your elbow or a tissue whenever you
       cough or sneeze.
   clean_surface:
-    name: Cleaing and disinfecting surfaces
+    name: Cleaning and disinfecting surfaces
     desc:
       Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs,
       tables, light switches, and keyboards.
