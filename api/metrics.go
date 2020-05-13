@@ -30,7 +30,7 @@ func (s *Server) getMetrics(c *gin.Context) {
 		return
 	}
 
-	avgToday, avgYesterday, err := s.mongoStore.GetCommunityAvgReportCount(c.Param("reportType"), consts.CORHORT_DISTANCE_RANGE, *loc)
+	avgToday, avgYesterday, err := s.mongoStore.GetCommunityAvgReportCount(c.Param("reportType"), consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
