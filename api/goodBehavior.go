@@ -20,6 +20,11 @@ func (s *Server) createBehavior(c *gin.Context) {
 		return
 	}
 
+	if params.Name == "" {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
+		return
+	}
+
 	id, err := s.mongoStore.CreateBehavior(params)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)

@@ -22,6 +22,11 @@ func (s *Server) createSymptom(c *gin.Context) {
 		return
 	}
 
+	if params.Name == "" {
+		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
+		return
+	}
+
 	id, err := s.mongoStore.CreateSymptom(params)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
