@@ -15,7 +15,10 @@ func CalculateConfirmScore(metric *schema.Metric) {
 		details.Score = 0
 		return
 	}
-
 	// in between 0 - 10 people, each increased confirm case deduct 5 points
 	details.Score = 100 - 5*delta
+	if details.Score < 0 {
+		details.Score = 0
+	}
+
 }
