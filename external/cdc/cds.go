@@ -62,9 +62,9 @@ func (c *CDS) Run() (int, error) {
 		record.CountryID, _ = object["countryId"].(string)
 		record.StateID, _ = object["stateId"].(string)
 		record.CountyID, _ = object["countyId"].(string)
-		record.Level, ok = object["level"].(string)
+		record.Level, _ = object["level"].(string)
 
-		if ok && "" == record.Level {
+		if "" == record.Level {
 			switch c.Level {
 			case "country":
 				if "" != record.Country && "" == record.State {
@@ -136,6 +136,7 @@ func (c *CDS) Run() (int, error) {
 		count++
 		updateRecords = append(updateRecords, record)
 	}
+
 	c.Result = updateRecords
 
 	return count, nil
