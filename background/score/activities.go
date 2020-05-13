@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/cadence/activity"
 	"go.uber.org/zap"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
-	"github.com/spf13/viper"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var ErrInvalidLocation = fmt.Errorf("invalid location")
@@ -101,7 +102,10 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 		for _, profile := range profiles {
 
-			accountLocation := time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))
+			accountLocation := utils.GetLocation(profile.Timezone)
+			if accountLocation == nil {
+				accountLocation = utils.GetLocation("GMT+8")
+			}
 
 			accountNow := time.Now().In(accountLocation)
 			accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
@@ -143,7 +147,10 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
-		accountLocation := time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))
+		accountLocation := utils.GetLocation(profile.Timezone)
+		if accountLocation == nil {
+			accountLocation = utils.GetLocation("GMT+8")
+		}
 
 		accountNow := time.Now().In(accountLocation)
 		accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)

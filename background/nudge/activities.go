@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bitmark-inc/autonomy-api/background"
-	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/utils"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go.uber.org/cadence/activity"
 	"go.uber.org/zap"
+
+	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 const SymptomFollowUpExpiry = 24 * time.Hour
@@ -38,7 +39,10 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 	}
 
 	// get account timezone
-	accountLocation := time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))
+	accountLocation := utils.GetLocation(p.Timezone)
+	if accountLocation == nil {
+		accountLocation = utils.GetLocation("GMT+8")
+	}
 
 	accountNow := time.Now().In(accountLocation)
 	accountCurrentHour := accountNow.Hour()
