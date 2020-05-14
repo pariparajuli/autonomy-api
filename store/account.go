@@ -23,7 +23,7 @@ type MongoAccount interface {
 
 	DeleteAccount(string) error
 	UpdateAccountScore(string, float64) error
-	UpdateAccountSymptomNudge(string) error
+	UpdateAccountNudge(string, schema.NudgeType) error
 	IsAccountExist(string) (bool, error)
 	GetProfile(accountNumber string) (*schema.Profile, error)
 	GetProfilesByPOI(id string) ([]schema.Profile, error)
@@ -283,7 +283,7 @@ func (m *mongoDB) UpdateAccountScore(accountNumber string, score float64) error 
 	return nil
 }
 
-func (m *mongoDB) UpdateAccountSymptomNudge(accountNumber string) error {
+func (m *mongoDB) UpdateAccountNudge(accountNumber string, nudgeType schema.NudgeType) error {
 	c := m.client.Database(m.database).Collection(schema.ProfileCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -296,7 +296,7 @@ func (m *mongoDB) UpdateAccountSymptomNudge(accountNumber string) error {
 		},
 	}
 
-	update := bson.M{"$set": bson.M{"last_symptom_nudged": time.Now().UTC()}}
+	update := bson.M{"$set": bson.M{fmt.Sprintf("last_nudge.%s", nudgeType): time.Now().UTC()}}
 	_, err := c.UpdateOne(ctx, query, update)
 	if nil != err {
 		log.WithField("prefix", mongoLogPrefix).WithError(err).WithField("account_number", accountNumber).

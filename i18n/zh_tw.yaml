@@ -292,3 +292,6 @@ notification:
   behavior_suggestion:
     heading: 進入高風險區域
     content: 請戴上口罩、勤洗手，並減少與他人接觸。如果你有做到請點擊回報。
+  behavior_high_risk_follow_up:
+    heading: 加強防護，保護自己也保護別人
+    content: 請戴上口罩，並減少與他人接觸，尤其你有些潛在症狀。我有做到，我要回報。

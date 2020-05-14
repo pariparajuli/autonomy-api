@@ -33,6 +33,15 @@ type ScoreCoefficient struct {
 	SymptomWeights SymptomWeights `json:"symptom_weights" bson:"symptom_weights"`
 }
 
+type NudgeType string
+
+const (
+	SymptomFollowUpNudge    = NudgeType("symptom_follow_up")
+	BehaviorOnHighRiskNudge = NudgeType("behavior_on_high_risk")
+)
+
+type NudgeTime map[NudgeType]time.Time
+
 // Profile - user profile data
 type Profile struct {
 	ID                  string            `bson:"id"`
@@ -42,7 +51,7 @@ type Profile struct {
 	HealthScore         float64           `bson:"health_score"`
 	Metric              Metric            `bson:"metric"`
 	ScoreCoefficient    *ScoreCoefficient `bson:"score_coefficient"`
-	LastSymptomNudged   time.Time         `bson:"last_symptom_nudged"`
+	LastNudge           NudgeTime         `bson:"last_nudge"`
 	PointsOfInterest    []ProfilePOI      `bson:"points_of_interest,omitempty"`
 	CustomizedBehaviors []Behavior        `bson:"customized_behavior"`
 	CustomizedSymptoms  []Symptom         `bson:"customized_symptom"`
