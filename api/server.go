@@ -147,9 +147,11 @@ func (s *Server) setupRouter() *gin.Engine {
 		accountRoute.PATCH("/me", s.accountUpdateMetadata)
 		accountRoute.DELETE("/me", s.accountDelete)
 
+		accountRoute.GET("/me/here", s.accountHere)
 		accountRoute.GET("/me/profile_formula", s.getProfileFormula)
 		accountRoute.PUT("/me/profile_formula", s.updateProfileFormula)
 		accountRoute.DELETE("/me/profile_formula", s.resetProfileFormula)
+
 		// accountRoute.POST("/me/export", s.accountPrepareExport)
 		// accountRoute.GET("/me/export", s.accountExportStatus)
 		// accountRoute.GET("/me/export/download", s.accountDownloadExport)

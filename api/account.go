@@ -105,6 +105,11 @@ func (s *Server) accountDelete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 }
 
+// accountHere is an api to acking for an account
+func (s *Server) accountHere(c *gin.Context) {
+	c.Status(http.StatusNoContent)
+}
+
 // getProfileFormula returns customized formula saved by a user
 func (s *Server) getProfileFormula(c *gin.Context) {
 	var isDefaultFormula bool
