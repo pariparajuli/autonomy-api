@@ -233,6 +233,12 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 					sentry.CaptureException(err)
 				}
 			}
+
+			if err := utils.TriggerAccountHighRiskFollowUpNudge(*s.cadenceClient, c, account.AccountNumber); err != nil {
+				if _, ok := err.(*workflow.WorkflowExecutionAlreadyStartedError); !ok {
+					sentry.CaptureException(err)
+				}
+			}
 		}()
 	} else {
 		c.Error(err)

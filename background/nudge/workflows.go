@@ -3,14 +3,17 @@ package nudge
 import (
 	"time"
 
-	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/cadence/workflow"
 	"go.uber.org/zap"
+
+	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 const (
 	AccountSymptomsCheckInterval = time.Hour
+	AccountHighRiskCheckInterval = 30 * time.Minute
 )
 
 var activityOptions = workflow.ActivityOptions{
@@ -113,4 +116,40 @@ func (n *NudgeWorker) NotifyBehaviorOnRiskAreaWorkflow(ctx workflow.Context, acc
 	}
 
 	return nil
+}
+
+// HighRiskAccountFollowUpWorkflow is a workflow to follow up an account if it in risk by
+// it self reported symptoms
+func (n *NudgeWorker) HighRiskAccountFollowUpWorkflow(ctx workflow.Context, accountNumber string) error {
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+
+	logger := workflow.GetLogger(ctx)
+
+	selector := workflow.NewSelector(ctx)
+
+	timerCancelCtx, _ := workflow.WithCancel(ctx)
+	timerFuture := workflow.NewTimer(timerCancelCtx, AccountHighRiskCheckInterval)
+	selector.AddFuture(timerFuture, func(f workflow.Future) {
+		logger.Info("Start periodically account self high risk nudge follow up")
+	})
+
+	selector.Select(ctx)
+
+	var shouldFollowUp bool
+	if err := workflow.ExecuteActivity(ctx, n.HighRiskAccountFollowUpActivity, accountNumber).Get(ctx, &shouldFollowUp); err != nil {
+		if err.Error() == background.ErrStopRenewWorkflow.Error() {
+			logger.Info("Stop following high risk for account", zap.Any("accountNumber", accountNumber))
+			return nil
+		}
+		logger.Error("Fail to check if an account needs to follow up", zap.Error(err))
+		return workflow.NewContinueAsNewError(ctx, n.HighRiskAccountFollowUpWorkflow, accountNumber)
+	}
+
+	if shouldFollowUp {
+		if err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber).Get(ctx, nil); err != nil {
+			logger.Error("Fail to send notification to follow up high risk user", zap.Error(err))
+		}
+	}
+
+	return workflow.NewContinueAsNewError(ctx, n.HighRiskAccountFollowUpWorkflow, accountNumber)
 }

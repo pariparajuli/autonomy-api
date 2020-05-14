@@ -15,6 +15,7 @@ import (
 )
 
 const SymptomFollowUpExpiry = 24 * time.Hour
+const HighRiskSymptomExpiry = 3 * 24 * time.Hour
 
 func (n *NudgeWorker) getLastSymptomReport(accountNumber string) *schema.SymptomReportData {
 	symptoms, err := n.mongo.GetReportedSymptoms(accountNumber, time.Now().Unix(), 1, "")
@@ -59,7 +60,7 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 
 	// check if the last symptom is reported yesterday.
 	if lastSymptomReportDuration > 0 && lastSymptomReportDuration < SymptomFollowUpExpiry {
-		lastNudgeSinceToday := p.LastSymptomNudged.Sub(accountToday.UTC())
+		lastNudgeSinceToday := p.LastNudge[schema.SymptomFollowUpNudge].Sub(accountToday.UTC())
 		logger.Info("Last nudge sent since today", zap.Any("lastNudgeSinceToday", lastNudgeSinceToday))
 
 		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
@@ -141,7 +142,7 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 		return err
 	}
 
-	return n.mongo.UpdateAccountSymptomNudge(accountNumber)
+	return n.mongo.UpdateAccountNudge(accountNumber, schema.SymptomFollowUpNudge)
 }
 
 // NotifySymptomSpikeActivity send notifications to accounts those have symptoms spiked around
@@ -205,4 +206,108 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
 		},
 	)
+}
+
+// HighRiskAccountFollowUpActivity is an activity that determine if an account contains high risk symptoms to follow up
+func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accountNumber string) (bool, error) {
+	logger := activity.GetLogger(ctx)
+	var shouldSendBehaviorNudge bool
+
+	p, err := n.mongo.GetProfile(accountNumber)
+	if err != nil {
+		return shouldSendBehaviorNudge, err
+	}
+
+	// get account timezone
+	accountLocation := utils.GetLocation(p.Timezone)
+	if accountLocation == nil {
+		accountLocation = utils.GetLocation("GMT+8")
+	}
+
+	accountNow := time.Now().In(accountLocation)
+	accountCurrentHour := accountNow.Hour()
+	accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
+
+	if accountCurrentHour < 8 || accountCurrentHour >= 17 {
+		return shouldSendBehaviorNudge, nil
+	}
+
+	report := n.getLastSymptomReport(accountNumber)
+
+	if report == nil {
+		return shouldSendBehaviorNudge, nil
+	}
+
+	lastSymptomReportTime := time.Unix(report.Timestamp, 0)
+	lastHighRiskMoment := accountToday.Add(-1 * HighRiskSymptomExpiry)
+
+	// check if the last symptom is reported in the past.
+	if lastSymptomReportTime.Sub(lastHighRiskMoment) > 0 && len(report.OfficialSymptoms) > 0 {
+		lastNudgeSinceToday := p.LastNudge[schema.BehaviorOnHighRiskNudge].Sub(accountToday.UTC())
+		logger.Info("Risky symptoms found in the past",
+			zap.Any("lastNudgeSinceToday", lastNudgeSinceToday),
+			zap.Any("accountCurrentHour", accountCurrentHour))
+
+		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
+			if accountCurrentHour >= 8 && accountCurrentHour < 12 {
+				logger.Info("trigger morning behavior nudge")
+				shouldSendBehaviorNudge = true
+			}
+		} else if lastNudgeSinceToday >= 8*time.Hour && lastNudgeSinceToday < 12*time.Hour { // last notified time is in this morning
+			if accountCurrentHour >= 13 && accountCurrentHour < 17 {
+				logger.Info("trigger afternoon behavior nudge")
+				shouldSendBehaviorNudge = true
+			}
+		}
+	} else {
+		return false, background.ErrStopRenewWorkflow
+	}
+
+	return shouldSendBehaviorNudge, nil
+}
+
+// NotifyBehaviorFollowUpActivity is an activity to prepare and send a follow-up message if a user is under risk
+func (n *NudgeWorker) NotifyBehaviorFollowUpActivity(ctx context.Context, accountNumber string) error {
+
+	logger := activity.GetLogger(ctx)
+	logger.Info("Prepare the message context for following up hige risk symptoms")
+
+	headings := map[string]string{}
+	contents := map[string]string{}
+
+	for key, lang := range background.OneSignalLanguageCode {
+		loc := utils.NewLocalizer(lang)
+
+		// translate heading
+		heading, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: "notification.behavior_high_risk_follow_up.heading",
+		})
+		if err != nil {
+			return err
+		}
+
+		headings[key] = heading
+
+		// translate content
+		content, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: "notification.behavior_high_risk_follow_up.content",
+		})
+		if err != nil {
+			return err
+		}
+
+		contents[key] = content
+	}
+
+	if err := n.Background.NotifyAccountByText(accountNumber,
+		headings, contents,
+		map[string]interface{}{
+			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
+		},
+	); err != nil {
+		return err
+	}
+
+	return n.mongo.UpdateAccountNudge(accountNumber, schema.BehaviorOnHighRiskNudge)
+
 }

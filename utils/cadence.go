@@ -47,6 +47,20 @@ func TriggerAccountSymptomFollowUpNudge(client cadence.CadenceClient, c context.
 	return err
 }
 
+// TriggerAccountHighRiskFollowUpNudge is a helper function to send a signal to
+// trigger account following up behaviors on self risk.
+func TriggerAccountHighRiskFollowUpNudge(client cadence.CadenceClient, c context.Context, accountNumber string) error {
+	_, err := client.StartWorkflow(c,
+		cadenceClient.StartWorkflowOptions{
+			ID:                           fmt.Sprintf("account-nudge-behavior-follow-up-on-risk-%s", accountNumber),
+			TaskList:                     NudgeTaskListName,
+			ExecutionStartToCloseTimeout: 24 * time.Hour,
+			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+		}, "HighRiskAccountFollowUpWorkflow", accountNumber)
+
+	return err
+}
+
 // TriggerPOIUpdate is a helper function to send a signal to
 // trigger the workflow to update scores.
 func TriggerPOIUpdate(client cadence.CadenceClient, c context.Context, poiIDs []primitive.ObjectID) error {

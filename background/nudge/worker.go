@@ -41,12 +41,15 @@ func (n *NudgeWorker) Register() {
 	workflow.RegisterWithOptions(n.SymptomFollowUpNudgeWorkflow, workflow.RegisterOptions{Name: "SymptomFollowUpNudgeWorkflow"})
 	workflow.RegisterWithOptions(n.NotifySymptomSpikeWorkflow, workflow.RegisterOptions{Name: "NotifySymptomSpikeWorkflow"})
 	workflow.RegisterWithOptions(n.NotifyBehaviorOnRiskAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnRiskAreaWorkflow"})
+	workflow.RegisterWithOptions(n.HighRiskAccountFollowUpWorkflow, workflow.RegisterOptions{Name: "HighRiskAccountFollowUpWorkflow"})
 
 	activity.RegisterWithOptions(n.SymptomsNeedFollowUpActivity, activity.RegisterOptions{Name: "SymptomsNeedFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomFollowUpActivity, activity.RegisterOptions{Name: "NotifySymptomFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomSpikeActivity, activity.RegisterOptions{Name: "NotifySymptomSpikeActivity"})
 	activity.RegisterWithOptions(n.NotifyBehaviorNudgeActivity, activity.RegisterOptions{Name: "NotifyBehaviorNudgeActivity"})
 	activity.RegisterWithOptions(n.FindNotificationReceiver, activity.RegisterOptions{Name: "FindNotificationReceiver"})
+	activity.RegisterWithOptions(n.HighRiskAccountFollowUpActivity, activity.RegisterOptions{Name: "HighRiskAccountFollowUpActivity"})
+	activity.RegisterWithOptions(n.NotifyBehaviorFollowUpActivity, activity.RegisterOptions{Name: "NotifyBehaviorFollowUpActivity"})
 }
 
 func (n *NudgeWorker) Start(service workflowserviceclient.Interface, logger *zap.Logger) {
