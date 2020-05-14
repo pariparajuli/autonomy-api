@@ -63,9 +63,13 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 		logger.Info("Last nudge sent since today", zap.Any("lastNudgeSinceToday", lastNudgeSinceToday))
 
 		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
-			return append(report.OfficialSymptoms, report.CustomizedSymptoms...), nil
+			if accountCurrentHour >= 8 || accountCurrentHour < 12 {
+				logger.Info("trigger morning symptom follow up nudge")
+				return append(report.OfficialSymptoms, report.CustomizedSymptoms...), nil
+			}
 		} else if lastNudgeSinceToday >= 8*time.Hour && lastNudgeSinceToday < 12*time.Hour { // last notified time is in this morning
 			if accountCurrentHour >= 13 || accountCurrentHour < 17 {
+				logger.Info("trigger afternoon symptom follow up nudge")
 				return append(report.OfficialSymptoms, report.CustomizedSymptoms...), nil
 			}
 		}
