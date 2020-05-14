@@ -94,7 +94,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				TotalPeople:             totalPeopleReport,
 				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
 				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
-				Score: behaviorScore,
+				Score:                   behaviorScore,
 			},
 		},
 	}, nil
@@ -102,7 +102,14 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, location schema.Location) (*schema.Metric, error) {
 	rawMetrics, err := m.CollectRawMetrics(location)
-	if err != nil {
+	if err == ErrNoConfirmDataset || err == ErrInvalidConfirmDataset || err == ErrPoliticalTypeGeoInfo {
+		log.WithFields(log.Fields{
+			"prefix":         mongoLogPrefix,
+			"account_number": accountNumber,
+			"location":       location,
+			"err":            err,
+		}).Warn("collect confirm raw metrics")
+	} else if err != nil {
 		log.WithFields(log.Fields{
 			"prefix":         mongoLogPrefix,
 			"account_number": accountNumber,
