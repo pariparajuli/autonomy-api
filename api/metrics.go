@@ -24,13 +24,13 @@ func (s *Server) getMetrics(c *gin.Context) {
 		return
 	}
 
-	countToday, countYesterday, err := s.mongoStore.GetPersonalReportCount(c.Param("reportType"), account.AccountNumber)
+	countToday, countYesterday, err := s.mongoStore.GetPersonalReportedItemCount(c.Param("reportType"), account.AccountNumber)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
 
-	avgToday, avgYesterday, err := s.mongoStore.GetCommunityAvgReportCount(c.Param("reportType"), consts.NEARBY_DISTANCE_RANGE, *loc)
+	avgToday, avgYesterday, err := s.mongoStore.GetCommunityAvgReportedItemCount(c.Param("reportType"), consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
