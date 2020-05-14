@@ -50,11 +50,7 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 	var metric schema.Metric
 	err := workflow.ExecuteActivity(ctx, s.CalculatePOIStateActivity, id).Get(ctx, &metric)
 	if err != nil {
-		if err == ErrTooFrequentUpdate {
-			return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
-		}
 		logger.Error("Fail to update POI.", zap.Error(err))
-		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
 	}
 
@@ -128,10 +124,7 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 	var metric schema.Metric
 	err := workflow.ExecuteActivity(ctx, s.CalculateAccountStateActivity, accountNumber).Get(ctx, &metric)
 	if err != nil {
-		if err != ErrInvalidLocation {
-			logger.Error("Fail to update account state", zap.Error(err))
-			sentry.CaptureException(err)
-		}
+		logger.Error("Fail to update account state", zap.Error(err))
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
