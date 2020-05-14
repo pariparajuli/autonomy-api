@@ -301,3 +301,6 @@ notification:
   symptom_spike:
     heading: Spike in symptoms in your neighboorhood
     content: "There has been a recent spike in the following symptoms near you: {{.Symptoms}}. Tap if you’re also experiencing any of these symptoms today."
+  behavior_suggestion:
+    heading: Entering a high-risk neighborhood
+    content: Please wear a face covering, avoid close contact with others, and wash your hands often. Tap if you did this.

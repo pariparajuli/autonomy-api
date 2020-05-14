@@ -169,3 +169,40 @@ func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNum
 		},
 	)
 }
+
+// NotifySymptomSpikeActivity send notifications to accounts those have symptoms spiked around
+func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNumber string) error {
+	headings := map[string]string{}
+	contents := map[string]string{}
+
+	for key, lang := range background.OneSignalLanguageCode {
+		loc := utils.NewLocalizer(lang)
+
+		// translate heading
+		heading, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: "notification.behavior_suggestion.heading",
+		})
+		if err != nil {
+			return err
+		}
+
+		headings[key] = heading
+
+		// translate content
+		content, err := loc.Localize(&i18n.LocalizeConfig{
+			MessageID: "notification.behavior_suggestion.content",
+		})
+		if err != nil {
+			return err
+		}
+
+		contents[key] = content
+	}
+
+	return n.Background.NotifyAccountByText(accountNumber,
+		headings, contents,
+		map[string]interface{}{
+			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
+		},
+	)
+}

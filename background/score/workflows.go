@@ -54,15 +54,15 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
 	}
 
-	var na NotificationAccounts
-	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, "", id, metric).Get(ctx, &na); err != nil {
+	var np NotificationProfile
+	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, "", id, metric).Get(ctx, &np); err != nil {
 		logger.Error("Fail to update POI state for accounts.", zap.Error(err))
 		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.POIStateUpdateWorkflow, id)
 	}
 
-	if len(na.StateChangedAccounts) > 0 {
-		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, id, na.StateChangedAccounts).Get(ctx, nil)
+	if len(np.StateChangedAccounts) > 0 {
+		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, id, np.StateChangedAccounts).Get(ctx, nil)
 		if err != nil {
 			logger.Error("Fail to notify users for location state", zap.Error(err))
 			sentry.CaptureException(err)
@@ -77,7 +77,7 @@ func (s *ScoreUpdateWorker) POIStateUpdateWorkflow(ctx workflow.Context, id stri
 	}
 
 	if len(spikeSymptoms) > 0 {
-		for _, a := range na.SymptomsSpikeAccounts {
+		for _, a := range np.SymptomsSpikeAccounts {
 			cwo := workflow.ChildWorkflowOptions{
 				// Do not specify WorkflowID if you want Cadence to generate a unique ID for the child execution.
 				WorkflowID:                   fmt.Sprintf("poi-%s-nudge-symptom-spike-%s", id, a),
@@ -128,17 +128,31 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
-	var na NotificationAccounts
-	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, accountNumber, "", metric).Get(ctx, &na); err != nil {
+	var np NotificationProfile
+	if err := workflow.ExecuteActivity(ctx, s.RefreshLocationStateActivity, accountNumber, "", metric).Get(ctx, &np); err != nil {
 		logger.Error("Fail to update POI state for accounts.", zap.Error(err))
 		sentry.CaptureException(err)
 		return workflow.NewContinueAsNewError(ctx, s.AccountStateUpdateWorkflow, accountNumber)
 	}
 
-	if len(na.StateChangedAccounts) > 0 {
-		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, "", na.StateChangedAccounts).Get(ctx, nil)
+	if len(np.StateChangedAccounts) > 0 {
+		err := workflow.ExecuteActivity(ctx, s.NotifyLocationStateActivity, "", np.StateChangedAccounts).Get(ctx, nil)
 		if err != nil {
 			logger.Error("Fail to notify users for location state", zap.Error(err))
+			sentry.CaptureException(err)
+		}
+	}
+
+	if np.ReportRiskArea {
+		cwo := workflow.ChildWorkflowOptions{
+			WorkflowID:                   fmt.Sprintf("account-behavior-on-risk-area-%s", accountNumber),
+			TaskList:                     nudge.TaskListName,
+			ExecutionStartToCloseTimeout: time.Minute,
+			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+		}
+
+		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorOnRiskAreaWorkflow", accountNumber).Get(ctx, nil); err != nil {
+			logger.Error("NotifySymptomSpikeWorkflow failed.", zap.Error(err))
 			sentry.CaptureException(err)
 		}
 	}
@@ -151,7 +165,7 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 	}
 
 	if len(spikeSymptoms) > 0 {
-		for _, a := range na.SymptomsSpikeAccounts {
+		for _, a := range np.SymptomsSpikeAccounts {
 			cwo := workflow.ChildWorkflowOptions{
 				// Do not specify WorkflowID if you want Cadence to generate a unique ID for the child execution.
 				WorkflowID:                   fmt.Sprintf("account-nudge-symptom-spike-%s", accountNumber),

@@ -100,3 +100,17 @@ func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNu
 
 	return nil
 }
+
+func (n *NudgeWorker) NotifyBehaviorOnRiskAreaWorkflow(ctx workflow.Context, accountNumber string) error {
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+
+	logger := workflow.GetLogger(ctx)
+
+	err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorNudgeActivity, accountNumber).Get(ctx, nil)
+	if err != nil {
+		logger.Error("Fail to notify user behavior nudge on risk area", zap.Error(err))
+		return err
+	}
+
+	return nil
+}

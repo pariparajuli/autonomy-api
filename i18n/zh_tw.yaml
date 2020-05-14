@@ -289,3 +289,6 @@ notification:
   symptom_spike:
     heading: 鄰近位置有症狀飆升
     content: "在你生活周遭有下列症狀大量增加: {{.Symptoms}}。點擊回報我也有類似的症狀"
+  behavior_suggestion:
+    heading: 進入高風險區域
+    content: 請戴上口罩、勤洗手，並減少與他人接觸。如果你有做到請點擊回報。

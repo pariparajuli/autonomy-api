@@ -18,10 +18,11 @@ import (
 var ErrInvalidLocation = fmt.Errorf("invalid location")
 var ErrTooFrequentUpdate = fmt.Errorf("too frequent update")
 
-// NotificationAccounts is a map of notification types and its correlated accounts
-type NotificationAccounts struct {
+// NotificationProfile is a struct that summarizes how notifications are going to deliver.
+type NotificationProfile struct {
 	StateChangedAccounts  []string
 	SymptomsSpikeAccounts []string
+	ReportRiskArea        bool
 }
 
 // CalculatePOIStateActivity calculates metrics by the location of a POI
@@ -80,8 +81,10 @@ func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spik
 // RefreshLocationStateActivity updates the metrics as well as the score if the POI id
 // is not provided. Otherwise, it updates the score of POIs in the profile.
 // It will return accounts whose score's color is changed.
-func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, accountNumber, poiID string, metric schema.Metric) (*NotificationAccounts, error) {
+func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, accountNumber, poiID string, metric schema.Metric) (*NotificationProfile, error) {
 	logger := activity.GetLogger(ctx)
+
+	var reportRiskArea bool
 	stateChangedAccounts := make([]string, 0)
 	symptomsSpikeAccounts := make([]string, 0)
 
@@ -181,15 +184,22 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			logger.Debug("State color changed", zap.Any("old", profile.Metric.Score), zap.Any("new", metric.Score))
 			stateChangedAccounts = append(stateChangedAccounts, profile.AccountNumber)
 		}
+
+		// only report the risk area when a location state change is detected and
+		// the score it lower than 67 (with color yellow and red)
+		if changed && metric.Score < 67 {
+			reportRiskArea = true
+		}
 	}
 
 	logger.Debug("finish state refreshing",
 		zap.Any("stateChangedAccounts", stateChangedAccounts),
 		zap.Any("symptomsSpikeAccounts", symptomsSpikeAccounts))
 
-	return &NotificationAccounts{
+	return &NotificationProfile{
 		StateChangedAccounts:  stateChangedAccounts,
 		SymptomsSpikeAccounts: symptomsSpikeAccounts,
+		ReportRiskArea:        reportRiskArea,
 	}, nil
 }
 

@@ -40,10 +40,12 @@ func NewNudgeWorker(domain string, mongo store.MongoStore) *NudgeWorker {
 func (n *NudgeWorker) Register() {
 	workflow.RegisterWithOptions(n.SymptomFollowUpNudgeWorkflow, workflow.RegisterOptions{Name: "SymptomFollowUpNudgeWorkflow"})
 	workflow.RegisterWithOptions(n.NotifySymptomSpikeWorkflow, workflow.RegisterOptions{Name: "NotifySymptomSpikeWorkflow"})
+	workflow.RegisterWithOptions(n.NotifyBehaviorOnRiskAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnRiskAreaWorkflow"})
 
 	activity.RegisterWithOptions(n.SymptomsNeedFollowUpActivity, activity.RegisterOptions{Name: "SymptomsNeedFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomFollowUpActivity, activity.RegisterOptions{Name: "NotifySymptomFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomSpikeActivity, activity.RegisterOptions{Name: "NotifySymptomSpikeActivity"})
+	activity.RegisterWithOptions(n.NotifyBehaviorNudgeActivity, activity.RegisterOptions{Name: "NotifyBehaviorNudgeActivity"})
 	activity.RegisterWithOptions(n.FindNotificationReceiver, activity.RegisterOptions{Name: "FindNotificationReceiver"})
 }
 
