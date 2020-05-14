@@ -16,10 +16,16 @@ import (
 type CDSCountryType string
 
 const (
-	CdsUSA         = "United States"
-	CdsUSALevel    = "county"
-	CdsTaiwan      = "Taiwan"
-	CdsTaiwanLevel = "country"
+	CdsUSA    = "United States"
+	CdsTaiwan = "Taiwan"
+)
+
+var (
+	ErrNoConfirmDataset      = fmt.Errorf("no data-set")
+	ErrInvalidConfirmDataset = fmt.Errorf("invalid confirm data-set")
+	ErrPoliticalTypeGeoInfo  = fmt.Errorf("no political type geo info")
+	ErrConfirmDataFetch      = fmt.Errorf("fetch cds confirm data fail")
+	ErrConfirmDecode         = fmt.Errorf("decode confirm data fail")
 )
 
 type PoliticalGeo struct {
@@ -57,16 +63,14 @@ func (m *mongoDB) CreateCDSData(result []schema.CDSData, country string) error {
 	if err != nil {
 		if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
 			if 1 == len(errs.WriteErrors) && DuplicateKeyCode == errs.WriteErrors[0].Code {
+				log.WithFields(log.Fields{"prefix": mongoLogPrefix, "err": errs}).Warn("createCDSData Insert data")
 				fmt.Println(err)
 				return nil
 			}
 		}
 	}
 	if res != nil {
-		log.WithFields(log.Fields{
-			"prefix":  mongoLogPrefix,
-			"records": len(res.InsertedIDs),
-		}).Info("createCDSData Insert data")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": len(res.InsertedIDs)}).Info("createCDSData Insert data")
 	}
 	return nil
 }
@@ -74,7 +78,7 @@ func (m *mongoDB) CreateCDSData(result []schema.CDSData, country string) error {
 func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
 	pGeo, err := m.politicalGeoInfo(loc)
 	if err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("get political  geo info")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error(ErrPoliticalTypeGeoInfo)
 		return 0, 0, 0, err
 	}
 
@@ -85,7 +89,7 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		// use taiwan cdc data (temp solution)
 		today, delta, percent, err := m.GetConfirm(loc)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("cds confirm data  error: %s", err)
+			return 0, 0, 0, fmt.Errorf("%s: %s", ErrConfirmDataFetch, err)
 		}
 		return today, delta, percent, nil
 
@@ -98,19 +102,16 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		filter := bson.M{"county": pGeo.Level2, "state": pGeo.Level1}
 		cur, err := c.Find(context.Background(), filter, opts)
 		if nil != err {
-			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
-			return 0, 0, 0, fmt.Errorf("cds confirm data find  error: %s", err)
+			return 0, 0, 0, ErrConfirmDataFetch
 		}
 		var results []schema.CDSData
 
 		for cur.Next(ctx) {
 			var result schema.CDSData
 			if errDecode := cur.Decode(&result); errDecode != nil {
-				log.WithField("prefix", mongoLogPrefix).Errorf("cds Decode with error: %s", errDecode)
-				return 0, 0, 0, errDecode
+				return 0, 0, 0, ErrConfirmDecode
 			}
 			results = append(results, result)
-			log.WithField("prefix", mongoLogPrefix).Debugf("cds query name: %s date:%s", result.Name, result.ReportTimeDate)
 		}
 		percent := float64(100)
 		if len(results) >= 2 {
@@ -129,10 +130,10 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 				log.WithField("prefix", mongoLogPrefix).Debugf("cds score results: today:%f, delta:%f, percent:%f", today.Cases, delta, percent)
 				return today.Cases, delta, percent, nil
 			}
-			return 0, 0, 0, errors.New("no enough data in CdsUS dataset")
+			return 0, 0, 0, ErrInvalidConfirmDataset
 		}
 	}
-	return 0, 0, 0, errors.New("no supported CDS dataset")
+	return 0, 0, 0, ErrNoConfirmDataset
 
 }
 
