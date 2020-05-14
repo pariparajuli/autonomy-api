@@ -64,7 +64,6 @@ func (m *mongoDB) CreateCDSData(result []schema.CDSData, country string) error {
 		if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
 			if 1 == len(errs.WriteErrors) && DuplicateKeyCode == errs.WriteErrors[0].Code {
 				log.WithFields(log.Fields{"prefix": mongoLogPrefix, "err": errs}).Warn("createCDSData Insert data")
-				fmt.Println(err)
 				return nil
 			}
 		}
@@ -79,7 +78,7 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 	pGeo, err := m.politicalGeoInfo(loc)
 	if err != nil {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error(ErrPoliticalTypeGeoInfo)
-		return 0, 0, 0, err
+		return 0, 0, 0, ErrPoliticalTypeGeoInfo
 	}
 
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": pGeo.Country, "lv1": pGeo.Level1, "lv2": pGeo.Level2, "lv3": pGeo.Level3}).Debug("political geo address")

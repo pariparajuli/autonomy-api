@@ -102,7 +102,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 func (m *mongoDB) SyncAccountMetrics(accountNumber string, coefficient *schema.ScoreCoefficient, location schema.Location) (*schema.Metric, error) {
 	rawMetrics, err := m.CollectRawMetrics(location)
-	if err == ErrNoConfirmDataset || err == ErrInvalidConfirmDataset || err != ErrPoliticalTypeGeoInfo {
+	if err == ErrNoConfirmDataset || err == ErrInvalidConfirmDataset || err == ErrPoliticalTypeGeoInfo {
 		log.WithFields(log.Fields{
 			"prefix":         mongoLogPrefix,
 			"account_number": accountNumber,
