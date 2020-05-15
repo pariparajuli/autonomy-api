@@ -248,12 +248,12 @@ func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accou
 			zap.Any("lastNudgeSinceToday", lastNudgeSinceToday),
 			zap.Any("accountCurrentHour", accountCurrentHour))
 
-		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
+		if lastNudgeSinceToday < 8*time.Hour { // not report yet in the morning
 			if accountCurrentHour >= 8 && accountCurrentHour < 12 {
 				logger.Info("trigger morning behavior nudge")
 				shouldSendBehaviorNudge = true
 			}
-		} else if lastNudgeSinceToday >= 8*time.Hour && lastNudgeSinceToday < 12*time.Hour { // last notified time is in this morning
+		} else if lastNudgeSinceToday < 12*time.Hour { // not report yet in the afternoon
 			if accountCurrentHour >= 13 && accountCurrentHour < 17 {
 				logger.Info("trigger afternoon behavior nudge")
 				shouldSendBehaviorNudge = true
