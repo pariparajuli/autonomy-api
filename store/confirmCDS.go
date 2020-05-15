@@ -181,7 +181,6 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 
 func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
-	lessEqThan = 1589040000
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 

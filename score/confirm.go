@@ -1,21 +1,20 @@
 package score
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
 const (
-	confirmCriteria = 10
+	confirmDataCountThreadHold = 5
 )
 
 func CalculateConfirmScore(metric *schema.Metric) {
 	details := &metric.Details.Confirm
 	dataset := details.ContinuousData
 	score := float64(0)
-	if len(dataset) < 14 {
+	if len(dataset) < confirmDataCountThreadHold {
 		metric.Details.Confirm.Score = score
 		return
 	}
@@ -31,5 +30,4 @@ func CalculateConfirmScore(metric *schema.Metric) {
 		score = 1 - fraction/denominator
 	}
 	metric.Details.Confirm.Score = score * 100
-	fmt.Println(fmt.Sprintf("score in percentage:%f     fraction:%f denominator:%f score in fraction:%f", metric.Details.Confirm.Score, fraction, denominator, score))
 }
