@@ -17,17 +17,20 @@ type groupedByUserResult struct {
 }
 
 type AcknowledgementMetrics interface {
-	GetPersonalReportCount(reportType, accountNumber string) (int64, int64, error)
-	GetCommunityAvgReportCount(reportType string, meter int, loc schema.Location) (float64, float64, error)
+	GetPersonalReportedItemCount(reportType, accountNumber string) (int64, int64, error)
+	GetCommunityAvgReportedItemCount(reportType string, meter int, loc schema.Location) (float64, float64, error)
 }
 
-func (m *mongoDB) GetPersonalReportCount(reportType, accountNumber string) (int64, int64, error) {
+func (m *mongoDB) GetPersonalReportedItemCount(reportType, accountNumber string) (int64, int64, error) {
 	var c *mongo.Collection
+	var fields []string
 	switch reportType {
 	case "symptom":
 		c = m.client.Database(m.database).Collection(schema.SymptomReportCollection)
+		fields = []string{"official_symptoms", "customized_symptoms"}
 	case "behavior":
 		c = m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+		fields = []string{"official_behaviors", "customized_behaviors"}
 	default:
 		return 0, 0, errors.New("undefined report type")
 	}
@@ -38,39 +41,79 @@ func (m *mongoDB) GetPersonalReportCount(reportType, accountNumber string) (int6
 	todayBeginTime := todayStartAt()
 
 	// today
-	filter := bson.M{
-		"$and": []bson.M{
-			{"account_number": accountNumber},
-			matchReportedToday(todayBeginTime),
-		},
+	pipeline := []bson.M{
+		{"$match": bson.M{"account_number": accountNumber}},
+		aggStageReportedToday(todayBeginTime),
+		aggStagePreventNullArray(fields...),
+		aggStageReportedItemCount("count", fields...),
+		aggStageSumValues("count", "total"),
 	}
-	countToday, err := c.CountDocuments(ctx, filter)
+	cur, err := c.Aggregate(ctx, pipeline)
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"prefix": mongoLogPrefix}).Error("failed to count user reported items")
 		return 0, 0, err
+	}
+	type aggregatedItem struct {
+		Total int64 `bson:"total"`
+	}
+	result := make([]aggregatedItem, 0)
+	for cur.Next(ctx) {
+		var item aggregatedItem
+		if err = cur.Decode(&item); err != nil {
+			log.WithError(err).WithFields(log.Fields{"prefix": mongoLogPrefix}).Error("failed to decode aggreaged result")
+			return 0, 0, err
+		}
+		result = append(result, item)
+	}
+	countToday := int64(0)
+	if len(result) > 0 {
+		countToday = result[0].Total
 	}
 
 	// yesterday
-	filter = bson.M{
-		"$and": []bson.M{
-			{"account_number": accountNumber},
-			matchReportedYesterday(todayBeginTime),
-		},
+	pipeline = []bson.M{
+		{"$match": bson.M{"account_number": accountNumber}},
+		aggStageReportedYesterday(todayBeginTime),
+		aggStagePreventNullArray(fields...),
+		aggStageReportedItemCount("count", fields...),
+		aggStageSumValues("count", "total"),
 	}
-	countYesterday, err := c.CountDocuments(ctx, filter)
+
+	cur, err = c.Aggregate(ctx, pipeline)
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"prefix": mongoLogPrefix}).Error("failed to count user reported items")
 		return 0, 0, err
 	}
+	result = make([]aggregatedItem, 0)
+	for cur.Next(ctx) {
+		var item aggregatedItem
+		if err = cur.Decode(&item); err != nil {
+			log.WithError(err).WithFields(log.Fields{"prefix": mongoLogPrefix}).Error("failed to decode aggreaged result")
+			return 0, 0, err
+		}
+		result = append(result, item)
+	}
+	countYesterday := int64(0)
+	if len(result) > 0 {
+		countYesterday = result[0].Total
+	}
+
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "cnt_today": countToday, "cnt_yesterday": countYesterday}).Debug("personal reported item count")
 
 	return countToday, countYesterday, nil
 }
 
-func (m *mongoDB) GetCommunityAvgReportCount(reportType string, meter int, loc schema.Location) (float64, float64, error) {
+func (m *mongoDB) GetCommunityAvgReportedItemCount(reportType string, meter int, loc schema.Location) (float64, float64, error) {
 	var c *mongo.Collection
+	var fields []string
 	switch reportType {
 	case "symptom":
 		c = m.client.Database(m.database).Collection(schema.SymptomReportCollection)
+		fields = []string{"official_symptoms", "customized_symptoms"}
+
 	case "behavior":
 		c = m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+		fields = []string{"official_behaviors", "customized_behaviors"}
 	default:
 		return 0, 0, errors.New("undefined report type")
 	}
@@ -84,7 +127,8 @@ func (m *mongoDB) GetCommunityAvgReportCount(reportType string, meter int, loc s
 	pipeline := []bson.M{
 		aggStageGeoProximity(meter, loc),
 		aggStageReportedToday(todayBeginTime),
-		aggStageUserReportCount(),
+		aggStagePreventNullArray(fields...),
+		aggStageReportedItemCount("count", fields...),
 	}
 	cur, err := c.Aggregate(ctx, pipeline)
 	if err != nil {
@@ -106,7 +150,8 @@ func (m *mongoDB) GetCommunityAvgReportCount(reportType string, meter int, loc s
 	pipeline = []bson.M{
 		aggStageGeoProximity(meter, loc),
 		aggStageReportedYesterday(todayBeginTime),
-		aggStageUserReportCount(),
+		aggStagePreventNullArray(fields...),
+		aggStageReportedItemCount("count", fields...),
 	}
 
 	cur, err = c.Aggregate(ctx, pipeline)
@@ -125,7 +170,7 @@ func (m *mongoDB) GetCommunityAvgReportCount(reportType string, meter int, loc s
 	}
 	avgYesterday := calculateAvgCount(result)
 
-	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "avg_today": avgToday, "avg_yesterday": avgYesterday}).Debug("community avg report")
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "avg_today": avgToday, "avg_yesterday": avgYesterday}).Debug("community avg reported item count")
 
 	return avgToday, avgYesterday, nil
 }
