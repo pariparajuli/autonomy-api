@@ -60,8 +60,9 @@ func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
 		return nil
 	}
 
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "report_ts": result[0].ReportTime}).Debug("no record to update")
 	for _, v := range result {
-		filter := bson.M{"report_ts": result[0].ReportTime}
+		filter := bson.M{"name": v.Name, "report_ts": v.ReportTime}
 		replacement := bson.M{
 			"name":        v.Name,
 			"city":        v.City,
