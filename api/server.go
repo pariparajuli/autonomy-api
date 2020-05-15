@@ -144,10 +144,10 @@ func (s *Server) setupRouter() *gin.Engine {
 	{
 		accountRoute.GET("/me", s.accountDetail)
 
+		accountRoute.HEAD("/me", s.accountHere)
 		accountRoute.PATCH("/me", s.accountUpdateMetadata)
 		accountRoute.DELETE("/me", s.accountDelete)
 
-		accountRoute.PUT("/me/here", s.accountHere)
 		accountRoute.GET("/me/profile_formula", s.getProfileFormula)
 		accountRoute.PUT("/me/profile_formula", s.updateProfileFormula)
 		accountRoute.DELETE("/me/profile_formula", s.resetProfileFormula)
