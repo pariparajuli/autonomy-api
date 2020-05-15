@@ -157,19 +157,26 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 			today = results[0]
 			yesterday = results[1]
 		} else if results[0].ReportTime < results[1].ReportTime {
-			today = results[0]
-			yesterday = results[1]
+			today = results[1]
+			yesterday = results[0]
+			log.WithField("prefix", mongoLogPrefix).Errorf("cds query result error: name :%v  today:%v date:%v", results[0].Name, results[0].ReportTime, results[1].ReportTime)
 		} else {
 			return 0, 0, 0, ErrConfirmDuplicateRecord
 		}
 		delta = today.Cases - yesterday.Cases
 		if yesterday.Cases > 0 {
 			percent = 100 * delta / yesterday.Cases
-			return today.Cases, delta, percent, nil
 		} else {
 			percent = 100
 		}
+		return today.Cases, delta, percent, nil
+	} else if 1 == len(results) {
+		today = results[0]
+		delta = today.Cases
+		percent = 100
+		return today.Cases, delta, percent, nil
 	}
+
 	return 0, 0, 0, ErrInvalidConfirmDataset
 
 }
