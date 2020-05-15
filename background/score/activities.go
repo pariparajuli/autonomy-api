@@ -23,6 +23,7 @@ type NotificationProfile struct {
 	StateChangedAccounts  []string
 	SymptomsSpikeAccounts []string
 	ReportRiskArea        bool
+	RemindGoodBehavior    bool
 }
 
 // CalculatePOIStateActivity calculates metrics by the location of a POI
@@ -84,7 +85,7 @@ func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spik
 func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, accountNumber, poiID string, metric schema.Metric) (*NotificationProfile, error) {
 	logger := activity.GetLogger(ctx)
 
-	var reportRiskArea bool
+	var reportRiskArea, remindGoodBehavior bool
 	stateChangedAccounts := make([]string, 0)
 	symptomsSpikeAccounts := make([]string, 0)
 
@@ -162,6 +163,12 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
+		if time.Since(profile.LastNudge[schema.BehaviorOnSymptomSpikeNudge]) > 90*time.Minute { // 90 minutes of delay between nudges
+			if profile.Metric.SymptomDelta < 10 && metric.SymptomDelta >= 10 { // from a non-spike area to a spike area
+				remindGoodBehavior = true
+			}
+		}
+
 		lastSpikeUpdate := profile.Metric.Details.Symptoms.LastSpikeUpdate
 		lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
 
@@ -200,6 +207,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 		StateChangedAccounts:  stateChangedAccounts,
 		SymptomsSpikeAccounts: symptomsSpikeAccounts,
 		ReportRiskArea:        reportRiskArea,
+		RemindGoodBehavior:    remindGoodBehavior,
 	}, nil
 }
 

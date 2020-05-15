@@ -143,6 +143,20 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 		}
 	}
 
+	if np.RemindGoodBehavior {
+		cwo := workflow.ChildWorkflowOptions{
+			WorkflowID:                   fmt.Sprintf("account-behavior-on-symptom-score-spike-%s", accountNumber),
+			TaskList:                     nudge.TaskListName,
+			ExecutionStartToCloseTimeout: time.Minute,
+			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
+		}
+
+		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorOnSymptomScoreSpikeWorkflow", accountNumber).Get(ctx, nil); err != nil {
+			logger.Error("NotifyBehaviorOnSymptomScoreSpikeWorkflow failed.", zap.Error(err))
+			sentry.CaptureException(err)
+		}
+	}
+
 	if np.ReportRiskArea {
 		cwo := workflow.ChildWorkflowOptions{
 			WorkflowID:                   fmt.Sprintf("account-behavior-on-risk-area-%s", accountNumber),

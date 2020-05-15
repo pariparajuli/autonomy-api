@@ -267,7 +267,7 @@ func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accou
 }
 
 // NotifyBehaviorFollowUpActivity is an activity to prepare and send a follow-up message if a user is under risk
-func (n *NudgeWorker) NotifyBehaviorFollowUpActivity(ctx context.Context, accountNumber string) error {
+func (n *NudgeWorker) NotifyBehaviorFollowUpActivity(ctx context.Context, accountNumber string, nudgeType schema.NudgeType) error {
 
 	logger := activity.GetLogger(ctx)
 	logger.Info("Prepare the message context for following up hige risk symptoms")
@@ -308,6 +308,6 @@ func (n *NudgeWorker) NotifyBehaviorFollowUpActivity(ctx context.Context, accoun
 		return err
 	}
 
-	return n.mongo.UpdateAccountNudge(accountNumber, schema.BehaviorOnHighRiskNudge)
+	return n.mongo.UpdateAccountNudge(accountNumber, nudgeType)
 
 }

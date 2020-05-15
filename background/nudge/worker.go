@@ -42,6 +42,7 @@ func (n *NudgeWorker) Register() {
 	workflow.RegisterWithOptions(n.NotifySymptomSpikeWorkflow, workflow.RegisterOptions{Name: "NotifySymptomSpikeWorkflow"})
 	workflow.RegisterWithOptions(n.NotifyBehaviorOnRiskAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnRiskAreaWorkflow"})
 	workflow.RegisterWithOptions(n.HighRiskAccountFollowUpWorkflow, workflow.RegisterOptions{Name: "HighRiskAccountFollowUpWorkflow"})
+	workflow.RegisterWithOptions(n.NotifyBehaviorOnSymptomScoreSpikeWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnSymptomScoreSpikeWorkflow"})
 
 	activity.RegisterWithOptions(n.SymptomsNeedFollowUpActivity, activity.RegisterOptions{Name: "SymptomsNeedFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomFollowUpActivity, activity.RegisterOptions{Name: "NotifySymptomFollowUpActivity"})

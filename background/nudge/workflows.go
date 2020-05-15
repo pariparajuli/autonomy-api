@@ -104,6 +104,20 @@ func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNu
 	return nil
 }
 
+func (n *NudgeWorker) NotifyBehaviorOnSymptomScoreSpikeWorkflow(ctx workflow.Context, accountNumber string) error {
+	ctx = workflow.WithActivityOptions(ctx, activityOptions)
+
+	logger := workflow.GetLogger(ctx)
+
+	err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber, schema.BehaviorOnSymptomSpikeNudge).Get(ctx, nil)
+	if err != nil {
+		logger.Error("Fail to notify user behavior nudge on risk area (symptom score spike)", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
 func (n *NudgeWorker) NotifyBehaviorOnRiskAreaWorkflow(ctx workflow.Context, accountNumber string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
@@ -146,7 +160,7 @@ func (n *NudgeWorker) HighRiskAccountFollowUpWorkflow(ctx workflow.Context, acco
 	}
 
 	if shouldFollowUp {
-		if err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber).Get(ctx, nil); err != nil {
+		if err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber, schema.BehaviorOnHighRiskNudge).Get(ctx, nil); err != nil {
 			logger.Error("Fail to send notification to follow up high risk user", zap.Error(err))
 		}
 	}

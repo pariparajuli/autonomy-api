@@ -36,8 +36,9 @@ type ScoreCoefficient struct {
 type NudgeType string
 
 const (
-	SymptomFollowUpNudge    = NudgeType("symptom_follow_up")
-	BehaviorOnHighRiskNudge = NudgeType("behavior_on_high_risk")
+	SymptomFollowUpNudge        = NudgeType("symptom_follow_up")
+	BehaviorOnHighRiskNudge     = NudgeType("behavior_on_high_risk")
+	BehaviorOnSymptomSpikeNudge = NudgeType("behavior_on_symptom_spike")
 )
 
 type NudgeTime map[NudgeType]time.Time
