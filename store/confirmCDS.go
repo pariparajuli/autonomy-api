@@ -166,7 +166,7 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		delta = today.Cases - yesterday.Cases
 		if yesterday.Cases > 0 {
 			percent = 100 * delta / yesterday.Cases
-		} else {
+		} else if 0 == yesterday.Cases {
 			percent = 100
 		}
 		return today.Cases, delta, percent, nil
