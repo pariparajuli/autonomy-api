@@ -176,58 +176,70 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		percent = 100
 		return today.Cases, delta, percent, nil
 	}
-
 	return 0, 0, 0, ErrInvalidConfirmDataset
-
 }
 
 func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
+	lessEqThan = 1589040000
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	var results []schema.CDSScoreDataSet
-	var c *mongo.Collection
-	var cur *mongo.Cursor
 
+	var col *mongo.Collection
+	var filter bson.M
+	var opts *options.FindOptions
+	var cur *mongo.Cursor
 	switch loc.Country { //  Currently this function support only USA data
 	case CdsTaiwan:
-		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
-		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num)
-		filter := bson.M{}
+		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num + 1)
+		filter = bson.M{}
 		if lessEqThan > 0 {
 			filter = bson.M{"report_ts": bson.D{{"$lte", lessEqThan}}}
 		}
-		curTW, err := c.Find(context.Background(), filter, opts)
+		curTW, err := col.Find(context.Background(), filter, opts)
 		if nil != err {
 			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
 			return nil, 0, ErrConfirmDataFetch
 		}
 		cur = curTW
 	case CdsUSA:
-		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
-		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num)
+		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num + 1)
 		filter := bson.M{"county": loc.County, "state": loc.State}
 		if lessEqThan > 0 {
 			filter = bson.M{"county": loc.County, "state": loc.State, "report_ts": bson.D{{"$lte", lessEqThan}}}
 		}
-		curUSA, err := c.Find(context.Background(), filter, opts)
+		curUSA, err := col.Find(context.Background(), filter, opts)
 		if nil != err {
 			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
 			return nil, 0, ErrConfirmDataFetch
 		}
 		cur = curUSA
 	default:
-		return nil, 0, errors.New("no supported CDS dataset")
+		return nil, 0, ErrNoConfirmDataset
 	}
+
+	var results []schema.CDSScoreDataSet
+	cur, err := col.Find(context.Background(), filter, opts)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("%v: %s", ErrConfirmDataFetch, err)
+		return nil, 0, ErrConfirmDataFetch
+	}
+	now := schema.CDSScoreDataSet{}
+
 	for cur.Next(ctx) {
 		var result schema.CDSScoreDataSet
-		tmp := make([]schema.CDSScoreDataSet, 1)
 		if errDecode := cur.Decode(&result); errDecode != nil {
 			log.WithField("prefix", mongoLogPrefix).Errorf("cds Decode with error: %s", errDecode)
 			return nil, 0, errDecode
 		}
-		tmp[0] = result
-		results = append(tmp, results...)
+		if len(now.Name) > 0 { // now data is valid
+			head := make([]schema.CDSScoreDataSet, 1)
+			head[0] = schema.CDSScoreDataSet{Name: now.Name, Cases: now.Cases - result.Cases, ReportTimeDate: now.ReportTimeDate}
+			results = append(head, results...)
+		}
+		now = result
 	}
 	cur.Close(ctx)
 	return results, len(results), nil

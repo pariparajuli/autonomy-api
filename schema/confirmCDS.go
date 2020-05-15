@@ -21,6 +21,7 @@ type CDSData struct {
 }
 
 type CDSScoreDataSet struct {
-	Name  string  `json:"country" bson:"country"`
-	Cases float64 `json:"cases" bson:"cases"`
+	Name           string  `json:"name" bson:"name"`
+	Cases          float64 `json:"cases" bson:"cases"`
+	ReportTimeDate string  `json:"-" bson:"report_date"`
 }

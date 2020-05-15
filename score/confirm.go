@@ -31,5 +31,5 @@ func CalculateConfirmScore(metric *schema.Metric) {
 		score = 1 - fraction/denominator
 	}
 	metric.Details.Confirm.Score = score * 100
-	fmt.Println(fmt.Sprintf("score:%f     fraction:%f denominator:%f score:%f", metric.Details.Confirm.Score, fraction, denominator, score))
+	fmt.Println(fmt.Sprintf("score in percentage:%f     fraction:%f denominator:%f score in fraction:%f", metric.Details.Confirm.Score, fraction, denominator, score))
 }
