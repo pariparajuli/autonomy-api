@@ -58,6 +58,7 @@ type NotificationRequest struct {
 	AndroidBackgroundData bool                   `json:"android_background_data,omitempty"`
 	AmazonBackgroundData  bool                   `json:"amazon_background_data,omitempty"`
 	TemplateID            string                 `json:"template_id,omitempty"`
+	LocalChannelID        string                 `json:"existing_android_channel_id"`
 	AndroidGroup          string                 `json:"android_group,omitempty"`
 	AndroidGroupMessage   interface{}            `json:"android_group_message,omitempty"`
 	Filters               []map[string]string    `json:"filters,omitempty"`

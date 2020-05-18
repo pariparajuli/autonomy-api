@@ -36,10 +36,11 @@ func (b *Background) NotifyAccountsByTemplate(accountNumbers []string, templateI
 		}
 		if i%100 == 99 {
 			req := &onesignal.NotificationRequest{
-				AppID:      viper.GetString("onesignal.appid"),
-				TemplateID: templateID,
-				Filters:    filters,
-				Data:       data,
+				AppID:          viper.GetString("onesignal.appid"),
+				TemplateID:     templateID,
+				Filters:        filters,
+				Data:           data,
+				LocalChannelID: "important_alert",
 			}
 			if err := b.Onesignal.SendNotification(context.Background(), req); err != nil {
 				return err
@@ -49,10 +50,11 @@ func (b *Background) NotifyAccountsByTemplate(accountNumbers []string, templateI
 	}
 	// send rest of notification
 	req := &onesignal.NotificationRequest{
-		AppID:      viper.GetString("onesignal.appid"),
-		TemplateID: templateID,
-		Filters:    filters,
-		Data:       data,
+		AppID:          viper.GetString("onesignal.appid"),
+		TemplateID:     templateID,
+		Filters:        filters,
+		Data:           data,
+		LocalChannelID: "important_alert",
 	}
 	return b.Onesignal.SendNotification(context.Background(), req)
 }
@@ -70,11 +72,12 @@ func (b *Background) NotifyAccountByText(accountNumber string, headings, content
 
 	// send rest of notification
 	req := &onesignal.NotificationRequest{
-		AppID:    viper.GetString("onesignal.appid"),
-		Headings: headings,
-		Contents: contents,
-		Filters:  filters,
-		Data:     data,
+		AppID:          viper.GetString("onesignal.appid"),
+		Headings:       headings,
+		Contents:       contents,
+		Filters:        filters,
+		Data:           data,
+		LocalChannelID: "important_alert",
 	}
 	return b.Onesignal.SendNotification(context.Background(), req)
 }
