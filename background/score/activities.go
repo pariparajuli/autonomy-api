@@ -122,12 +122,13 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 				return nil, err
 			}
 
-			lastSpikeUpdate := profile.PointsOfInterest[0].Metric.Details.Symptoms.LastSpikeUpdate
+			poi := profile.PointsOfInterest[0]
+			lastSpikeUpdate := poi.Metric.Details.Symptoms.LastSpikeUpdate.In(accountLocation)
 			lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
 
 			if currentSpikeLength := len(metric.Details.Symptoms.LastSpikeList); currentSpikeLength > 0 {
 				if accountToday.Sub(lastSpikeDay) == 0 { // spike in the same day
-					if currentSpikeLength > len(profile.PointsOfInterest[0].Metric.Details.Symptoms.LastSpikeList) {
+					if currentSpikeLength > len(poi.Metric.Details.Symptoms.LastSpikeList) {
 						symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
 					}
 				} else {
@@ -137,7 +138,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 
 			var changed bool
 			if len(profile.PointsOfInterest) != 0 {
-				changed = score.CheckScoreColorChange(profile.PointsOfInterest[0].Score, metric.Score)
+				changed = score.CheckScoreColorChange(poi.Score, metric.Score)
 			}
 
 			if changed {
@@ -169,7 +170,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			}
 		}
 
-		lastSpikeUpdate := profile.Metric.Details.Symptoms.LastSpikeUpdate
+		lastSpikeUpdate := profile.Metric.Details.Symptoms.LastSpikeUpdate.In(accountLocation)
 		lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
 
 		if currentSpikeLength := len(metric.Details.Symptoms.LastSpikeList); currentSpikeLength > 0 {
