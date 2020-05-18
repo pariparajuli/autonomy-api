@@ -34,7 +34,7 @@ type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
-	ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, error)
+	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
@@ -154,7 +154,7 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 	var delta float64
 	var today, yesterday schema.CDSData
 	if len(results) >= 2 {
-		if results[0].ReportTime != results[1].ReportTime {
+		if results[0].ReportTime > results[1].ReportTime {
 			today = results[0]
 			yesterday = results[1]
 		} else if results[0].ReportTime < results[1].ReportTime {
