@@ -92,12 +92,13 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "confirmedCount": confirmedCount, "confirmDiff": confirmDiff, "confirmDiffPercent": confirmDiffPercent}).Debug("confirm info")
 	}
 
-	confirmData, cnt, err := m.ContinuousDataCDSConfirm(location, 14, 0)
+	confirmData, err := m.ContinuousDataCDSConfirm(location, consts.ConfirmScoreWindowSize, 0)
 	if err != nil {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("confirm continuous data")
 		return nil, err
-	} else {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "count": cnt}).Debug("confirm continuous data")
+	}
+	if nil == confirmData {
+		confirmData = []schema.CDSScoreDataSet{}
 	}
 
 	return &schema.Metric{
@@ -123,7 +124,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				TotalPeople:             totalPeopleReport,
 				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
 				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
-				Score: behaviorScore,
+				Score:                   behaviorScore,
 			},
 		},
 	}, nil

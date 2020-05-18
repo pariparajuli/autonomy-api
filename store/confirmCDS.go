@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 type CDSCountryType string
@@ -33,7 +34,7 @@ type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
-	ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error)
+	ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, error)
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
@@ -150,10 +151,10 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		results = append(results, result)
 	}
 
-	var percent, delta float64
+	var delta float64
 	var today, yesterday schema.CDSData
 	if len(results) >= 2 {
-		if results[0].ReportTime > results[1].ReportTime {
+		if results[0].ReportTime != results[1].ReportTime {
 			today = results[0]
 			yesterday = results[1]
 		} else if results[0].ReportTime < results[1].ReportTime {
@@ -164,22 +165,15 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 			return 0, 0, 0, ErrConfirmDuplicateRecord
 		}
 		delta = today.Cases - yesterday.Cases
-		if yesterday.Cases > 0 {
-			percent = 100 * delta / yesterday.Cases
-		} else if 0 == yesterday.Cases {
-			percent = 100
-		}
-		return today.Cases, delta, percent, nil
+		return today.Cases, delta, score.ChangeRate(today.Cases, yesterday.Cases), nil
+
 	} else if 1 == len(results) {
 		today = results[0]
-		delta = today.Cases
-		percent = 100
-		return today.Cases, delta, percent, nil
+		return today.Cases, today.Cases, score.ChangeRate(today.Cases, 0), nil
 	}
 	return 0, 0, 0, ErrInvalidConfirmDataset
 }
-
-func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEqThan int64) ([]schema.CDSScoreDataSet, int, error) {
+func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64, timeBefore int64) ([]schema.CDSScoreDataSet, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -187,43 +181,30 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEq
 	var col *mongo.Collection
 	var filter bson.M
 	var opts *options.FindOptions
-	var cur *mongo.Cursor
 	switch loc.Country { //  Currently this function support only USA data
 	case CdsTaiwan:
 		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
-		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num + 1)
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
 		filter = bson.M{}
-		if lessEqThan > 0 {
-			filter = bson.M{"report_ts": bson.D{{"$lte", lessEqThan}}}
+		if timeBefore > 0 {
+			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
 		}
-		curTW, err := col.Find(context.Background(), filter, opts)
-		if nil != err {
-			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
-			return nil, 0, ErrConfirmDataFetch
-		}
-		cur = curTW
 	case CdsUSA:
 		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
-		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(num + 1)
-		filter := bson.M{"county": loc.County, "state": loc.State}
-		if lessEqThan > 0 {
-			filter = bson.M{"county": loc.County, "state": loc.State, "report_ts": bson.D{{"$lte", lessEqThan}}}
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
+		filter = bson.M{"county": loc.County, "state": loc.State}
+		if timeBefore > 0 {
+			filter = bson.M{"county": loc.County, "state": loc.State, "report_ts": bson.D{{"$lte", timeBefore}}}
 		}
-		curUSA, err := col.Find(context.Background(), filter, opts)
-		if nil != err {
-			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
-			return nil, 0, ErrConfirmDataFetch
-		}
-		cur = curUSA
 	default:
-		return nil, 0, ErrNoConfirmDataset
+		return nil, ErrNoConfirmDataset
 	}
 
 	var results []schema.CDSScoreDataSet
 	cur, err := col.Find(context.Background(), filter, opts)
 	if nil != err {
 		log.WithField("prefix", mongoLogPrefix).Errorf("%v: %s", ErrConfirmDataFetch, err)
-		return nil, 0, ErrConfirmDataFetch
+		return nil, ErrConfirmDataFetch
 	}
 	now := schema.CDSScoreDataSet{}
 
@@ -231,15 +212,19 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, num int64, lessEq
 		var result schema.CDSScoreDataSet
 		if errDecode := cur.Decode(&result); errDecode != nil {
 			log.WithField("prefix", mongoLogPrefix).Errorf("cds Decode with error: %s", errDecode)
-			return nil, 0, errDecode
+			return nil, errDecode
 		}
 		if len(now.Name) > 0 { // now data is valid
 			head := make([]schema.CDSScoreDataSet, 1)
-			head[0] = schema.CDSScoreDataSet{Name: now.Name, Cases: now.Cases - result.Cases, ReportTimeDate: now.ReportTimeDate}
+			head[0] = schema.CDSScoreDataSet{Name: now.Name, Cases: now.Cases - result.Cases}
 			results = append(head, results...)
 		}
 		now = result
 	}
+	if len(results) == 0 && now.Name != "" { // only one record
+		results = append(results, now)
+	}
+
 	cur.Close(ctx)
-	return results, len(results), nil
+	return results, nil
 }
