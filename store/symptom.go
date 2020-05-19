@@ -256,7 +256,7 @@ func (m *mongoDB) AreaCustomizedSymptomList(distInMeter int, location schema.Loc
 	return cSymptoms, nil
 }
 
-// NearestGoodBehaviorScore return  the total symptom score and delta score of users within distInMeter range
+// NearestGoodBehaviorScore returns symptom raw data of today and yesterday
 func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location) (schema.NearestSymptomData, schema.NearestSymptomData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -286,6 +286,9 @@ func (m *mongoDB) NearestSymptomScore(distInMeter int, location schema.Location)
 			}},
 			{"official_symptoms", bson.D{
 				{"$first", "$official_symptoms"},
+			}},
+			{"customized_symptoms", bson.D{
+				{"$first", "$customized_symptoms"},
 			}},
 		}}}
 	officialDistribution := make(schema.SymptomDistribution)
