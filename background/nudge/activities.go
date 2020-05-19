@@ -30,6 +30,30 @@ func (n *NudgeWorker) getLastSymptomReport(accountNumber string) *schema.Symptom
 	return nil
 }
 
+// GetNotificationReceiverActivity returns a list of notification receiver based on
+// either an account number or a poi ID
+func (n *NudgeWorker) GetNotificationReceiverActivity(ctx context.Context, accountNumber, poiID string) ([]string, error) {
+	accountNumbers := make([]string, 0)
+
+	if poiID != "" {
+		profiles, err := n.mongo.GetProfilesByPOI(poiID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range profiles {
+			accountNumbers = append(accountNumbers, p.AccountNumber)
+		}
+
+	} else if accountNumber != "" {
+		accountNumbers = append(accountNumbers, accountNumber)
+	} else {
+		return nil, background.ErrBothAccountPOIEmpty
+	}
+
+	return accountNumbers, nil
+}
+
 // SymptomsNeedFollowUpActivity is an activity that determine if an account contains symptoms to follow up
 func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountNumber string) ([]schema.Symptom, error) {
 	logger := activity.GetLogger(ctx)
@@ -145,7 +169,7 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 	return n.mongo.UpdateAccountNudge(accountNumber, schema.SymptomFollowUpNudge)
 }
 
-// NotifySymptomSpikeActivity send notifications to accounts those have symptoms spiked around
+// NotifySymptomSpikeActivity send notifications to accounts who have symptoms spiked around
 func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNumber string, symptoms []schema.Symptom) error {
 	logger := activity.GetLogger(ctx)
 
@@ -208,8 +232,11 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 	)
 }
 
-// HighRiskAccountFollowUpActivity is an activity that determine if an account contains high risk symptoms to follow up
-func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accountNumber string) (bool, error) {
+// CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity is an activity that determine if an account contains
+// high risk symptoms and need to be follow up.
+// An account will be notified twice a day. Once in the morning and once in the afternoon.
+// The function will return a boolean to deteremine whether to deliver a notification
+func (n *NudgeWorker) CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity(ctx context.Context, accountNumber string) (bool, error) {
 	logger := activity.GetLogger(ctx)
 	var shouldSendBehaviorNudge bool
 
@@ -243,7 +270,7 @@ func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accou
 
 	// check if the last symptom is reported in the past.
 	if lastSymptomReportTime.Sub(lastHighRiskMoment) > 0 && len(report.OfficialSymptoms) > 0 {
-		lastNudgeSinceToday := p.LastNudge[schema.BehaviorOnHighRiskNudge].Sub(accountToday.UTC())
+		lastNudgeSinceToday := p.LastNudge[schema.NudgeBehaviorOnSelfHighRiskSymptoms].Sub(accountToday.UTC())
 		logger.Info("Risky symptoms found in the past",
 			zap.Any("lastNudgeSinceToday", lastNudgeSinceToday),
 			zap.Any("accountCurrentHour", accountCurrentHour))
@@ -266,8 +293,12 @@ func (n *NudgeWorker) HighRiskAccountFollowUpActivity(ctx context.Context, accou
 	return shouldSendBehaviorNudge, nil
 }
 
-// NotifyBehaviorFollowUpActivity is an activity to prepare and send a follow-up message if a user is under risk
-func (n *NudgeWorker) NotifyBehaviorFollowUpActivity(ctx context.Context, accountNumber string, nudgeType schema.NudgeType) error {
+// NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity is an activity to prepare and
+// send a follow-up message if a user is under risk.
+// The notification will be triggered either an account reported high risk symptoms or
+// it enters an area where has a symptom spike detected.
+// The nudge type is reflected to either kind of nudge. (BehaviorOnHighRiskNudge, BehaviorOnSymptomSpikeNudge)
+func (n *NudgeWorker) NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity(ctx context.Context, accountNumber string, nudgeType schema.NudgeType) error {
 
 	logger := activity.GetLogger(ctx)
 	logger.Info("Prepare the message context for following up hige risk symptoms")

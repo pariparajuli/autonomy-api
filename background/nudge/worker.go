@@ -40,17 +40,17 @@ func NewNudgeWorker(domain string, mongo store.MongoStore) *NudgeWorker {
 func (n *NudgeWorker) Register() {
 	workflow.RegisterWithOptions(n.SymptomFollowUpNudgeWorkflow, workflow.RegisterOptions{Name: "SymptomFollowUpNudgeWorkflow"})
 	workflow.RegisterWithOptions(n.NotifySymptomSpikeWorkflow, workflow.RegisterOptions{Name: "NotifySymptomSpikeWorkflow"})
-	workflow.RegisterWithOptions(n.NotifyBehaviorOnRiskAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnRiskAreaWorkflow"})
-	workflow.RegisterWithOptions(n.HighRiskAccountFollowUpWorkflow, workflow.RegisterOptions{Name: "HighRiskAccountFollowUpWorkflow"})
-	workflow.RegisterWithOptions(n.NotifyBehaviorOnSymptomScoreSpikeWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnSymptomScoreSpikeWorkflow"})
+	workflow.RegisterWithOptions(n.NotifyBehaviorOnEnteringRiskAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorOnEnteringRiskAreaWorkflow"})
+	workflow.RegisterWithOptions(n.AccountSelfReportedHighRiskFollowUpWorkflow, workflow.RegisterOptions{Name: "AccountSelfReportedHighRiskFollowUpWorkflow"})
+	workflow.RegisterWithOptions(n.NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow, workflow.RegisterOptions{Name: "NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow"})
 
 	activity.RegisterWithOptions(n.SymptomsNeedFollowUpActivity, activity.RegisterOptions{Name: "SymptomsNeedFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomFollowUpActivity, activity.RegisterOptions{Name: "NotifySymptomFollowUpActivity"})
 	activity.RegisterWithOptions(n.NotifySymptomSpikeActivity, activity.RegisterOptions{Name: "NotifySymptomSpikeActivity"})
 	activity.RegisterWithOptions(n.NotifyBehaviorNudgeActivity, activity.RegisterOptions{Name: "NotifyBehaviorNudgeActivity"})
-	activity.RegisterWithOptions(n.FindNotificationReceiver, activity.RegisterOptions{Name: "FindNotificationReceiver"})
-	activity.RegisterWithOptions(n.HighRiskAccountFollowUpActivity, activity.RegisterOptions{Name: "HighRiskAccountFollowUpActivity"})
-	activity.RegisterWithOptions(n.NotifyBehaviorFollowUpActivity, activity.RegisterOptions{Name: "NotifyBehaviorFollowUpActivity"})
+	activity.RegisterWithOptions(n.GetNotificationReceiverActivity, activity.RegisterOptions{Name: "GetNotificationReceiverActivity"})
+	activity.RegisterWithOptions(n.CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity, activity.RegisterOptions{Name: "HighRiskAccountFollowUpActivity"})
+	activity.RegisterWithOptions(n.NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity, activity.RegisterOptions{Name: "NotifyBehaviorFollowUpActivity"})
 }
 
 func (n *NudgeWorker) Start(service workflowserviceclient.Interface, logger *zap.Logger) {

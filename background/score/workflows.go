@@ -151,8 +151,8 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
 		}
 
-		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorOnSymptomScoreSpikeWorkflow", accountNumber).Get(ctx, nil); err != nil {
-			logger.Error("NotifyBehaviorOnSymptomScoreSpikeWorkflow failed.", zap.Error(err))
+		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow", accountNumber).Get(ctx, nil); err != nil {
+			logger.Error("NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow failed.", zap.Error(err))
 			sentry.CaptureException(err)
 		}
 	}
@@ -165,8 +165,8 @@ func (s *ScoreUpdateWorker) AccountStateUpdateWorkflow(ctx workflow.Context, acc
 			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
 		}
 
-		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorOnRiskAreaWorkflow", accountNumber).Get(ctx, nil); err != nil {
-			logger.Error("NotifySymptomSpikeWorkflow failed.", zap.Error(err))
+		if err := workflow.ExecuteChildWorkflow(workflow.WithChildOptions(ctx, cwo), "NotifyBehaviorOnEnteringRiskAreaWorkflow", accountNumber).Get(ctx, nil); err != nil {
+			logger.Error("NotifyBehaviorOnEnteringRiskAreaWorkflow failed.", zap.Error(err))
 			sentry.CaptureException(err)
 		}
 	}

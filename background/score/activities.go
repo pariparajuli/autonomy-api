@@ -164,7 +164,7 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
-		if time.Since(profile.LastNudge[schema.BehaviorOnSymptomSpikeNudge]) > 90*time.Minute { // 90 minutes of delay between nudges
+		if time.Since(profile.LastNudge[schema.NudgeBehaviorOnSymptomSpikeArea]) > 90*time.Minute { // 90 minutes of delay between nudges
 			if profile.Metric.SymptomDelta < 10 && metric.SymptomDelta >= 10 { // from a non-spike area to a spike area
 				remindGoodBehavior = true
 			}

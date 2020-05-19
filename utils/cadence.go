@@ -56,7 +56,7 @@ func TriggerAccountHighRiskFollowUpNudge(client cadence.CadenceClient, c context
 			TaskList:                     NudgeTaskListName,
 			ExecutionStartToCloseTimeout: 24 * time.Hour,
 			WorkflowIDReusePolicy:        cadenceClient.WorkflowIDReusePolicyAllowDuplicate,
-		}, "HighRiskAccountFollowUpWorkflow", accountNumber)
+		}, "AccountSelfReportedHighRiskFollowUpWorkflow", accountNumber)
 
 	return err
 }

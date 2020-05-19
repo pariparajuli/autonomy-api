@@ -61,32 +61,15 @@ func (n *NudgeWorker) SymptomFollowUpNudgeWorkflow(ctx workflow.Context, account
 	return workflow.NewContinueAsNewError(ctx, n.SymptomFollowUpNudgeWorkflow, accountNumber)
 }
 
-func (n *NudgeWorker) FindNotificationReceiver(accountNumber, poiID string) ([]string, error) {
-	accountNumbers := make([]string, 0)
-
-	if poiID != "" {
-		profiles, err := n.mongo.GetProfilesByPOI(poiID)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, p := range profiles {
-			accountNumbers = append(accountNumbers, p.AccountNumber)
-		}
-
-	} else if accountNumber != "" {
-		accountNumbers = append(accountNumbers, accountNumber)
-	}
-	return accountNumbers, nil
-}
-
+// NotifySymptomSpikeWorkflow is a workflow that deliver symptoms spike notifications to related
+// accounts base on given account number or poi ID
 func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNumber string, poiID string, symptoms []schema.Symptom) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
 	logger := workflow.GetLogger(ctx)
 
 	receivers := make([]string, 0)
-	if err := workflow.ExecuteActivity(ctx, n.FindNotificationReceiver, accountNumber, poiID).Get(ctx, &receivers); err != nil {
+	if err := workflow.ExecuteActivity(ctx, n.GetNotificationReceiverActivity, accountNumber, poiID).Get(ctx, &receivers); err != nil {
 		logger.Error("Fail to get notification receivers", zap.Error(err))
 		return err
 	}
@@ -104,12 +87,14 @@ func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNu
 	return nil
 }
 
-func (n *NudgeWorker) NotifyBehaviorOnSymptomScoreSpikeWorkflow(ctx workflow.Context, accountNumber string) error {
+// NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow is a workflow to send behavior follow up to
+// accounts that enters a symptom spike area. [NB_3-1]
+func (n *NudgeWorker) NotifyBehaviorFollowUpOnEnteringSymptomSpikeAreaWorkflow(ctx workflow.Context, accountNumber string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
 	logger := workflow.GetLogger(ctx)
 
-	err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber, schema.BehaviorOnSymptomSpikeNudge).Get(ctx, nil)
+	err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity, accountNumber, schema.NudgeBehaviorOnSymptomSpikeArea).Get(ctx, nil)
 	if err != nil {
 		logger.Error("Fail to notify user behavior nudge on risk area (symptom score spike)", zap.Error(err))
 		return err
@@ -118,23 +103,28 @@ func (n *NudgeWorker) NotifyBehaviorOnSymptomScoreSpikeWorkflow(ctx workflow.Con
 	return nil
 }
 
-func (n *NudgeWorker) NotifyBehaviorOnRiskAreaWorkflow(ctx workflow.Context, accountNumber string) error {
+// NotifyBehaviorOnEnteringRiskAreaWorkflow is a workflow to send behavior follow up to
+// accounts that enters a risk area (score is lower than 67). [NB_1]
+func (n *NudgeWorker) NotifyBehaviorOnEnteringRiskAreaWorkflow(ctx workflow.Context, accountNumber string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
 	logger := workflow.GetLogger(ctx)
 
 	err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorNudgeActivity, accountNumber).Get(ctx, nil)
 	if err != nil {
-		logger.Error("Fail to notify user behavior nudge on risk area", zap.Error(err))
+		logger.Error("Fail to notify user behavior nudge on risk area (score is lower than 67)", zap.Error(err))
 		return err
 	}
 
 	return nil
 }
 
-// HighRiskAccountFollowUpWorkflow is a workflow to follow up an account if it in risk by
-// it self reported symptoms
-func (n *NudgeWorker) HighRiskAccountFollowUpWorkflow(ctx workflow.Context, accountNumber string) error {
+// AccountSelfReportedHighRiskFollowUpWorkflow is a workflow to follow up an account if it in risk by
+// it self reported symptoms (NB_3-2)
+// There are two activities involved.
+// 1. `CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity` checks if an account has reported a symptoms in the past three days.
+// 2. If it has, `NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity` will send notification to the account.
+func (n *NudgeWorker) AccountSelfReportedHighRiskFollowUpWorkflow(ctx workflow.Context, accountNumber string) error {
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
 	logger := workflow.GetLogger(ctx)
@@ -150,20 +140,20 @@ func (n *NudgeWorker) HighRiskAccountFollowUpWorkflow(ctx workflow.Context, acco
 	selector.Select(ctx)
 
 	var shouldFollowUp bool
-	if err := workflow.ExecuteActivity(ctx, n.HighRiskAccountFollowUpActivity, accountNumber).Get(ctx, &shouldFollowUp); err != nil {
+	if err := workflow.ExecuteActivity(ctx, n.CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity, accountNumber).Get(ctx, &shouldFollowUp); err != nil {
 		if err.Error() == background.ErrStopRenewWorkflow.Error() {
-			logger.Info("Stop following high risk for account", zap.Any("accountNumber", accountNumber))
+			logger.Info("Stop following high risk for account (no symptoms in the past)", zap.Any("accountNumber", accountNumber))
 			return nil
 		}
 		logger.Error("Fail to check if an account needs to follow up", zap.Error(err))
-		return workflow.NewContinueAsNewError(ctx, n.HighRiskAccountFollowUpWorkflow, accountNumber)
+		return workflow.NewContinueAsNewError(ctx, n.AccountSelfReportedHighRiskFollowUpWorkflow, accountNumber)
 	}
 
 	if shouldFollowUp {
-		if err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpActivity, accountNumber, schema.BehaviorOnHighRiskNudge).Get(ctx, nil); err != nil {
-			logger.Error("Fail to send notification to follow up high risk user", zap.Error(err))
+		if err := workflow.ExecuteActivity(ctx, n.NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity, accountNumber, schema.NudgeBehaviorOnSelfHighRiskSymptoms).Get(ctx, nil); err != nil {
+			logger.Error("Fail to send notification user", zap.Error(err))
 		}
 	}
 
-	return workflow.NewContinueAsNewError(ctx, n.HighRiskAccountFollowUpWorkflow, accountNumber)
+	return workflow.NewContinueAsNewError(ctx, n.AccountSelfReportedHighRiskFollowUpWorkflow, accountNumber)
 }
