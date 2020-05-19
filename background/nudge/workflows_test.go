@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"go.uber.org/cadence/testsuite"
+	"go.uber.org/zap"
 )
 
 type NudgeWorkflowTestSuite struct {
@@ -21,9 +22,9 @@ type NudgeWorkflowTestSuite struct {
 }
 
 func (ts *NudgeWorkflowTestSuite) SetupSuite() {
+	ts.SetLogger(zap.NewNop())
 	ts.testAccountNumber = "e5KNBJCzwBqAyQzKx1pv8CR4MacrUBBTQpWwAbmcLbYNsEg5WS"
 	ts.worker = NewNudgeWorker("test", nil)
-	ts.worker.Register()
 }
 
 func (ts *NudgeWorkflowTestSuite) SetupTest() {

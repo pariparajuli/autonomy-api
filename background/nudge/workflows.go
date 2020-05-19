@@ -120,7 +120,7 @@ func (n *NudgeWorker) NotifyBehaviorOnEnteringRiskAreaWorkflow(ctx workflow.Cont
 }
 
 // AccountSelfReportedHighRiskFollowUpWorkflow is a workflow to follow up an account if it in risk by
-// it self reported symptoms (NB_3-2)
+// it self reported symptoms [NB_3-2]
 // There are two activities involved.
 // 1. `CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity` checks if an account has reported a symptoms in the past three days.
 // 2. If it has, `NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity` will send notification to the account.

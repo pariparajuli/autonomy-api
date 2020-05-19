@@ -17,8 +17,15 @@ import (
 const SymptomFollowUpExpiry = 24 * time.Hour
 const HighRiskSymptomExpiry = 3 * 24 * time.Hour
 
+// now is alias of `time.Now`. `time.Now` is wildy used for checking notification intervals
+// and is hard to mock it up. After adding this alias, we can easily mock the time.Now function.
+// Another approach would be create a Clock interface instead.
+// The alias approach is easier, but it might create some race condition during testing. Please
+// make sure not run test cases in parallel
+var now = time.Now
+
 func (n *NudgeWorker) getLastSymptomReport(accountNumber string) *schema.SymptomReportData {
-	symptoms, err := n.mongo.GetReportedSymptoms(accountNumber, time.Now().Unix(), 1, "")
+	symptoms, err := n.mongo.GetReportedSymptoms(accountNumber, now().Unix(), 1, "")
 	if err != nil {
 		return nil
 	}
@@ -69,7 +76,7 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 		accountLocation = utils.GetLocation("GMT+8")
 	}
 
-	accountNow := time.Now().In(accountLocation)
+	accountNow := now().In(accountLocation)
 	accountCurrentHour := accountNow.Hour()
 	accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
 
@@ -84,7 +91,7 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 
 	// check if the last symptom is reported yesterday.
 	if lastSymptomReportDuration > 0 && lastSymptomReportDuration < SymptomFollowUpExpiry {
-		lastNudgeSinceToday := p.LastNudge[schema.SymptomFollowUpNudge].Sub(accountToday.UTC())
+		lastNudgeSinceToday := p.LastNudge[schema.NudgeSymptomFollowUp].Sub(accountToday.UTC())
 		logger.Info("Last nudge sent since today", zap.Any("lastNudgeSinceToday", lastNudgeSinceToday))
 
 		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
@@ -100,7 +107,9 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 		}
 	}
 
-	logger.Info("No symptoms for following", zap.String("account_number", accountNumber))
+	logger.Info("No symptoms for following",
+		zap.String("account_number", accountNumber),
+		zap.Any("lastReportSinceToday", -lastSymptomReportDuration))
 	return nil, nil
 }
 
@@ -108,6 +117,10 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 func SymptomListingMessage(msgType string, sourceSymptoms []schema.Symptom) (map[string]string, map[string]string, error) {
 	headings := map[string]string{}
 	contents := map[string]string{}
+
+	if len(sourceSymptoms) == 0 {
+		return nil, nil, fmt.Errorf("no symptoms in list")
+	}
 
 	for key, lang := range background.OneSignalLanguageCode {
 		loc := utils.NewLocalizer(lang)
@@ -139,7 +152,7 @@ func SymptomListingMessage(msgType string, sourceSymptoms []schema.Symptom) (map
 	return headings, contents, nil
 }
 
-// NotifySymptomFollowUpActivity send notifications to accounts those have symptoms to be followed
+// NotifySymptomFollowUpActivity send notifications to accounts those have symptoms to be followed [NSy_2]
 func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, accountNumber string, symptoms []schema.Symptom) error {
 	logger := activity.GetLogger(ctx)
 
@@ -166,10 +179,10 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 		return err
 	}
 
-	return n.mongo.UpdateAccountNudge(accountNumber, schema.SymptomFollowUpNudge)
+	return n.mongo.UpdateAccountNudge(accountNumber, schema.NudgeSymptomFollowUp)
 }
 
-// NotifySymptomSpikeActivity send notifications to accounts who have symptoms spiked around
+// NotifySymptomSpikeActivity send notifications to accounts who have symptoms spiked around [NSy_1]
 func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNumber string, symptoms []schema.Symptom) error {
 	logger := activity.GetLogger(ctx)
 
@@ -233,7 +246,7 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 }
 
 // CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity is an activity that determine if an account contains
-// high risk symptoms and need to be follow up.
+// high risk symptoms and need to be follow up. [NB_3-2]
 // An account will be notified twice a day. Once in the morning and once in the afternoon.
 // The function will return a boolean to deteremine whether to deliver a notification
 func (n *NudgeWorker) CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity(ctx context.Context, accountNumber string) (bool, error) {
@@ -251,7 +264,7 @@ func (n *NudgeWorker) CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity(ctx 
 		accountLocation = utils.GetLocation("GMT+8")
 	}
 
-	accountNow := time.Now().In(accountLocation)
+	accountNow := now().In(accountLocation)
 	accountCurrentHour := accountNow.Hour()
 	accountToday := time.Date(accountNow.Year(), accountNow.Month(), accountNow.Day(), 0, 0, 0, 0, accountLocation)
 

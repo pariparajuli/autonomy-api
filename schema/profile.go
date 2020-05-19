@@ -36,7 +36,7 @@ type ScoreCoefficient struct {
 type NudgeType string
 
 const (
-	SymptomFollowUpNudge                = NudgeType("symptom_follow_up")
+	NudgeSymptomFollowUp                = NudgeType("symptom_follow_up")
 	NudgeBehaviorOnSelfHighRiskSymptoms = NudgeType("behavior_on_high_risk")
 	NudgeBehaviorOnSymptomSpikeArea     = NudgeType("behavior_on_symptom_spike")
 )
