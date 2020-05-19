@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/bitmark-inc/autonomy-api/api/mocks"
 	"github.com/bitmark-inc/autonomy-api/consts"
+	"github.com/bitmark-inc/autonomy-api/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 

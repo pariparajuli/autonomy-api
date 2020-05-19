@@ -2,6 +2,7 @@
 *.pem
 config.yaml
 Makefile
+mocks
 
 # Binaries
 bin

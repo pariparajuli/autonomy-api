@@ -71,5 +71,13 @@ endif
 
 build: build-api-image build-score-worker-image build-nudge-worker-image build-crawler-image
 
+mockgen:
+	rm -r mocks
+	mockgen -package=mocks -destination=mocks/mongo.go "github.com/bitmark-inc/autonomy-api/store" MongoStore
+	mockgen -package=mocks -destination=mocks/autonomy.go "github.com/bitmark-inc/autonomy-api/store" AutonomyCore
+
+test: mockgen
+	go test -v ./...
+
 clean:
 	rm -rf bin
