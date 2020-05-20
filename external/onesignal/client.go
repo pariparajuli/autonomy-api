@@ -12,6 +12,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+const ErrMsgAllPlayersNotSubscribed = "All included players are not subscribed"
+
+func IsErrAllPlayersNotSubscribed(err error) bool {
+	return err.Error() == ErrMsgAllPlayersNotSubscribed
+}
+
 type OneSignalClient struct {
 	httpClient *http.Client
 	endpoint   string
@@ -128,6 +134,15 @@ func (os *OneSignalClient) SendNotification(ctx context.Context, reqBody *Notifi
 	}
 
 	if errBody.Errors != nil {
+		switch errors := errBody.Errors.(type) {
+		case map[string]interface{}:
+		case []interface{}:
+			if len(errors) == 1 {
+				if errStr, ok := errors[0].(string); ok {
+					return fmt.Errorf(errStr)
+				}
+			}
+		}
 		return &errBody
 	}
 

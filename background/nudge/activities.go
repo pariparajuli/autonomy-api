@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
@@ -176,7 +177,11 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 			"symptoms":          symptomsIDs,
 		},
 	); err != nil {
-		return err
+		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
+			return err
+		} else {
+			logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+		}
 	}
 
 	return n.mongo.UpdateAccountNudge(accountNumber, schema.NudgeSymptomFollowUp)
@@ -199,17 +204,25 @@ func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNum
 		return err
 	}
 
-	return n.Background.NotifyAccountByText(accountNumber,
+	if err := n.Background.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "ACCOUNT_SYMPTOM_SPIKE",
 			"symptoms":          symptomsIDs,
 		},
-	)
+	); !onesignal.IsErrAllPlayersNotSubscribed(err) {
+		return err
+	} else {
+		logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+	}
+
+	return nil
 }
 
 // NotifySymptomSpikeActivity send notifications to accounts those have symptoms spiked around
 func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNumber string) error {
+	logger := activity.GetLogger(ctx)
+
 	headings := map[string]string{}
 	contents := map[string]string{}
 
@@ -237,12 +250,17 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 		contents[key] = content
 	}
 
-	return n.Background.NotifyAccountByText(accountNumber,
+	if err := n.Background.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
 		},
-	)
+	); !onesignal.IsErrAllPlayersNotSubscribed(err) {
+		return err
+	} else {
+		logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+	}
+	return nil
 }
 
 // CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity is an activity that determine if an account contains
@@ -349,7 +367,11 @@ func (n *NudgeWorker) NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity(ctx con
 			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
 		},
 	); err != nil {
-		return err
+		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
+			return err
+		} else {
+			logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+		}
 	}
 
 	return n.mongo.UpdateAccountNudge(accountNumber, nudgeType)

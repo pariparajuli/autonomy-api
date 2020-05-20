@@ -80,6 +80,7 @@ func (n *NudgeWorker) NotifySymptomSpikeWorkflow(ctx workflow.Context, accountNu
 		err := workflow.ExecuteActivity(ctx, n.NotifySymptomSpikeActivity, accountNumber, symptoms).Get(ctx, nil)
 		if err != nil {
 			logger.Error("Fail to notify user", zap.Error(err))
+			sentry.CaptureException(err)
 			return err
 		}
 	}
