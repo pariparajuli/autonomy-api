@@ -210,10 +210,12 @@ func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNum
 			"notification_type": "ACCOUNT_SYMPTOM_SPIKE",
 			"symptoms":          symptomsIDs,
 		},
-	); !onesignal.IsErrAllPlayersNotSubscribed(err) {
-		return err
-	} else {
-		logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+	); err != nil {
+		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
+			return err
+		} else {
+			logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+		}
 	}
 
 	return nil
@@ -255,10 +257,12 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
 		},
-	); !onesignal.IsErrAllPlayersNotSubscribed(err) {
-		return err
-	} else {
-		logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+	); err != nil {
+		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
+			return err
+		} else {
+			logger.Warn("account is not subscribed in onesignal", zap.String("accountNumber", accountNumber))
+		}
 	}
 	return nil
 }
