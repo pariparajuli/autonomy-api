@@ -1,6 +1,7 @@
 package score
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, 80.0, updatedMetric.Details.Symptoms.Score)
+	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
 	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
@@ -41,7 +42,7 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 
 	// the function must be idempotent
 	updatedMetric = CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, 80.0, updatedMetric.Details.Symptoms.Score)
+	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
 	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
@@ -83,7 +84,7 @@ func TestCalculateSymptomScoreUsingCustomizedWeights(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(weights, metric)
-	assert.Equal(t, 88.0, updatedMetric.Details.Symptoms.Score)
+	assert.Equal(t, "85.37", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
 	assert.Equal(t, 8.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
@@ -109,7 +110,7 @@ func TestCalculateSymptomScoreNoReportYesterday(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, 84.0, updatedMetric.Details.Symptoms.Score)
+	assert.Equal(t, "82.09", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 5.0, updatedMetric.Details.Symptoms.TotalPeople)
 	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)

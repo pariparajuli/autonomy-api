@@ -39,7 +39,7 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 		totalCountYesterday += cnt
 	}
 
-	maxWeightedSum := float64(rawData.TotalPeople) * (totalWeight + float64(nonOfficialCount))
+	maxWeightedSum := float64(rawData.TotalPeople)*totalWeight + float64(nonOfficialCount)
 	score := 100.0
 	if maxWeightedSum > 0 {
 		score = 100 * (1 - weightedSum/maxWeightedSum)
