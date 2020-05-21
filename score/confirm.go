@@ -16,7 +16,7 @@ func CalculateConfirmScore(metric *schema.Metric) {
 		metric.Details.Confirm.Score = 0
 		return
 	} else if len(dataset) < consts.ConfirmScoreWindowSize {
-		zeroDay := []schema.CDSScoreDataSet{schema.CDSScoreDataSet{Name: dataset[0].Name, Cases: 0}}
+		zeroDay := []schema.CDSScoreDataSet{schema.CDSScoreDataSet{Name: dataset[0].Name, Active: 0}}
 		for idx := 0; idx < consts.ConfirmScoreWindowSize-sizeOfConfirmData; idx++ {
 			dataset = append(zeroDay, dataset...)
 		}
@@ -26,8 +26,8 @@ func CalculateConfirmScore(metric *schema.Metric) {
 	denominator := float64(0)
 	for idx, val := range dataset {
 		power := (float64(idx) + 1) / 2
-		numerator = numerator + math.Exp(power)*val.Cases
-		denominator = denominator + math.Exp(power)*(val.Cases+1)
+		numerator = numerator + math.Exp(power)*val.Active
+		denominator = denominator + math.Exp(power)*(val.Active+1)
 	}
 
 	if denominator > 0 {
