@@ -120,26 +120,28 @@ func (c *CDS) Run() (int, error) {
 			continue
 		}
 		record.Deaths, _ = object["deaths"].(float64)
-		record.Recovered, _ = object["Recovered"].(float64)
+		if record.Deaths < 0 {
+			record.Deaths = 0
+		}
+		record.Recovered, _ = object["recovered"].(float64)
+		if record.Recovered < 0 {
+			record.Recovered = 0
+		}
+
+		record.Active, _ = object["active"].(float64)
+		if record.Active <= 0 {
+			record.Active = recorder.Cases - record.Deaths - record.Recovered
+		}
+
 		year, month, day := time.Now().Date()
 		dateString := fmt.Sprintf("%d-%.2d-%.2d", year, int(month), day)
-
-		if len(record.Timezone) > 0 {
-			location, err := time.LoadLocation(record.Timezone[0])
-			if err == nil {
-				year, month, day := time.Now().In(location).Date()
-				dateString = fmt.Sprintf("%d-%.2d-%.2d", year, int(month), day)
-			}
-		}
 		record.UpdateTime = time.Now().UTC().Unix()
 		record.ReportTime = time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Unix()
 		record.ReportTimeDate = dateString //In local time
 		count++
 		updateRecords = append(updateRecords, record)
 	}
-
 	c.Result = updateRecords
-
 	return count, nil
 }
 
