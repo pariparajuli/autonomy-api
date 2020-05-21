@@ -226,6 +226,22 @@ func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []sc
 	return foundOfficial, foundCustomized, notFound, nil
 }
 
+// FindNearbySymptomDistribution returns the mapping of each reported symptom and the number of users who have reported it
+// in the specified area and within the specified time rage.
+//
+// Duplicated reported symptoms of a user are seen as one symptom.
+//
+// Here's the example: within the specified time interval, assume there are following 5 reports:
+//
+// | user  | symptoms              |
+// |-------|-----------------------|
+// | userA | [cough, fever]        |
+// | userA | [fever, cough, nasal] |
+// | userB | [fever]               |
+// | userB | [fever]               |
+// | userB | [fever] 			    |
+//
+// symptom_distribution = {fever: 2, cough: 1, nasal: 1}
 func (m *mongoDB) FindNearbySymptomDistribution(dist int, loc schema.Location, start, end int64) (schema.SymptomDistribution, error) {
 	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -295,6 +311,8 @@ func (m *mongoDB) FindNearbySymptomDistribution(dist int, loc schema.Location, s
 	return result, nil
 }
 
+// FindNearbyReporterCount returns the number of users who have reported symptoms
+// in the specified area and within the specified time rage.
 func (m *mongoDB) FindNearbyReporterCount(dist int, loc schema.Location, start, end int64) (int, error) {
 	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -339,6 +357,7 @@ func (m *mongoDB) FindNearbyReporterCount(dist int, loc schema.Location, start, 
 	return result.Count, nil
 }
 
+// FindNearbyNonOfficialSymptoms returns non-official symptoms reported today in the specified area.
 func (m *mongoDB) FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) ([]schema.Symptom, error) {
 	distribution, err := m.FindNearbySymptomDistribution(dist, loc, 0, 9223372036854775807)
 	if err != nil {
