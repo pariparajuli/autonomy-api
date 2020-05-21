@@ -66,6 +66,7 @@ func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
 			"cases":       v.Cases,
 			"deaths":      v.Deaths,
 			"recovered":   v.Recovered,
+			"active":      v.Active,
 			"report_ts":   v.ReportTime,
 			"update_ts":   v.UpdateTime,
 			"report_date": v.ReportTimeDate,
