@@ -10,6 +10,7 @@ type CDSData struct {
 	Cases          float64  `json:"cases" bson:"cases"`
 	Deaths         float64  `json:"deaths" bson:"deaths"`
 	Recovered      float64  `json:"recovered" bson:"recovered"`
+	Active         float64  `json:"active" bson:"active"`
 	ReportTime     int64    `json:"report_ts" bson:"report_ts"`
 	UpdateTime     int64    `json:"update_ts"  bson:"update_ts"`
 	ReportTimeDate string   `json:"report_date" bson:"report_date"`
