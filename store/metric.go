@@ -92,7 +92,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "confirmedCount": confirmedCount, "confirmDiff": confirmDiff, "confirmDiffPercent": confirmDiffPercent}).Debug("confirm info")
 	}
 
-	confirmData, err := m.ContinuousDataCDSActive(location, consts.ConfirmScoreWindowSize, 0)
+	confirmData, err := m.ContinuousDataCDSConfirm(location, consts.ConfirmScoreWindowSize, 0)
 	if err != nil {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("confirm continuous data")
 		return nil, err

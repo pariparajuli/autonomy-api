@@ -35,7 +35,7 @@ type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSActive(loc schema.Location) (float64, float64, float64, error)
-	ContinuousDataCDSActive(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
+	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
@@ -237,7 +237,7 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64,
 		}
 		if len(now.Name) > 0 { // now data is valid
 			head := make([]schema.CDSScoreDataSet, 1)
-			head[0] = schema.CDSScoreDataSet{Name: now.Name, Active: now.Active - result.Active}
+			head[0] = schema.CDSScoreDataSet{Name: now.Name, Cases: now.Cases - result.Cases}
 			results = append(head, results...)
 		}
 		now = result

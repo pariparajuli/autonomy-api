@@ -22,6 +22,6 @@ type CDSData struct {
 }
 
 type CDSScoreDataSet struct {
-	Name   string  `json:"name" bson:"name"`
-	Active float64 `json:"active" bson:"active"`
+	Name  string  `json:"name" bson:"name"`
+	Cases float64 `json:"cases" bson:"cases"`
 }
