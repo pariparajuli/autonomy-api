@@ -51,15 +51,15 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := score.BehaviorScore(behaviorToday, behaviorYesterday)
 
-	sToday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
+	symptomDistToday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
 	if err != nil {
 		return nil, err
 	}
-	sYesterday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, yesterdayStartAtUnix, todayStartAtUnix)
+	symptomDistYesterday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, yesterdayStartAtUnix, todayStartAtUnix)
 	if err != nil {
 		return nil, err
 	}
-	sUserCount, err := m.FindNearbyReporterCount(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
+	symptomUserCount, err := m.FindNearbyReporterCount(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +109,12 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				Today:     confirmedCount,
 			},
 			Symptoms: schema.SymptomDetail{
-				TotalPeople: float64(sUserCount),
+				TotalPeople: float64(symptomUserCount),
 				TodayData: schema.NearestSymptomData{
-					WeightDistribution: sToday,
+					WeightDistribution: symptomDistToday,
 				},
 				YesterdayData: schema.NearestSymptomData{
-					WeightDistribution: sYesterday,
+					WeightDistribution: symptomDistYesterday,
 				},
 			},
 			Behaviors: schema.BehaviorDetail{
