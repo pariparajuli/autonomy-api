@@ -130,7 +130,7 @@ func (c *CDS) Run() (int, error) {
 
 		record.Active, _ = object["active"].(float64)
 		if record.Active <= 0 {
-			record.Active = recorder.Cases - record.Deaths - record.Recovered
+			record.Active = record.Cases - record.Deaths - record.Recovered
 		}
 
 		year, month, day := time.Now().Date()
