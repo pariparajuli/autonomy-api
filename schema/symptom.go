@@ -6,18 +6,6 @@ import (
 
 type SymptomType string
 
-// SymptomFromID is a map which key is Symptom.ID and value is a object of Symptom
-var SymptomFromID = map[SymptomType]Symptom{
-	SymptomType(Fever):   COVID19Symptoms[0],
-	SymptomType(Cough):   COVID19Symptoms[1],
-	SymptomType(Fatigue): COVID19Symptoms[2],
-	SymptomType(Breath):  COVID19Symptoms[3],
-	SymptomType(Nasal):   COVID19Symptoms[4],
-	SymptomType(Throat):  COVID19Symptoms[5],
-	SymptomType(Chest):   COVID19Symptoms[6],
-	SymptomType(Face):    COVID19Symptoms[7],
-}
-
 type SymptomSource string
 
 const (
@@ -50,6 +38,19 @@ type Symptom struct {
 	Source SymptomSource `json:"-" bson:"source"`
 	Weight float64       `json:"-" bson:"weight"`
 }
+
+var (
+	OfficialSymptoms = map[string]bool{
+		"fever":   true,
+		"cough":   true,
+		"fatigue": true,
+		"breath":  true,
+		"nasal":   true,
+		"throat":  true,
+		"chest":   true,
+		"face":    true,
+	}
+)
 
 // The system defined symptoms. The list will be inserted into database by migration function
 var COVID19Symptoms = []Symptom{
@@ -193,10 +194,9 @@ type SymptomReportData struct {
 	CustomizedSymptoms []Symptom `json:"customized_symptoms" bson:"customized_symptoms"`
 	Location           GeoJSON   `json:"location" bson:"location"`
 	Timestamp          int64     `json:"ts" bson:"ts"`
-	SymptomScore       float64   `json:"score" bson:"score"`
 }
 
-type SymptomDistribution map[SymptomType]int
+type SymptomDistribution map[string]int
 
 func (s *SymptomReportData) MarshalJSON() ([]byte, error) {
 	allSymptoms := append(s.OfficialSymptoms, s.CustomizedSymptoms...)

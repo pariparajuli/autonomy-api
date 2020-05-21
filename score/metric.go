@@ -46,8 +46,8 @@ func CheckScoreColorChange(oldScore, newScore float64) bool {
 
 // CheckSymptomSpike check if there is a spike for symptoms distribution
 // for a given metric data
-func CheckSymptomSpike(yesterdayDistribution, currentDistribution schema.SymptomDistribution) []schema.SymptomType {
-	spikeSymptoms := []schema.SymptomType{}
+func CheckSymptomSpike(yesterdayDistribution, currentDistribution schema.SymptomDistribution) []string {
+	spikeSymptoms := []string{}
 
 	for t, c1 := range currentDistribution {
 		if c0, ok := yesterdayDistribution[t]; ok {

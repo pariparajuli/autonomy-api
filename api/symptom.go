@@ -72,7 +72,7 @@ func (s *Server) getSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorUnknownAccountLocation)
 	}
 
-	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	customized, err := s.mongoStore.FindNearbyNonOfficialSymptoms(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 	}
@@ -141,7 +141,7 @@ func (s *Server) getSymptomsV2(c *gin.Context) {
 		return
 	}
 
-	customized, err := s.mongoStore.AreaCustomizedSymptomList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	customized, err := s.mongoStore.FindNearbyNonOfficialSymptoms(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
@@ -185,15 +185,12 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	totalSymptoms := append(official, customized...)
-	symptomScore := calculateSymptomScore(totalSymptoms)
 	data := schema.SymptomReportData{
 		ProfileID:          account.Profile.ID.String(),
 		AccountNumber:      account.Profile.AccountNumber,
 		OfficialSymptoms:   official,
 		Location:           schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
 		CustomizedSymptoms: customized,
-		SymptomScore:       symptomScore,
 		Timestamp:          time.Now().UTC().Unix(),
 	}
 
@@ -249,17 +246,6 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	return
 }
 
-func calculateSymptomScore(symptoms []schema.Symptom) float64 {
-	var sum float64 = 0
-	for _, symptom := range symptoms {
-		sum = sum + symptom.Weight
-	}
-	if len(symptoms) >= 3 {
-		return 2 * sum
-	}
-	return sum
-}
-
 func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symptom, error) {
 	var syIDs []schema.SymptomType
 	for _, id := range ids {
@@ -267,20 +253,4 @@ func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symp
 	}
 	official, customeried, _, err := s.mongoStore.IDToSymptoms(syIDs)
 	return official, customeried, err
-}
-
-func (s *Server) userSymptomInfection(infectedUser *schema.SymptomReportData, loc schema.Location) error {
-	err := s.mongoStore.UpdateAreaProfileSymptom(infectedUser.CustomizedSymptoms, loc)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Server) areaSymptomInfection(distance int, loc schema.Location) ([]schema.Symptom, error) {
-	list, err := s.mongoStore.AreaCustomizedSymptomList(distance, loc)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
 }
