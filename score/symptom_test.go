@@ -30,10 +30,10 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, "76.86", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
-	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
 	assert.Equal(t, 1.0, updatedMetric.Details.Symptoms.CustomizedWeight)
 	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
 	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
@@ -42,10 +42,10 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 
 	// the function must be idempotent
 	updatedMetric = CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, "76.86", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
-	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
 	assert.Equal(t, 1.0, updatedMetric.Details.Symptoms.CustomizedWeight)
 	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
 	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
@@ -55,14 +55,13 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 
 func TestCalculateSymptomScoreUsingCustomizedWeights(t *testing.T) {
 	weights := schema.SymptomWeights{
-		"fever":   1,
-		"cough":   1,
-		"fatigue": 1,
-		"breath":  1,
-		"nasal":   1,
-		"throat":  1,
-		"chest":   1,
-		"face":    1,
+		"cough":            1,
+		"breath":           1,
+		"fever":            1,
+		"chills":           1,
+		"muscle_pain":      1,
+		"throat":           1,
+		"loss_taste_smell": 1,
 	}
 	metric := schema.Metric{
 		Details: schema.Details{
@@ -84,10 +83,10 @@ func TestCalculateSymptomScoreUsingCustomizedWeights(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(weights, metric)
-	assert.Equal(t, "85.37", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, "83.33", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
 	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
-	assert.Equal(t, 8.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 7.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
 	assert.Equal(t, 2.0, updatedMetric.Details.Symptoms.CustomizedWeight)
 	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
 	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
@@ -102,7 +101,7 @@ func TestCalculateSymptomScoreNoReportYesterday(t *testing.T) {
 				TotalPeople: 5,
 				TodayData: schema.NearestSymptomData{
 					WeightDistribution: schema.SymptomDistribution{
-						"nasal":         10, // weight 1
+						"fever":         10, // weight 3
 						"new-symptom-1": 1,  // weight 1
 						"new-symptom-2": 1,  // weight 1
 					}},
@@ -110,10 +109,10 @@ func TestCalculateSymptomScoreNoReportYesterday(t *testing.T) {
 		},
 	}
 	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
-	assert.Equal(t, "82.09", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
-	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, "48.39", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, 32.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 5.0, updatedMetric.Details.Symptoms.TotalPeople)
-	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
 	assert.Equal(t, 2.0, updatedMetric.Details.Symptoms.CustomizedWeight)
 	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
 	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
@@ -139,7 +138,7 @@ func TestCalculateSymptomScoreNoReportToday(t *testing.T) {
 	assert.Equal(t, 100.0, updatedMetric.Details.Symptoms.Score)
 	assert.Equal(t, 0.0, updatedMetric.Details.Symptoms.SymptomTotal)
 	assert.Equal(t, 5.0, updatedMetric.Details.Symptoms.TotalPeople)
-	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
 	assert.Equal(t, 0.0, updatedMetric.Details.Symptoms.CustomizedWeight)
 	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
 	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)

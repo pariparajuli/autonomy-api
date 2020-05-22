@@ -124,17 +124,24 @@ func setupCollectionSymptom(ctx context.Context, client *mongo.Client) error {
 	fmt.Println("initialize symptom collection")
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomCollection)
 
+	if _, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.M{
+			"source": 1,
+		},
+	}); err != nil {
+		return err
+	}
+
+	if _, err := c.DeleteMany(ctx, bson.M{"source": schema.OfficialSymptom}); err != nil {
+		return err
+	}
+
 	officialSymptoms := make([]interface{}, 0, len(schema.COVID19Symptoms))
 	for _, s := range schema.COVID19Symptoms {
 		officialSymptoms = append(officialSymptoms, s)
 	}
-	_, err := c.InsertMany(ctx, officialSymptoms)
-	if err != nil {
-		if errs, hasErr := err.(mongo.BulkWriteException); hasErr {
-			if !(1 == len(errs.WriteErrors) && store.DuplicateKeyCode == errs.WriteErrors[0].Code) {
-				return err
-			}
-		}
+	if _, err := c.InsertMany(ctx, officialSymptoms); err != nil {
+		return err
 	}
 
 	generalSymptoms := make([]interface{}, 0, len(schema.GeneralSymptoms))

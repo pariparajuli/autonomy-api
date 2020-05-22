@@ -98,12 +98,12 @@ func (n *NudgeWorker) SymptomsNeedFollowUpActivity(ctx context.Context, accountN
 		if lastNudgeSinceToday < 8*time.Hour { // last notified time is before this morning
 			if accountCurrentHour >= 8 && accountCurrentHour < 12 {
 				logger.Info("trigger morning symptom follow up nudge", zap.Any("accountCurrentHour", accountCurrentHour))
-				return append(report.OfficialSymptoms, report.CustomizedSymptoms...), nil
+				return report.Symptoms, nil
 			}
 		} else if lastNudgeSinceToday >= 8*time.Hour && lastNudgeSinceToday < 12*time.Hour { // last notified time is in this morning
 			if accountCurrentHour >= 13 && accountCurrentHour < 17 {
 				logger.Info("trigger afternoon symptom follow up nudge", zap.Any("accountCurrentHour", accountCurrentHour))
-				return append(report.OfficialSymptoms, report.CustomizedSymptoms...), nil
+				return report.Symptoms, nil
 			}
 		}
 	}
@@ -305,7 +305,8 @@ func (n *NudgeWorker) CheckSelfHasHighRiskSymptomsAndNeedToFollowUpActivity(ctx 
 	lastHighRiskMoment := accountToday.Add(-1 * HighRiskSymptomExpiry)
 
 	// check if the last symptom is reported in the past.
-	if lastSymptomReportTime.Sub(lastHighRiskMoment) > 0 && len(report.OfficialSymptoms) > 0 {
+	officialSympoms, _ := schema.SplitSymptoms(report.Symptoms)
+	if lastSymptomReportTime.Sub(lastHighRiskMoment) > 0 && len(officialSympoms) > 0 {
 		lastNudgeSinceToday := p.LastNudge[schema.NudgeBehaviorOnSelfHighRiskSymptoms].Sub(accountToday.UTC())
 		logger.Info("Risky symptoms found in the past",
 			zap.Any("lastNudgeSinceToday", lastNudgeSinceToday),

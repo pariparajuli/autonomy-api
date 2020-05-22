@@ -13,14 +13,13 @@ type SymptomWeights map[string]float64
 
 var (
 	DefaultSymptomWeights = SymptomWeights{
-		"fever":   3,
-		"cough":   2,
-		"fatigue": 1,
-		"breath":  1,
-		"nasal":   1,
-		"throat":  1,
-		"chest":   2,
-		"face":    2,
+		"cough":            2,
+		"breath":           1,
+		"fever":            3,
+		"chills":           1,
+		"muscle_pain":      2,
+		"throat":           1,
+		"loss_taste_smell": 2,
 	}
 )
 

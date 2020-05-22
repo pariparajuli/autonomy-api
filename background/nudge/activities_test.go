@@ -136,7 +136,7 @@ func (ts *NudgeActivityTestSuite) TestSymptomsNeedFollowUpActivityReportedYester
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     time.Now().Add(-24 * time.Hour).Unix(), // reported yesterday
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},
@@ -183,7 +183,7 @@ func (ts *NudgeActivityTestSuite) TestSymptomsNeedFollowUpActivityReportedTodayW
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     now().Unix(), // reported today
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},
@@ -230,7 +230,7 @@ func (ts *NudgeActivityTestSuite) TestSymptomsNeedFollowUpActivityReportedYester
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     time.Now().Add(-24 * time.Hour).Unix(), // reported yesterday
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},
@@ -277,7 +277,7 @@ func (ts *NudgeActivityTestSuite) TestSymptomsNeedFollowUpActivityReportedYester
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     time.Now().Add(-24 * time.Hour).Unix(), // reported yesterday
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},
@@ -324,7 +324,7 @@ func (ts *NudgeActivityTestSuite) TestCheckSelfHasHighRiskSymptomsAndNeedToFollo
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     time.Now().Add(-24 * time.Hour).Unix(), // reported yesterday
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},
@@ -396,7 +396,7 @@ func (ts *NudgeActivityTestSuite) TestCheckSelfHasHighRiskSymptomsAndNeedToFollo
 				ProfileID:     "test-account",
 				AccountNumber: ts.testAccountNumber,
 				Timestamp:     time.Now().Add(-24 * time.Hour).Unix(), // reported yesterday
-				OfficialSymptoms: []schema.Symptom{
+				Symptoms: []schema.Symptom{
 					schema.COVID19Symptoms[0],
 					schema.COVID19Symptoms[1],
 				},

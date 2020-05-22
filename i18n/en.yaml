@@ -1,28 +1,25 @@
 symptoms:
+  cough:
+    name: Cough
+    desc: ""
+  breath:
+    name: Shortness of breath or difficulty breathing
+    desc: ""
   fever:
     name: Fever
-    desc: Body temperature above 100ºF (38ºC)
-  cough:
-    name: Dry cough
-    desc: Without mucous or phlegm (rattling)
-  fatigue:
-    name: Fatigue or tiredness
-    desc: Unusual lack of energy or feeling run down
-  breath:
-    name: Shortness of breath
-    desc: Constriction or difficulty inhaling fully
-  nasal:
-    name: Nasal congestion
-    desc: Stuffy or blocked nose
+    desc: ""
+  chills:
+    name: Chills
+    desc: ""
+  muscle_pain:
+    name: Muscle pain
+    desc: ""
   throat:
     name: Sore throat
-    desc: Throat pain, scratchiness, or irritation
-  chest:
-    name: Chest pain
-    desc: Persistent pain or pressure in the chest
-  face:
-    name: Bluish lips or face
-    desc: Not caused by cold exposure
+    desc: ""
+  loss_taste_smell:
+    name: New loss of taste or smell
+    desc: ""
   suggestion_1:
     name: Abdominal bloating
   suggestion_2:
