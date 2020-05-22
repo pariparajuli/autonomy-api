@@ -256,6 +256,7 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
+			"behaviors":         []schema.GoodBehaviorType{schema.CleanHand, schema.SocialDistancing, schema.WearMask},
 		},
 	); err != nil {
 		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
@@ -369,6 +370,7 @@ func (n *NudgeWorker) NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity(ctx con
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
+			"behaviors":         []schema.GoodBehaviorType{schema.SocialDistancing, schema.WearMask},
 		},
 	); err != nil {
 		if !onesignal.IsErrAllPlayersNotSubscribed(err) {
