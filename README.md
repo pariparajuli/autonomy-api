@@ -67,3 +67,7 @@ Now, You can run the server:
 ```
 ./autonomy-api
 ```
+
+## Run Test
+
+Use `make test` to run all test cases. It will also build the `mocks` package which required for test cases.
