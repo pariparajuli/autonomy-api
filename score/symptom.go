@@ -21,8 +21,8 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 		var weight float64
 		var ok bool
 		if schema.OfficialSymptoms[symptomID] {
-			if weight, ok = weights[schema.SymptomType(symptomID)]; !ok {
-				weight = schema.DefaultSymptomWeights[schema.SymptomType(symptomID)]
+			if weight, ok = weights[symptomID]; !ok {
+				weight = schema.DefaultSymptomWeights[symptomID]
 			}
 			officialCount += cnt
 		} else {

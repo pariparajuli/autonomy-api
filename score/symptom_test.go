@@ -55,14 +55,14 @@ func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
 
 func TestCalculateSymptomScoreUsingCustomizedWeights(t *testing.T) {
 	weights := schema.SymptomWeights{
-		schema.Fever:   1,
-		schema.Cough:   1,
-		schema.Fatigue: 1,
-		schema.Breath:  1,
-		schema.Nasal:   1,
-		schema.Throat:  1,
-		schema.Chest:   1,
-		schema.Face:    1,
+		"fever":   1,
+		"cough":   1,
+		"fatigue": 1,
+		"breath":  1,
+		"nasal":   1,
+		"throat":  1,
+		"chest":   1,
+		"face":    1,
 	}
 	metric := schema.Metric{
 		Details: schema.Details{

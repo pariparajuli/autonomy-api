@@ -122,7 +122,7 @@ func (m *mongoDB) UpdateAreaProfileSymptom(symptoms []schema.Symptom, location s
 			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
 			return fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
 		}
-		temp := make(map[schema.SymptomType]schema.Symptom, 0)
+		temp := make(map[string]schema.Symptom, 0)
 		for _, s := range symptoms {
 			temp[s.ID] = s
 		}

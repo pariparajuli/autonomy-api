@@ -247,9 +247,9 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 }
 
 func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symptom, error) {
-	var syIDs []schema.SymptomType
+	var syIDs []string
 	for _, id := range ids {
-		syIDs = append(syIDs, schema.SymptomType(id))
+		syIDs = append(syIDs, id)
 	}
 	official, customeried, _, err := s.mongoStore.IDToSymptoms(syIDs)
 	return official, customeried, err

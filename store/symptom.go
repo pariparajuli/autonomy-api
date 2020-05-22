@@ -28,7 +28,7 @@ type Symptom interface {
 	ListSuggestedSymptoms(lang string) ([]schema.Symptom, error)
 	ListCustomizedSymptoms() ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
-	IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error)
+	IDToSymptoms(ids []string) ([]schema.Symptom, []schema.Symptom, []string, error)
 	FindNearbySymptomDistribution(dist int, loc schema.Location, start, end int64) (schema.SymptomDistribution, error)
 	FindNearbyReporterCount(dist int, loc schema.Location, start, end int64) (int, error)
 	FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) ([]schema.Symptom, error)
@@ -45,19 +45,19 @@ func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
 	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%s=:=%s", symptom.Name, symptom.Desc)))
 
-	symptom.ID = schema.SymptomType(hex.EncodeToString(h.Sum(nil)))
+	symptom.ID = hex.EncodeToString(h.Sum(nil))
 	symptom.Source = schema.CustomizedSymptom
 
 	if _, err := c.Collection(schema.SymptomCollection).InsertOne(ctx, &symptom); err != nil {
 		if we, hasErr := err.(mongo.WriteException); hasErr {
 			if 1 == len(we.WriteErrors) && DuplicateKeyCode == we.WriteErrors[0].Code {
-				return string(symptom.ID), nil
+				return symptom.ID, nil
 			}
 		}
 		return "", err
 	}
 
-	return string(symptom.ID), nil
+	return symptom.ID, nil
 }
 
 func (m *mongoDB) ListOfficialSymptoms(lang string) ([]schema.Symptom, error) {
@@ -198,13 +198,13 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 }
 
 // IDToSymptoms return official and customized symptoms from a list of SymptomType ID
-func (m *mongoDB) IDToSymptoms(ids []schema.SymptomType) ([]schema.Symptom, []schema.Symptom, []schema.SymptomType, error) {
+func (m *mongoDB) IDToSymptoms(ids []string) ([]schema.Symptom, []schema.Symptom, []string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	c := m.client.Database(m.database)
 	var foundOfficial []schema.Symptom
 	var foundCustomized []schema.Symptom
-	var notFound []schema.SymptomType
+	var notFound []string
 	for _, id := range ids {
 		query := bson.M{"_id": string(id)}
 		var result schema.Symptom

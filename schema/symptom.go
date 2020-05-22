@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 )
 
-type SymptomType string
-
 type SymptomSource string
 
 const (
@@ -17,22 +15,10 @@ const (
 const (
 	SymptomCollection       = "symptom"
 	SymptomReportCollection = "symptomReport"
-	TotalSymptomWeight      = 9
-)
-
-const (
-	Fever   SymptomType = "fever"
-	Cough   SymptomType = "cough"
-	Fatigue SymptomType = "fatigue"
-	Breath  SymptomType = "breath"
-	Nasal   SymptomType = "nasal"
-	Throat  SymptomType = "throat"
-	Chest   SymptomType = "chest"
-	Face    SymptomType = "face"
 )
 
 type Symptom struct {
-	ID     SymptomType   `json:"id" bson:"_id"`
+	ID     string        `json:"id" bson:"_id"`
 	Name   string        `json:"name" bson:"name"`
 	Desc   string        `json:"desc" bson:"desc"`
 	Source SymptomSource `json:"-" bson:"source"`
@@ -54,14 +40,14 @@ var (
 
 // The system defined symptoms. The list will be inserted into database by migration function
 var COVID19Symptoms = []Symptom{
-	{Fever, "Fever", "Body temperature above 100ºF (38ºC)", OfficialSymptom, 2},
-	{Cough, "Dry cough", "Without mucous or phlegm (rattling)", OfficialSymptom, 2},
-	{Fatigue, "Fatigue or tiredness", "Unusual lack of energy or feeling run down", OfficialSymptom, 1},
-	{Breath, "Shortness of breath", "Constriction or difficulty inhaling fully", OfficialSymptom, 1},
-	{Nasal, "Nasal congestion", "Stuffy or blocked nose", OfficialSymptom, 1},
-	{Throat, "Sore throat", "Throat pain, scratchiness, or irritation", OfficialSymptom, 1},
-	{Chest, "Chest pain", "Persistent pain or pressure in the chest", OfficialSymptom, 1},
-	{Face, "Bluish lips or face", "Not caused by cold exposure", OfficialSymptom, 1},
+	{"fever", "Fever", "Body temperature above 100ºF (38ºC)", OfficialSymptom, 2},
+	{"cough", "Dry cough", "Without mucous or phlegm (rattling)", OfficialSymptom, 2},
+	{"fatigue", "Fatigue or tiredness", "Unusual lack of energy or feeling run down", OfficialSymptom, 1},
+	{"breath", "Shortness of breath", "Constriction or difficulty inhaling fully", OfficialSymptom, 1},
+	{"nasal", "Nasal congestion", "Stuffy or blocked nose", OfficialSymptom, 1},
+	{"throat", "Sore throat", "Throat pain, scratchiness, or irritation", OfficialSymptom, 1},
+	{"chest pain", "Chest pain", "Persistent pain or pressure in the chest", OfficialSymptom, 1},
+	{"face", "Bluish lips or face", "Not caused by cold exposure", OfficialSymptom, 1},
 }
 
 var GeneralSymptoms = []Symptom{
