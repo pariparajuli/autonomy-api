@@ -17,22 +17,18 @@ type BehaviorDetail struct {
 }
 
 type SymptomDetail struct {
-	SymptomTotal       float64             `json:"total_weight" bson:"total_weight"`
-	TotalPeople        float64             `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson  float64             `json:"max_weight" bson:"max_weight"`
-	CustomizedWeight   float64             `json:"customized_weight" bson:"customized_weight"`
-	Score              float64             `json:"score" bson:"score"`
-	Symptoms           SymptomDistribution `json:"-" bson:"symptoms"`
-	LastSpikeUpdate    time.Time           `json:"last_spike_update" bson:"last_spike_update"`
-	LastSpikeList      []SymptomType       `json:"last_spike_types" bson:"last_spike_types"`
-	CustomSymptomCount float64             `json:"-" bson:"custom_symptom_count"`
-	TodayData          NearestSymptomData  `json:"today_data"  bson:"today_data"`
-	YesterdayData      NearestSymptomData  `json:"yesterday_data"  bson:"-"`
+	Score             float64            `json:"score" bson:"score"`
+	SymptomTotal      float64            `json:"total_weight" bson:"total_weight"`
+	TotalPeople       float64            `json:"total_people" bson:"total_people"`
+	MaxScorePerPerson float64            `json:"max_weight" bson:"max_weight"`
+	CustomizedWeight  float64            `json:"customized_weight" bson:"customized_weight"`
+	TodayData         NearestSymptomData `json:"today_data"  bson:"today_data"`
+	YesterdayData     NearestSymptomData `json:"-"  bson:"-"`
+	LastSpikeUpdate   time.Time          `json:"-" bson:"last_spike_update"`
+	LastSpikeList     []string           `json:"-" bson:"last_spike_types"`
 }
+
 type NearestSymptomData struct {
-	UserCount          float64             `json:"user_count" bson:"user_count"`
-	OfficialCount      float64             `json:"official_count" bson:"official_count"`
-	CustomizedCount    float64             `json:"customized_count" bson:"customized_count"`
 	WeightDistribution SymptomDistribution `json:"weight_distribution" bson:"weight_distribution"`
 }
 

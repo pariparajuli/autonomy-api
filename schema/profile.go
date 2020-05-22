@@ -9,18 +9,18 @@ const (
 )
 
 // SymptomWeights is structure for customized symptom weights
-type SymptomWeights map[SymptomType]float64
+type SymptomWeights map[string]float64
 
 var (
 	DefaultSymptomWeights = SymptomWeights{
-		Fever:   3,
-		Cough:   2,
-		Fatigue: 1,
-		Breath:  1,
-		Nasal:   1,
-		Throat:  1,
-		Chest:   2,
-		Face:    2,
+		"fever":   3,
+		"cough":   2,
+		"fatigue": 1,
+		"breath":  1,
+		"nasal":   1,
+		"throat":  1,
+		"chest":   2,
+		"face":    2,
 	}
 )
 

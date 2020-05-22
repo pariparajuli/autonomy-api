@@ -52,6 +52,17 @@ func aggStageReportedYesterday(todayBeginTime int64) bson.M {
 	}
 }
 
+func aggStageReportedBetween(start, end int64) bson.M {
+	return bson.M{
+		"$match": bson.M{
+			"ts": bson.M{
+				"$gte": start,
+				"$lt":  end,
+			},
+		},
+	}
+}
+
 func aggStagePreventNullArray(fields ...string) bson.M {
 	targets := bson.M{}
 	for _, field := range fields {

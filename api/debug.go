@@ -61,11 +61,17 @@ func (s *Server) currentAreaDebugData(c *gin.Context) {
 		}
 		userCount = len(nearAccounts)
 
-		symptomCount, err = s.mongoStore.SymptomCount(consts.NEARBY_DISTANCE_RANGE, loc)
+		now := time.Now().UTC()
+		todayStartAt := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		todayStartAtUnix := todayStartAt.Unix()
+		tomorrowStartAtUnix := todayStartAt.AddDate(0, 0, 1).Unix()
+		distribution, err := s.mongoStore.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, loc, todayStartAtUnix, tomorrowStartAtUnix)
 		if err != nil {
-			c.Error(err)
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 			return
+		}
+		for _, cnt := range distribution {
+			symptomCount += cnt
 		}
 	}
 
@@ -131,11 +137,17 @@ func (s *Server) poiDebugData(c *gin.Context) {
 		}
 		userCount = len(nearAccounts)
 
-		symptomCount, err = s.mongoStore.SymptomCount(consts.NEARBY_DISTANCE_RANGE, loc)
+		now := time.Now().UTC()
+		todayStartAt := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		todayStartAtUnix := todayStartAt.Unix()
+		tomorrowStartAtUnix := todayStartAt.AddDate(0, 0, 1).Unix()
+		distribution, err := s.mongoStore.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, loc, todayStartAtUnix, tomorrowStartAtUnix)
 		if err != nil {
-			c.Error(err)
 			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
 			return
+		}
+		for _, cnt := range distribution {
+			symptomCount += cnt
 		}
 
 	}

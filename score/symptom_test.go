@@ -1,54 +1,148 @@
-package score_test
+package score
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/score"
 )
 
-func TestSymptomScoreWhenDoTwice(t *testing.T) {
-	yesterday := schema.NearestSymptomData{
-		UserCount:       1,
-		OfficialCount:   2,
-		CustomizedCount: 3,
-		WeightDistribution: map[schema.SymptomType]int{
-			schema.Fever:   1,
-			schema.Face:    1,
-			schema.Chest:   1,
-			schema.Throat:  1,
-			schema.Nasal:   1,
-			schema.Cough:   1,
-			schema.Fatigue: 1,
-			schema.Breath:  1,
+func TestCalculateSymptomScoreUsingDefaultWeights(t *testing.T) {
+	metric := schema.Metric{
+		Details: schema.Details{
+			Symptoms: schema.SymptomDetail{
+				TotalPeople: 10,
+				TodayData: schema.NearestSymptomData{
+					WeightDistribution: map[string]int{
+						"cough":       3, // weight 2
+						"fever":       7, // weight 3
+						"new-symptom": 1, // weight 1
+					}},
+				YesterdayData: schema.NearestSymptomData{
+					WeightDistribution: map[string]int{
+						"cough":       1,
+						"fever":       1,
+						"new-symptom": 2,
+					}},
+			},
 		},
 	}
+	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
+	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
+	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 1.0, updatedMetric.Details.Symptoms.CustomizedWeight)
+	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
+	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
+	assert.Equal(t, 11.0, updatedMetric.SymptomCount)
+	assert.Equal(t, 175.0, updatedMetric.SymptomDelta)
 
-	today := schema.NearestSymptomData{
-		UserCount:       2,
-		OfficialCount:   3,
-		CustomizedCount: 4,
-		WeightDistribution: map[schema.SymptomType]int{
-			schema.Fever:   2,
-			schema.Face:    2,
-			schema.Chest:   2,
-			schema.Throat:  3,
-			schema.Nasal:   3,
-			schema.Cough:   3,
-			schema.Fatigue: 4,
-			schema.Breath:  5,
+	// the function must be idempotent
+	updatedMetric = CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
+	assert.Equal(t, "78.63", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, 28.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
+	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 1.0, updatedMetric.Details.Symptoms.CustomizedWeight)
+	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
+	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
+	assert.Equal(t, 11.0, updatedMetric.SymptomCount)
+	assert.Equal(t, 175.0, updatedMetric.SymptomDelta)
+}
+
+func TestCalculateSymptomScoreUsingCustomizedWeights(t *testing.T) {
+	weights := schema.SymptomWeights{
+		"fever":   1,
+		"cough":   1,
+		"fatigue": 1,
+		"breath":  1,
+		"nasal":   1,
+		"throat":  1,
+		"chest":   1,
+		"face":    1,
+	}
+	metric := schema.Metric{
+		Details: schema.Details{
+			Symptoms: schema.SymptomDetail{
+				TotalPeople: 10,
+				TodayData: schema.NearestSymptomData{
+					WeightDistribution: map[string]int{
+						"cough":       3, // weight 1
+						"fever":       7, // weight 1
+						"new-symptom": 2, // weight 1
+					}},
+				YesterdayData: schema.NearestSymptomData{
+					WeightDistribution: map[string]int{
+						"cough":       1,
+						"fever":       1,
+						"new-symptom": 2,
+					}},
+			},
 		},
 	}
+	updatedMetric := CalculateSymptomScore(weights, metric)
+	assert.Equal(t, "85.37", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, 10.0, updatedMetric.Details.Symptoms.TotalPeople)
+	assert.Equal(t, 8.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 2.0, updatedMetric.Details.Symptoms.CustomizedWeight)
+	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
+	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
+	assert.Equal(t, 12.0, updatedMetric.SymptomCount)
+	assert.Equal(t, 200.0, updatedMetric.SymptomDelta)
+}
 
-	y1, y2, y3, y4, y5, y6 := score.SymptomScore(schema.DefaultSymptomWeights, today, yesterday)
-	t1, t2, t3, t4, t5, t6 := score.SymptomScore(schema.DefaultSymptomWeights, today, yesterday)
+func TestCalculateSymptomScoreNoReportYesterday(t *testing.T) {
+	metric := schema.Metric{
+		Details: schema.Details{
+			Symptoms: schema.SymptomDetail{
+				TotalPeople: 5,
+				TodayData: schema.NearestSymptomData{
+					WeightDistribution: schema.SymptomDistribution{
+						"nasal":         10, // weight 1
+						"new-symptom-1": 1,  // weight 1
+						"new-symptom-2": 1,  // weight 1
+					}},
+			},
+		},
+	}
+	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
+	assert.Equal(t, "82.09", fmt.Sprintf("%.2f", updatedMetric.Details.Symptoms.Score))
+	assert.Equal(t, 12.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, 5.0, updatedMetric.Details.Symptoms.TotalPeople)
+	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 2.0, updatedMetric.Details.Symptoms.CustomizedWeight)
+	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
+	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
+	assert.Equal(t, 12.0, updatedMetric.SymptomCount)
+	assert.Equal(t, 100.0, updatedMetric.SymptomDelta)
+}
 
-	assert.Equal(t, t1, y1, "wrong symptom score")
-	assert.Equal(t, t2, y2, "wrong total weight")
-	assert.Equal(t, t3, y3, "wrong max score per person")
-	assert.Equal(t, t4, y4, "wrong delta in percent")
-	assert.Equal(t, t5, y5, "wrong official count")
-	assert.Equal(t, t6, y6, "wrong customized count")
+func TestCalculateSymptomScoreNoReportToday(t *testing.T) {
+	metric := schema.Metric{
+		Details: schema.Details{
+			Symptoms: schema.SymptomDetail{
+				TotalPeople: 5,
+				YesterdayData: schema.NearestSymptomData{
+					WeightDistribution: schema.SymptomDistribution{
+						"nasal":         10, // weight 1
+						"new-symptom-1": 1,  // weight 1
+						"new-symptom-2": 1,  // weight 1
+					}},
+			},
+		},
+	}
+	updatedMetric := CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
+	assert.Equal(t, 100.0, updatedMetric.Details.Symptoms.Score)
+	assert.Equal(t, 0.0, updatedMetric.Details.Symptoms.SymptomTotal)
+	assert.Equal(t, 5.0, updatedMetric.Details.Symptoms.TotalPeople)
+	assert.Equal(t, 13.0, updatedMetric.Details.Symptoms.MaxScorePerPerson)
+	assert.Equal(t, 0.0, updatedMetric.Details.Symptoms.CustomizedWeight)
+	assert.Equal(t, metric.Details.Symptoms.TodayData, updatedMetric.Details.Symptoms.TodayData)
+	assert.Equal(t, metric.Details.Symptoms.YesterdayData, updatedMetric.Details.Symptoms.YesterdayData)
+	assert.Equal(t, 0.0, updatedMetric.SymptomCount)
+	assert.Equal(t, -100.0, updatedMetric.SymptomDelta)
 }

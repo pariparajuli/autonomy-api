@@ -68,7 +68,7 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 	return &metric, nil
 }
 
-func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spikeSymptomTypes []schema.SymptomType) ([]schema.Symptom, error) {
+func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spikeSymptomTypes []string) ([]schema.Symptom, error) {
 	var spikeSymptom []schema.Symptom
 
 	if len(spikeSymptomTypes) > 0 {

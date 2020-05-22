@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -27,6 +26,13 @@ type Metric interface {
 // CollectRawMetrics will gather data from various of sources that is required to
 // calculate an autonomy score
 func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, error) {
+	now := time.Now().UTC()
+	todayStartAt := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
+	yesterdayStartAtUnix := todayStartAt.AddDate(0, 0, -1).Unix()
+	todayStartAtUnix := todayStartAt.Unix()
+	tomorrowStartAtUnix := todayStartAt.AddDate(0, 0, 1).Unix()
+
 	// Processing behaviors data
 	behaviorToday, behaviorYesterday, err := m.NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, location)
 	if err != nil {
@@ -45,14 +51,16 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 
 	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := score.BehaviorScore(behaviorToday, behaviorYesterday)
 
-	// Processing symptoms data
-	symptomToday, symptomYesterday, err := m.NearestSymptomScore(consts.NEARBY_DISTANCE_RANGE, location)
-	log.Info(fmt.Sprintf("CollectRawMetrics: officialSymptomDistribution:%v , officialSymptomCount:%v, userCount:%v", symptomToday.WeightDistribution, symptomToday.OfficialCount, symptomToday.UserCount))
+	symptomDistToday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("NearestSymptomScore outcome")
+		return nil, err
+	}
+	symptomDistYesterday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, yesterdayStartAtUnix, todayStartAtUnix)
+	if err != nil {
+		return nil, err
+	}
+	symptomUserCount, err := m.FindNearbyReporterCount(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
+	if err != nil {
 		return nil, err
 	}
 
@@ -95,16 +103,19 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		BehaviorDelta:  float64(behaviorDelta),
 		ConfirmedCount: confirmedCount,
 		ConfirmedDelta: confirmDiffPercent,
-		//	SymptomCount:   sOfficialCount + sCustomizedCount,
-		//		SymptomDelta:   sDeltaInPercent,
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
 				Yesterday: confirmedCount - confirmDiff,
 				Today:     confirmedCount,
 			},
 			Symptoms: schema.SymptomDetail{
-				TodayData:     symptomToday,
-				YesterdayData: symptomYesterday,
+				TotalPeople: float64(symptomUserCount),
+				TodayData: schema.NearestSymptomData{
+					WeightDistribution: symptomDistToday,
+				},
+				YesterdayData: schema.NearestSymptomData{
+					WeightDistribution: symptomDistYesterday,
+				},
 			},
 			Behaviors: schema.BehaviorDetail{
 				BehaviorTotal:           behaviorCount,

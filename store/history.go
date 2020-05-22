@@ -25,7 +25,7 @@ func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit in
 		return nil, err
 	}
 	// TODO: put the mapping in memory
-	mapping := make(map[schema.SymptomType]schema.Symptom)
+	mapping := make(map[string]schema.Symptom)
 	for _, s := range symptoms {
 		mapping[s.ID] = s
 	}

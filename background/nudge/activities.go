@@ -159,7 +159,7 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 
 	logger.Info("Prepare the message context for following up symptoms", zap.Any("symptoms", symptoms))
 
-	var symptomsIDs = make([]schema.SymptomType, 0)
+	var symptomsIDs = make([]string, 0)
 	for _, s := range symptoms {
 		symptomsIDs = append(symptomsIDs, s.ID)
 	}
@@ -193,7 +193,7 @@ func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNum
 
 	logger.Info("Prepare the message context for following up symptoms", zap.Any("symptoms", symptoms))
 
-	var symptomsIDs = make([]schema.SymptomType, 0)
+	var symptomsIDs = make([]string, 0)
 	for _, s := range symptoms {
 		symptomsIDs = append(symptomsIDs, s.ID)
 	}
