@@ -6,8 +6,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 )
 
 const (
@@ -44,9 +42,8 @@ type Pinger interface {
 }
 
 type mongoDB struct {
-	client    *mongo.Client
-	database  string
-	geoClient geoinfo.GeoInfo
+	client   *mongo.Client
+	database string
 }
 
 // Ping - ping mongo db
@@ -61,10 +58,9 @@ func (m mongoDB) Close() {
 }
 
 // NewMongoStore - return mongo db operations
-func NewMongoStore(client *mongo.Client, database string, geoClient geoinfo.GeoInfo) MongoStore {
+func NewMongoStore(client *mongo.Client, database string) MongoStore {
 	return &mongoDB{
-		client:    client,
-		database:  database,
-		geoClient: geoClient,
+		client:   client,
+		database: database,
 	}
 }

@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,10 +17,6 @@ const (
 	RecordNotExistCode = -1
 )
 
-var (
-	ErrEmptyGeo = fmt.Errorf("empty geo info")
-)
-
 type ConfirmCountyCount map[string]int
 
 type ConfirmUpdater interface {
@@ -31,9 +26,7 @@ type ConfirmUpdater interface {
 type ConfirmGetter interface {
 	// Read confirm count, return with current count, number of difference compare to
 	// yesterday, error
-	GetConfirm(loc schema.Location) (float64, float64, float64, error)
-	// total confirm of a country, return with latest total, previous day total, error
-	TotalConfirm(schema.Location) (int, int, error)
+	GetConfirm(string, string) (float64, float64, float64, error)
 }
 
 type ConfirmOperator interface {
@@ -150,30 +143,16 @@ func countUpdateCommand(count, diff int, updateTime int64) bson.M {
 	}
 }
 
-func (m mongoDB) GetConfirm(loc schema.Location) (float64, float64, float64, error) {
+func (m mongoDB) GetConfirm(country, county string) (float64, float64, float64, error) {
 	c := m.client.Database(m.database).Collection(ConfirmCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-
-	pGeo, err := m.politicalGeoInfo(loc)
-	if err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("get political  geo info")
-		return 0, 0, 0, err
-	}
-	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": pGeo.Country,
-		"lv1": pGeo.Level1, "lv2": pGeo.Level2, "lv3": pGeo.Level3}).Debug("political geo address")
-	country := utils.EnNameToKey(pGeo.CountryShort)
-
-	county := pGeo.Level3
-	if pGeo.Level1 != "" {
-		county = pGeo.Level1
-	}
 
 	country = utils.EnNameToKey(country)
 	county = utils.EnNameToKey(county)
 
 	var latest schema.Confirm
-	err = c.FindOne(ctx, countyCountryQuery(county, country)).Decode(&latest)
+	err := c.FindOne(ctx, countyCountryQuery(county, country)).Decode(&latest)
 
 	if nil != err {
 		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": country,
@@ -197,89 +176,4 @@ func (m mongoDB) GetConfirm(loc schema.Location) (float64, float64, float64, err
 	}).Debug("get confirm data")
 
 	return float64(latest.Count), float64(latest.DiffYesterday), percent, nil
-}
-
-func (m mongoDB) TotalConfirm(loc schema.Location) (int, int, error) {
-	c := m.client.Database(m.database).Collection(ConfirmCollection)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	// normalize key
-	geos, err := m.geoClient.Get(loc)
-	if nil != err {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("get geo info")
-		return 0, 0, err
-	}
-	if len(geos) == 0 {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "lat": loc.Latitude,
-			"loc": loc.Longitude}).Warn("find empty geo info")
-
-		return 0, 0, ErrEmptyGeo
-	}
-
-	info := geos[0]
-	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "info": info}).Debug("geo info")
-
-	var country string
-	for _, a := range info.AddressComponents {
-		if len(a.Types) > 0 && a.Types[0] == "country" {
-			country = utils.EnNameToKey(a.ShortName)
-			break
-		}
-	}
-
-	country = utils.EnNameToKey(country)
-
-	cur, err := c.Aggregate(ctx, mongo.Pipeline{bson.D{
-		{"$match", bson.D{
-			{"country", country},
-		}},
-	}, bson.D{
-		{"$group", bson.D{
-			{"_id", "_id"},
-			{"total", bson.D{{"$sum", "$count"}}},
-			{"diff", bson.D{{"$sum", "$diff_yesterday"}}},
-		}},
-	}})
-	if nil != err {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("aggregate total confirm")
-		return RecordNotExistCode, RecordNotExistCode, err
-	}
-
-	var results []bson.M
-	err = cur.All(ctx, &results)
-	if nil != err {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("aggregate total confirm")
-		return RecordNotExistCode, RecordNotExistCode, err
-	}
-	total := results[0]["total"].(int)
-	diff := results[0]["diff"].(int)
-
-	if total == 0 {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"lat":    loc.Latitude,
-			"lng":    loc.Longitude,
-		}).Info("empty records")
-
-		return 0, 0, nil
-	}
-
-	prev := total - diff
-
-	log.WithFields(log.Fields{
-		"prefix":       mongoLogPrefix,
-		"lat":          loc.Latitude,
-		"lng":          loc.Longitude,
-		"total":        total,
-		"previous day": prev,
-	}).Info("total confirm")
-
-	return total, prev, nil
 }

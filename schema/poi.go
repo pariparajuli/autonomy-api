@@ -15,6 +15,9 @@ type POI struct {
 	Location *GeoJSON           `bson:"location"`
 	Score    float64            `bson:"score"`
 	Metric   Metric             `bson:"metric"`
+	Country  string             `bson:"country" json:"-"`
+	State    string             `bson:"state" json:"-"`
+	County   string             `bson:"county" json:"-"`
 }
 
 type ProfilePOI struct {

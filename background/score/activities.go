@@ -52,9 +52,12 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 	location := schema.Location{
 		Latitude:  poi.Location.Coordinates[1],
 		Longitude: poi.Location.Coordinates[0],
+		Country:   poi.Country,
+		State:     poi.State,
+		County:    poi.County,
 	}
 
-	logger.Info("Calculate metric by location.", zap.Any("location", location))
+	logger.Info("Calculate POI metric by location.", zap.Any("location", location))
 	rawMetrics, err := s.mongo.CollectRawMetrics(location)
 	if err != nil {
 		return nil, err

@@ -99,6 +99,9 @@ func (s *Server) poiDebugData(c *gin.Context) {
 		loc := schema.Location{
 			Latitude:  poi.Location.Coordinates[1],
 			Longitude: poi.Location.Coordinates[0],
+			Country:   poi.Country,
+			State:     poi.State,
+			County:    poi.County,
 		}
 		metricLastUpdate := time.Unix(metric.LastUpdate, 0)
 		if time.Since(metricLastUpdate) >= metricUpdateInterval {

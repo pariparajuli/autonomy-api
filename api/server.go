@@ -21,7 +21,6 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/external/aqi"
 	"github.com/bitmark-inc/autonomy-api/external/cadence"
-	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/logmodule"
 	"github.com/bitmark-inc/autonomy-api/store"
@@ -47,7 +46,6 @@ type Server struct {
 
 	// External services
 	oneSignalClient *onesignal.OneSignalClient
-	geoClient       geoinfo.GeoInfo
 
 	cadenceClient *cadence.CadenceClient
 
@@ -67,7 +65,6 @@ func NewServer(
 	mongoClient *mongo.Client,
 	jwtKey *rsa.PrivateKey,
 	bitmarkAccount *account.AccountV2,
-	geoClient geoinfo.GeoInfo,
 	aqiClient aqi.AQI,
 ) *Server {
 	tr := &http.Transport{
@@ -82,7 +79,6 @@ func NewServer(
 	mongoStore := store.NewMongoStore(
 		mongoClient,
 		viper.GetString("mongo.database"),
-		geoClient,
 	)
 
 	return &Server{
@@ -92,7 +88,6 @@ func NewServer(
 		httpClient:      httpClient,
 		bitmarkAccount:  bitmarkAccount,
 		oneSignalClient: onesignal.NewClient(httpClient),
-		geoClient:       geoClient,
 		cadenceClient:   cadence.NewClient(),
 		aqiClient:       aqiClient,
 	}

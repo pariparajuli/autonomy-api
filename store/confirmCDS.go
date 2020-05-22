@@ -28,17 +28,6 @@ var (
 	ErrConfirmDecode         = fmt.Errorf("decode confirm data fail")
 )
 
-type PoliticalGeo struct {
-	Country      string
-	CountryShort string
-	Level1       string
-	Level1Short  string
-	Level2       string
-	Level2Short  string
-	Level3       string
-	Level3Short  string
-}
-
 type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
@@ -119,19 +108,12 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 	return nil
 }
 
-func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
-	pGeo, err := m.politicalGeoInfo(loc)
-	if err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error(ErrPoliticalTypeGeoInfo)
-		return 0, 0, 0, ErrPoliticalTypeGeoInfo
-	}
-
-	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": pGeo.Country, "lv1": pGeo.Level1, "lv2": pGeo.Level2, "lv3": pGeo.Level3}).Debug("political geo address")
-
-	switch pGeo.Country { //  Currently this function support only USA data
+func (m mongoDB) GetCDSConfirm(location schema.Location) (float64, float64, float64, error) {
+	log.WithField("location", location).Info("get cds confirmation by location")
+	switch location.Country { //  Currently this function support only USA data
 	case CdsTaiwan:
 		// use taiwan cdc data (temp solution)
-		today, delta, percent, err := m.GetConfirm(loc)
+		today, delta, percent, err := m.GetConfirm("tw", location.County)
 		if err != nil {
 			return 0, 0, 0, fmt.Errorf("%s: %s", ErrConfirmDataFetch, err)
 		}
@@ -143,7 +125,7 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		defer cancel()
 		opts := options.Find()
 		opts = opts.SetSort(bson.M{"report_ts": -1}).SetLimit(2)
-		filter := bson.M{"county": pGeo.Level2, "state": pGeo.Level1}
+		filter := bson.M{"county": location.County, "state": location.State}
 		cur, err := c.Find(context.Background(), filter, opts)
 		if nil != err {
 			return 0, 0, 0, ErrConfirmDataFetch
@@ -179,33 +161,4 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 	}
 	return 0, 0, 0, ErrNoConfirmDataset
 
-}
-
-func (m mongoDB) politicalGeoInfo(loc schema.Location) (PoliticalGeo, error) {
-	ret := PoliticalGeo{}
-	geos, err := m.geoClient.Get(loc)
-	if nil != err {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("get geo info")
-		return PoliticalGeo{}, err
-	}
-	if len(geos) == 0 {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "lat": loc.Latitude, "loc": loc.Longitude}).Warn("empty geo info")
-		return PoliticalGeo{}, ErrEmptyGeo
-	}
-	for _, a := range geos[0].AddressComponents {
-		if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_1" {
-			ret.Level1 = a.LongName
-			ret.Level1Short = a.ShortName
-		} else if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_2" {
-			ret.Level2 = a.LongName
-			ret.Level2Short = a.ShortName
-		} else if len(a.Types) > 0 && a.Types[0] == "administrative_area_level_3" {
-			ret.Level3 = a.LongName
-			ret.Level3Short = a.ShortName
-		} else if len(a.Types) > 0 && a.Types[0] == "country" {
-			ret.Country = a.LongName
-			ret.CountryShort = a.ShortName
-		}
-	}
-	return ret, nil
 }

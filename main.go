@@ -26,7 +26,6 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/api"
 	"github.com/bitmark-inc/autonomy-api/external/aqi"
-	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/utils"
 
 	bitmarksdk "github.com/bitmark-inc/bitmark-sdk-go"
@@ -183,10 +182,7 @@ func main() {
 		log.Panicf("connect mongo database with error: %s", err)
 	}
 
-	geoClient, err := geoinfo.New(viper.GetString("map.key"))
-	if nil != err {
-		log.Panicf("get geo client with error: %s", err)
-	}
+	utils.InitGeoInfo(viper.GetString("map.key"))
 
 	aqiClient := aqi.New(viper.GetString("aqi.key"), "")
 
@@ -196,7 +192,6 @@ func main() {
 		mongoClient,
 		jwtPrivateKey,
 		globalAccount,
-		geoClient,
 		aqiClient)
 	log.WithField("prefix", "init").Info("Initialized http server")
 

@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var (
@@ -26,6 +27,7 @@ type POI interface {
 
 	GetPOI(poiID primitive.ObjectID) (*schema.POI, error)
 	GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error)
+	UpdatePOIGeoInfo(poiID primitive.ObjectID, location schema.Location) error
 	UpdatePOIMetric(poiID primitive.ObjectID, metric schema.Metric) error
 
 	UpdatePOIAlias(accountNumber, alias string, poiID primitive.ObjectID) error
@@ -46,19 +48,38 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		"location.coordinates.0": lon,
 		"location.coordinates.1": lat,
 	}
+
 	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
 		if err == mongo.ErrNoDocuments {
+			location, err := utils.PoliticalGeoInfo(schema.Location{
+				Latitude:  lat,
+				Longitude: lon,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			poi = schema.POI{
 				Location: &schema.GeoJSON{
 					Type:        "Point",
 					Coordinates: []float64{lon, lat},
 				},
 			}
-			result, err := c.InsertOne(ctx, bson.M{"location": poi.Location})
+
+			result, err := c.InsertOne(ctx, bson.M{
+				"location": poi.Location,
+				"country":  location.Country,
+				"state":    location.State,
+				"county":   location.County,
+			})
+
 			if err != nil {
 				return nil, err
 			}
 			poi.ID = result.InsertedID.(primitive.ObjectID)
+			poi.Country = location.Country
+			poi.State = location.State
+			poi.County = location.County
 		} else {
 			return nil, err
 		}
@@ -68,6 +89,9 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		newMetric, err := m.SyncPOIMetrics(poi.ID, schema.Location{
 			Latitude:  lat,
 			Longitude: lon,
+			Country:   poi.Country,
+			State:     poi.State,
+			County:    poi.County,
 		})
 		if err == nil {
 			poi.Metric = *newMetric
@@ -165,6 +189,29 @@ func (m *mongoDB) GetPOI(poiID primitive.ObjectID) (*schema.POI, error) {
 	query := bson.M{"_id": poiID}
 	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
 		return nil, err
+	}
+
+	// fetch poi geo info if it is not existent
+	if poi.Country == "" {
+		log.Info("fetch poi geo info from external service")
+		location := schema.Location{
+			Latitude:  poi.Location.Coordinates[1],
+			Longitude: poi.Location.Coordinates[0],
+		}
+		location, err := utils.PoliticalGeoInfo(location)
+		if err != nil {
+			log.WithError(err).Error("can not fetch geo info")
+			return nil, err
+		}
+
+		if err := m.UpdatePOIGeoInfo(poiID, location); err != nil {
+			log.WithError(err).Error("can not update poi geo info")
+			return nil, err
+		}
+
+		poi.Country = location.Country
+		poi.County = location.County
+		poi.State = location.State
 	}
 
 	return &poi, nil
@@ -317,6 +364,46 @@ func (m *mongoDB) DeletePOI(accountNumber string, poiID primitive.ObjectID) erro
 	update := bson.M{"$pull": bson.M{"points_of_interest": bson.M{"id": poiID}}}
 	if _, err := c.UpdateOne(ctx, query, update); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (m *mongoDB) UpdatePOIGeoInfo(poiID primitive.ObjectID, location schema.Location) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	c := m.client.Database(m.database).Collection(schema.POICollection)
+	query := bson.M{
+		"_id": poiID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"country": location.Country,
+			"state":   location.State,
+			"county":  location.County,
+		},
+	}
+
+	result, err := c.UpdateOne(ctx, query, update)
+	pid := poiID.String()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"poi ID": pid,
+			"error":  err,
+		}).Error("update poi location")
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"poi ID": pid,
+			"error":  ErrPOINotFound.Error(),
+		}).Error("update poi metric")
+		return ErrPOINotFound
 	}
 
 	return nil

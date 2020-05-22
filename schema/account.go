@@ -12,6 +12,9 @@ import (
 type Location struct {
 	Latitude  float64 `json:"latitude" bson:"latitude"`
 	Longitude float64 `json:"longitude" bson:"longitude"`
+	Country   string  `json:"-" bson:"-"`
+	County    string  `json:"-" bson:"-"`
+	State     string  `json:"-" bson:"-"`
 }
 
 type ActivityState struct {

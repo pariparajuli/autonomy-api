@@ -30,7 +30,7 @@ func (g geoInfo) Get(loc schema.Location) ([]maps.GeocodingResult, error) {
 		"prefix": logPrefix,
 		"lat":    loc.Latitude,
 		"lng":    loc.Longitude,
-	}).Debug("query geo info")
+	}).Info("query geo info")
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()

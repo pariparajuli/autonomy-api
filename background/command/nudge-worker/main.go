@@ -15,7 +15,6 @@ import (
 
 	nudgeWorker "github.com/bitmark-inc/autonomy-api/background/nudge"
 	cadence "github.com/bitmark-inc/autonomy-api/external/cadence"
-	"github.com/bitmark-inc/autonomy-api/external/geoinfo"
 	"github.com/bitmark-inc/autonomy-api/store"
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
@@ -94,15 +93,9 @@ func main() {
 		logger.Panic("connect mongo database with error", zap.Error(err))
 	}
 
-	geoClient, err := geoinfo.New(viper.GetString("map.key"))
-	if nil != err {
-		logger.Panic("get geo client with error: ", zap.Error(err))
-	}
-
 	mongoStore := store.NewMongoStore(
 		mongoClient,
 		viper.GetString("mongo.database"),
-		geoClient,
 	)
 
 	worker := nudgeWorker.NewNudgeWorker(viper.GetString("cadence.domain"), mongoStore)
