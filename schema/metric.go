@@ -5,7 +5,7 @@ import (
 )
 
 type ConfirmDetail struct {
-	ContinuousData []CDSScoreDataSet `json:"data" bson:"data"`
+	ContinuousData []CDSScoreDataSet `json:"-" bson:"data"`
 	Score          float64           `json:"score" bson:"score"`
 }
 
