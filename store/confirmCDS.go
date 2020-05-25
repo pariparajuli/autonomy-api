@@ -112,7 +112,7 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 }
 
 func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
-	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("GetCDSConfirm geo info")
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "state": loc.State, "county": loc.County}).Debug("GetCDSConfirm geo info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	var results []schema.CDSData
