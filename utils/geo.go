@@ -39,6 +39,10 @@ func InitGeoInfo(apiKey string) {
 	geoClient = c
 }
 
+func SetGeoClient(c geoinfo.GeoInfo) {
+	geoClient = c
+}
+
 func PoliticalGeoInfo(loc schema.Location) (schema.Location, error) {
 	if loc.Country != "" {
 		return loc, nil

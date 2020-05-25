@@ -332,9 +332,13 @@ func (m *mongoDB) AppendPOIToAccountProfile(accountNumber string, poiDesc schema
 	// add the POI if not added before
 	query = bson.M{"account_number": bson.M{"$eq": accountNumber}}
 	update := bson.M{"$push": bson.M{"points_of_interest": poiDesc}}
-	if _, err := c.UpdateOne(ctx, query, update); nil != err {
+	if r, err := c.UpdateOne(ctx, query, update); nil != err {
 		prefixedLog.WithError(err).Error("unable to add POI for this account")
 		return err
+	} else {
+		if r.ModifiedCount != 1 {
+			return fmt.Errorf("fail to update poi into profile")
+		}
 	}
 
 	return nil

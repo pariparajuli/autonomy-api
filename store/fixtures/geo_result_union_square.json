@@ -1,0 +1,99 @@
+{
+  "results": [
+    {
+      "access_points": [],
+      "address_components": [
+        {
+          "long_name": "Union Square",
+          "short_name": "Union Square",
+          "types": [
+            "neighborhood",
+            "political"
+          ]
+        },
+        {
+          "long_name": "Manhattan",
+          "short_name": "Manhattan",
+          "types": [
+            "political",
+            "sublocality",
+            "sublocality_level_1"
+          ]
+        },
+        {
+          "long_name": "New York",
+          "short_name": "New York",
+          "types": [
+            "locality",
+            "political"
+          ]
+        },
+        {
+          "long_name": "New York County",
+          "short_name": "New York County",
+          "types": [
+            "administrative_area_level_2",
+            "political"
+          ]
+        },
+        {
+          "long_name": "New York",
+          "short_name": "NY",
+          "types": [
+            "administrative_area_level_1",
+            "political"
+          ]
+        },
+        {
+          "long_name": "United States",
+          "short_name": "US",
+          "types": [
+            "country",
+            "political"
+          ]
+        },
+        {
+          "long_name": "10003",
+          "short_name": "10003",
+          "types": [
+            "postal_code"
+          ]
+        }
+      ],
+      "formatted_address": "Union Square, New York, NY 10003, USA",
+      "geometry": {
+        "bounds": {
+          "northeast": {
+            "lat": 40.7385105,
+            "lng": -73.98697609999999
+          },
+          "southwest": {
+            "lat": 40.733992,
+            "lng": -73.993641
+          }
+        },
+        "location": {
+          "lat": 40.7358633,
+          "lng": -73.9910835
+        },
+        "location_type": "APPROXIMATE",
+        "viewport": {
+          "northeast": {
+            "lat": 40.7385105,
+            "lng": -73.98697609999999
+          },
+          "southwest": {
+            "lat": 40.733992,
+            "lng": -73.993641
+          }
+        }
+      },
+      "place_id": "ChIJi6oUnphZwokRpMog28mvAM0",
+      "types": [
+        "neighborhood",
+        "political"
+      ]
+    }
+  ],
+  "status": "OK"
+}
