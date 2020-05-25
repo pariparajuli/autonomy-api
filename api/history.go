@@ -13,7 +13,6 @@ import (
 const (
 	reportTypeSymptoms  = "symptoms"
 	reportTypeBehaviors = "behaviors"
-	reportTypeLocations = "locations"
 
 	defaultLimit = int64(100)
 )
@@ -80,13 +79,6 @@ func (s *Server) getHistory(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"behaviors_history": records})
-	case reportTypeLocations:
-		records, err := s.mongoStore.GetReportedLocations(account.AccountNumber, before, limit)
-		if err != nil {
-			abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"locations_history": records})
 	default:
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters)
 	}
