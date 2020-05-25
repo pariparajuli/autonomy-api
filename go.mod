@@ -21,6 +21,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.0.3
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
+	github.com/prometheus/common v0.9.1
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/pflag v1.0.5 // indirect

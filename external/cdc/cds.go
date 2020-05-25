@@ -122,7 +122,7 @@ func (c *CDS) Run() (int, error) {
 		record.Deaths, _ = object["deaths"].(float64)
 		record.Recovered, _ = object["Recovered"].(float64)
 		year, month, day := time.Now().Date()
-		dateString := fmt.Sprintf("%s-%.2s-%.2s", year, int(month), day)
+		dateString := fmt.Sprintf("%d-%.2d-%.2d", year, int(month), day)
 
 		if len(record.Timezone) > 0 {
 			location, err := time.LoadLocation(record.Timezone[0])

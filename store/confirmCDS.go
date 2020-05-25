@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/score"
 )
 
 type CDSCountryType string
@@ -21,17 +22,19 @@ const (
 )
 
 var (
-	ErrNoConfirmDataset      = fmt.Errorf("no data-set")
-	ErrInvalidConfirmDataset = fmt.Errorf("invalid confirm data-set")
-	ErrPoliticalTypeGeoInfo  = fmt.Errorf("no political type geo info")
-	ErrConfirmDataFetch      = fmt.Errorf("fetch cds confirm data fail")
-	ErrConfirmDecode         = fmt.Errorf("decode confirm data fail")
+	ErrNoConfirmDataset       = fmt.Errorf("no data-set")
+	ErrInvalidConfirmDataset  = fmt.Errorf("invalid confirm data-set")
+	ErrPoliticalTypeGeoInfo   = fmt.Errorf("no political type geo info")
+	ErrConfirmDataFetch       = fmt.Errorf("fetch cds confirm data fail")
+	ErrConfirmDecode          = fmt.Errorf("decode confirm data fail")
+	ErrConfirmDuplicateRecord = fmt.Errorf("confirm data duplicate")
 )
 
 type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
+	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
@@ -103,62 +106,125 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 		}
 	}
 	if res != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": len(res.InsertedIDs)}).Info("createCDSData Insert data")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": len(res.InsertedIDs)}).Debug("CreateCDSData Insert data")
 	}
 	return nil
 }
 
-func (m mongoDB) GetCDSConfirm(location schema.Location) (float64, float64, float64, error) {
-	log.WithField("location", location).Info("get cds confirmation by location")
-	switch location.Country { //  Currently this function support only USA data
+func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "state": loc.State, "county": loc.County}).Debug("GetCDSConfirm geo info")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+	var results []schema.CDSData
+	var c *mongo.Collection
+	var cur *mongo.Cursor
+	switch loc.Country { //  Currently this function support only USA data
 	case CdsTaiwan:
-		// use taiwan cdc data (temp solution)
-		today, delta, percent, err := m.GetConfirm("tw", location.County)
-		if err != nil {
-			return 0, 0, 0, fmt.Errorf("%s: %s", ErrConfirmDataFetch, err)
+		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
+		filter := bson.M{}
+		curTW, err := c.Find(context.Background(), filter, opts)
+		if nil != err {
+			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
+			return 0, 0, 0, ErrConfirmDataFetch
 		}
-		return today, delta, percent, nil
-
+		cur = curTW
 	case CdsUSA:
-		c := m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-		defer cancel()
-		opts := options.Find()
-		opts = opts.SetSort(bson.M{"report_ts": -1}).SetLimit(2)
-		filter := bson.M{"county": location.County, "state": location.State}
-		cur, err := c.Find(context.Background(), filter, opts)
+		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
+		filter := bson.M{"county": loc.County, "state": loc.State}
+		curUSA, err := c.Find(context.Background(), filter, opts)
 		if nil != err {
 			return 0, 0, 0, ErrConfirmDataFetch
 		}
-		var results []schema.CDSData
-
-		for cur.Next(ctx) {
-			var result schema.CDSData
-			if errDecode := cur.Decode(&result); errDecode != nil {
-				return 0, 0, 0, ErrConfirmDecode
-			}
-			results = append(results, result)
-		}
-		percent := float64(100)
-		if len(results) >= 2 {
-			if results[0].ReportTime > results[1].ReportTime {
-				today := results[0]
-				yesterday := results[1]
-				delta := today.Cases - yesterday.Cases
-				if yesterday.Cases > 0 {
-					percent = 100 * delta / yesterday.Cases
-				}
-				log.WithField("prefix", mongoLogPrefix).Debugf("cds score results: today:%f, delta:%f, percent:%f", today.Cases, delta, percent)
-				return today.Cases, delta, percent, nil
-			} else if 1 == len(results) {
-				today := results[0]
-				delta := today.Cases
-				log.WithField("prefix", mongoLogPrefix).Debugf("cds score results: today:%f, delta:%f, percent:%f", today.Cases, delta, percent)
-				return today.Cases, delta, percent, nil
-			}
-			return 0, 0, 0, ErrInvalidConfirmDataset
-		}
+		cur = curUSA
+	default:
+		return 0, 0, 0, ErrNoConfirmDataset
 	}
-	return 0, 0, 0, ErrNoConfirmDataset
 
+	for cur.Next(ctx) {
+		var result schema.CDSData
+		if errDecode := cur.Decode(&result); errDecode != nil {
+			return 0, 0, 0, ErrConfirmDecode
+		}
+		log.WithField("prefix", mongoLogPrefix).Debugf("cds query name: %s date:%s", result.Name, result.ReportTimeDate)
+		results = append(results, result)
+	}
+
+	var delta float64
+	var today, yesterday schema.CDSData
+	if len(results) >= 2 {
+		if results[0].ReportTime > results[1].ReportTime {
+			today = results[0]
+			yesterday = results[1]
+		} else if results[0].ReportTime < results[1].ReportTime {
+			today = results[1]
+			yesterday = results[0]
+			log.WithField("prefix", mongoLogPrefix).Errorf("cds query result error: name :%v  today:%v date:%v", results[0].Name, results[0].ReportTime, results[1].ReportTime)
+		} else {
+			return 0, 0, 0, ErrConfirmDuplicateRecord
+		}
+		delta = today.Cases - yesterday.Cases
+		return today.Cases, delta, score.ChangeRate(today.Cases, yesterday.Cases), nil
+
+	} else if 1 == len(results) {
+		today = results[0]
+		return today.Cases, today.Cases, score.ChangeRate(today.Cases, 0), nil
+	}
+	return 0, 0, 0, ErrInvalidConfirmDataset
+}
+func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64, timeBefore int64) ([]schema.CDSScoreDataSet, error) {
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	var col *mongo.Collection
+	var filter bson.M
+	var opts *options.FindOptions
+	switch loc.Country { //  Currently this function support only USA data
+	case CdsTaiwan:
+		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
+		filter = bson.M{}
+		if timeBefore > 0 {
+			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
+		}
+	case CdsUSA:
+		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
+		filter = bson.M{"county": loc.County, "state": loc.State}
+		if timeBefore > 0 {
+			filter = bson.M{"county": loc.County, "state": loc.State, "report_ts": bson.D{{"$lte", timeBefore}}}
+		}
+	default:
+		return nil, ErrNoConfirmDataset
+	}
+
+	var results []schema.CDSScoreDataSet
+	cur, err := col.Find(context.Background(), filter, opts)
+	if nil != err {
+		log.WithField("prefix", mongoLogPrefix).Errorf("%v: %s", ErrConfirmDataFetch, err)
+		return nil, ErrConfirmDataFetch
+	}
+	now := schema.CDSScoreDataSet{}
+
+	for cur.Next(ctx) {
+		var result schema.CDSScoreDataSet
+		if errDecode := cur.Decode(&result); errDecode != nil {
+			log.WithField("prefix", mongoLogPrefix).Errorf("cds Decode with error: %s", errDecode)
+			return nil, errDecode
+		}
+		if len(now.Name) > 0 { // now data is valid
+			head := make([]schema.CDSScoreDataSet, 1)
+			head[0] = schema.CDSScoreDataSet{Name: now.Name, Cases: now.Cases - result.Cases}
+			results = append(head, results...)
+		}
+		now = result
+	}
+	if len(results) == 0 && now.Name != "" { // only one record
+		results = append(results, now)
+	}
+
+	cur.Close(ctx)
+	return results, nil
 }

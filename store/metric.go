@@ -89,24 +89,26 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		}).Error("confirm info")
 		return nil, err
 	} else {
-		log.WithFields(log.Fields{
-			"prefix":         mongoLogPrefix,
-			"latest_count":   confirmedCount,
-			"diff_yesterday": confirmDiff,
-			"percent":        confirmDiffPercent,
-		}).Debug("confirm metric")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "confirmedCount": confirmedCount, "confirmDiff": confirmDiff, "confirmDiffPercent": confirmDiffPercent}).Debug("confirm info")
+	}
 
+	confirmData, err := m.ContinuousDataCDSConfirm(location, consts.ConfirmScoreWindowSize, 0)
+	if err != nil {
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("confirm continuous data")
+		return nil, err
+	}
+	if nil == confirmData {
+		confirmData = []schema.CDSScoreDataSet{}
 	}
 
 	return &schema.Metric{
-		BehaviorCount:  float64(behaviorCount),
-		BehaviorDelta:  float64(behaviorDelta),
 		ConfirmedCount: confirmedCount,
 		ConfirmedDelta: confirmDiffPercent,
+		BehaviorCount:  float64(behaviorCount),
+		BehaviorDelta:  float64(behaviorDelta),
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
-				Yesterday: confirmedCount - confirmDiff,
-				Today:     confirmedCount,
+				ContinuousData: confirmData,
 			},
 			Symptoms: schema.SymptomDetail{
 				TotalPeople: float64(symptomUserCount),
