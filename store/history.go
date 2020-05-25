@@ -29,8 +29,28 @@ func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit in
 		mapping[s.ID] = s
 	}
 
-	query, options := historyQuery(accountNumber, earierThan, limit)
-	cur, err := c.Find(ctx, query, options)
+	query, _ := historyQuery(accountNumber, earierThan, limit)
+	pipeline := []bson.M{
+		{"$match": query},
+		{"$sort": bson.M{"ts": -1}},
+		{"$limit": limit},
+		{
+			"$project": bson.M{
+				"profile_id":     1,
+				"account_number": 1,
+				"symptoms": bson.M{
+					"$concatArrays": bson.A{
+						bson.M{"$ifNull": bson.A{"$official_symptoms", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$customized_symptoms", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$symptoms", bson.A{}}},
+					},
+				},
+				"location": 1,
+				"ts":       1,
+			},
+		},
+	}
+	cur, err := c.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -41,14 +61,14 @@ func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit in
 		if err := cur.Decode(&r); err != nil {
 			return nil, err
 		}
-		// TODO: make OfficialSymptoms as []*schema.Symptom
 		translatedSymptoms := make([]schema.Symptom, 0)
-		for _, s := range r.OfficialSymptoms {
-			s.Name = mapping[s.ID].Name
-			s.Desc = mapping[s.ID].Desc
+		for _, s := range r.Symptoms {
+			if schema.OfficialSymptoms[s.ID] {
+				s.Name = mapping[s.ID].Name
+			}
 			translatedSymptoms = append(translatedSymptoms, s)
 		}
-		r.OfficialSymptoms = translatedSymptoms
+		r.Symptoms = translatedSymptoms
 		reports = append(reports, &r)
 	}
 

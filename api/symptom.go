@@ -180,27 +180,27 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, errors.New(errorMessageMap[1010]))
 		return
 	}
-	official, customized, err := s.findSymptomsInDB(params.Symptoms)
+	symptoms, err := s.mongoStore.FindSymptomsByIDs(params.Symptoms)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
-	}
-	data := schema.SymptomReportData{
-		ProfileID:          account.Profile.ID.String(),
-		AccountNumber:      account.Profile.AccountNumber,
-		OfficialSymptoms:   official,
-		Location:           schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		CustomizedSymptoms: customized,
-		Timestamp:          time.Now().UTC().Unix(),
 	}
 
-	err = s.mongoStore.SymptomReportSave(&data)
-	if err != nil {
+	data := schema.SymptomReportData{
+		ProfileID:     account.Profile.ID.String(),
+		AccountNumber: account.Profile.AccountNumber,
+		Symptoms:      symptoms,
+		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		Timestamp:     time.Now().UTC().Unix(),
+	}
+	if err := s.mongoStore.SymptomReportSave(&data); err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	if len(data.CustomizedSymptoms) > 0 {
-		err = s.mongoStore.UpdateAreaProfileSymptom(data.CustomizedSymptoms, *loc)
+
+	_, customied := schema.SplitSymptoms(symptoms)
+	if len(customied) > 0 {
+		err = s.mongoStore.UpdateAreaProfileSymptom(customied, *loc)
 		if err != nil { // do nothing
 			c.Error(err)
 		}
@@ -244,13 +244,4 @@ func (s *Server) reportSymptoms(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 
 	return
-}
-
-func (s *Server) findSymptomsInDB(ids []string) ([]schema.Symptom, []schema.Symptom, error) {
-	var syIDs []string
-	for _, id := range ids {
-		syIDs = append(syIDs, id)
-	}
-	official, customeried, _, err := s.mongoStore.IDToSymptoms(syIDs)
-	return official, customeried, err
 }

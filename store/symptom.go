@@ -28,7 +28,7 @@ type Symptom interface {
 	ListSuggestedSymptoms(lang string) ([]schema.Symptom, error)
 	ListCustomizedSymptoms() ([]schema.Symptom, error)
 	SymptomReportSave(data *schema.SymptomReportData) error
-	IDToSymptoms(ids []string) ([]schema.Symptom, []schema.Symptom, []string, error)
+	FindSymptomsByIDs(ids []string) ([]schema.Symptom, error)
 	FindNearbySymptomDistribution(dist int, loc schema.Location, start, end int64) (schema.SymptomDistribution, error)
 	FindNearbyReporterCount(dist int, loc schema.Location, start, end int64) (int, error)
 	FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) ([]schema.Symptom, error)
@@ -95,14 +95,6 @@ func (m *mongoDB) ListOfficialSymptoms(lang string) ([]schema.Symptom, error) {
 			s.Name = name
 		} else {
 			log.WithError(err).Warnf("can not decode name")
-		}
-
-		if desc, err := loc.Localize(&i18n.LocalizeConfig{
-			MessageID: fmt.Sprintf("symptoms.%s.desc", s.ID),
-		}); err == nil {
-			s.Desc = desc
-		} else {
-			log.WithError(err).Warnf("can not decode description")
 		}
 
 		symptoms = append(symptoms, s)
@@ -197,33 +189,29 @@ func (m *mongoDB) SymptomReportSave(data *schema.SymptomReportData) error {
 	return nil
 }
 
-// IDToSymptoms return official and customized symptoms from a list of SymptomType ID
-func (m *mongoDB) IDToSymptoms(ids []string) ([]schema.Symptom, []schema.Symptom, []string, error) {
+func (m *mongoDB) FindSymptomsByIDs(ids []string) ([]schema.Symptom, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	c := m.client.Database(m.database)
-	var foundOfficial []schema.Symptom
-	var foundCustomized []schema.Symptom
-	var notFound []string
-	for _, id := range ids {
-		query := bson.M{"_id": string(id)}
-		var result schema.Symptom
-		err := c.Collection(schema.SymptomCollection).FindOne(ctx, query).Decode(&result)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				notFound = append(notFound, id)
-			} else {
-				return nil, nil, nil, err
-			}
-		}
-		if result.Source == schema.OfficialSymptom {
-			foundOfficial = append(foundOfficial, result)
-		} else {
-			foundCustomized = append(foundCustomized, result)
-		}
 
+	c := m.client.Database(m.database).Collection(schema.SymptomCollection)
+
+	query := bson.M{"_id": bson.M{"$in": ids}}
+
+	cursor, err := c.Find(ctx, query)
+	if err != nil {
+		return nil, err
 	}
-	return foundOfficial, foundCustomized, notFound, nil
+
+	symptoms := make([]schema.Symptom, 0)
+	for cursor.Next(ctx) {
+		var s schema.Symptom
+		if err := cursor.Decode(&s); err != nil {
+			return nil, err
+		}
+		symptoms = append(symptoms, s)
+	}
+
+	return symptoms, nil
 }
 
 // FindNearbySymptomDistribution returns the mapping of each reported symptom and the number of users who have reported it
@@ -258,6 +246,7 @@ func (m *mongoDB) FindNearbySymptomDistribution(dist int, loc schema.Location, s
 					"$concatArrays": bson.A{
 						bson.M{"$ifNull": bson.A{"$official_symptoms", bson.A{}}},
 						bson.M{"$ifNull": bson.A{"$customized_symptoms", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$symptoms", bson.A{}}},
 					},
 				},
 			},

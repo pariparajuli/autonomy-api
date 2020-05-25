@@ -69,17 +69,15 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 }
 
 func (s *ScoreUpdateWorker) CheckLocationSpikeActivity(ctx context.Context, spikeSymptomTypes []string) ([]schema.Symptom, error) {
-	var spikeSymptom []schema.Symptom
-
 	if len(spikeSymptomTypes) > 0 {
-		official, customized, _, err := s.mongo.IDToSymptoms(spikeSymptomTypes)
+		symptoms, err := s.mongo.FindSymptomsByIDs(spikeSymptomTypes)
 		if err != nil {
 			return nil, err
 		}
-		spikeSymptom = append(official, customized...)
+		return symptoms, nil
 	}
 
-	return spikeSymptom, nil
+	return nil, nil
 }
 
 // RefreshLocationStateActivity updates the metrics as well as the score if the POI id

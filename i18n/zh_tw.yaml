@@ -1,28 +1,18 @@
 symptoms:
+  cough:
+    name: 咳嗽
+  breath:
+    name: 氣短或呼吸困難
   fever:
     name: 發燒
-    desc: 體溫超過 100ºF (38ºC)
-  cough:
-    name: 乾咳
-    desc: 咳嗽但沒有痰
-  fatigue:
-    name: 疲勞或四肢無力
-    desc: 不正常的身體軟弱無力
-  breath:
-    name: 呼吸急促
-    desc: 呼吸困難，難以吸到空氣
-  nasal:
-    name: 鼻塞
-    desc: 無法用鼻子呼吸，有異物感
+  chills:
+    name: 怕冷
+  muscle_pain:
+    name: 肌肉疼痛
   throat:
     name: 喉嚨痛
-    desc: 喉嚨疼痛，癢或發炎
-  chest:
-    name: 胸痛
-    desc: 持續性的胸部疼痛或脹氣
-  face:
-    name: 臉色發白
-    desc: 非由溫度引起的不正常臉色發白
+  loss_taste_smell:
+    name: 近期喪失嗅覺或味覺
   suggestion_1:
     name: 腹部脹氣
   suggestion_2:
