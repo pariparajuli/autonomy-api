@@ -201,6 +201,13 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64,
 		if timeBefore > 0 {
 			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
 		}
+	case CdsIceland:
+		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsIceland)])
+		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
+		filter = bson.M{}
+		if timeBefore > 0 {
+			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
+		}
 	case CdsUSA:
 		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
 		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
