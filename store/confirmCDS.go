@@ -35,6 +35,7 @@ type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
 	GetCDSActive(loc schema.Location) (float64, float64, float64, error)
+	DeleteCDSUnused(country string, timeBefore int64) error
 	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
@@ -186,6 +187,7 @@ func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, e
 	}
 	return 0, 0, 0, ErrInvalidConfirmDataset
 }
+
 func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64, timeBefore int64) ([]schema.CDSScoreDataSet, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "lv1": loc.State, "lv2": loc.County}).Debug("ContinuousDataCDSConfirm geo info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
