@@ -1,25 +1,18 @@
 symptoms:
   cough:
     name: Cough
-    desc: ""
   breath:
     name: Shortness of breath or difficulty breathing
-    desc: ""
   fever:
     name: Fever
-    desc: ""
   chills:
     name: Chills
-    desc: ""
   muscle_pain:
     name: Muscle pain
-    desc: ""
   throat:
     name: Sore throat
-    desc: ""
   loss_taste_smell:
     name: New loss of taste or smell
-    desc: ""
   suggestion_1:
     name: Abdominal bloating
   suggestion_2:

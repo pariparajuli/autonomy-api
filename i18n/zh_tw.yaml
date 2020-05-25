@@ -1,25 +1,18 @@
 symptoms:
   cough:
     name: 咳嗽
-    desc: ""
   breath:
     name: 氣短或呼吸困難
-    desc: ""
   fever:
     name: 發燒
-    desc: ""
   chills:
     name: 怕冷
-    desc: ""
   muscle_pain:
     name: 肌肉疼痛
-    desc: ""
   throat:
     name: 喉嚨痛
-    desc: ""
   loss_taste_smell:
     name: 近期喪失嗅覺或味覺
-    desc: ""
   suggestion_1:
     name: 腹部脹氣
   suggestion_2:

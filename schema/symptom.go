@@ -20,7 +20,7 @@ const (
 type Symptom struct {
 	ID     string        `json:"id" bson:"_id"`
 	Name   string        `json:"name" bson:"name"`
-	Desc   string        `json:"desc" bson:"desc"`
+	Desc   string        `json:"-" bson:"desc"`
 	Source SymptomSource `json:"-" bson:"source"`
 }
 

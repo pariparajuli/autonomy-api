@@ -97,14 +97,6 @@ func (m *mongoDB) ListOfficialSymptoms(lang string) ([]schema.Symptom, error) {
 			log.WithError(err).Warnf("can not decode name")
 		}
 
-		if desc, err := loc.Localize(&i18n.LocalizeConfig{
-			MessageID: fmt.Sprintf("symptoms.%s.desc", s.ID),
-		}); err == nil {
-			s.Desc = desc
-		} else {
-			log.WithError(err).Warnf("can not decode description")
-		}
-
 		symptoms = append(symptoms, s)
 	}
 

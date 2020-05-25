@@ -66,7 +66,6 @@ func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit in
 		for _, s := range r.Symptoms {
 			if schema.OfficialSymptoms[s.ID] {
 				s.Name = mapping[s.ID].Name
-				s.Desc = mapping[s.ID].Desc
 			}
 			translatedSymptoms = append(translatedSymptoms, s)
 		}
