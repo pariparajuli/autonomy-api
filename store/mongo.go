@@ -25,7 +25,6 @@ type MongoStore interface {
 	Pinger
 	ConfirmOperator
 	History
-	Geographic
 	Metric
 	ConfirmCDS
 	AcknowledgementMetrics

@@ -12,7 +12,6 @@ import (
 type History interface {
 	GetReportedSymptoms(accountNumber string, earierThan, limit int64, lang string) ([]*schema.SymptomReportData, error)
 	GetReportedBehaviors(accountNumber string, earierThan, limit int64, lang string) ([]*schema.BehaviorReportData, error)
-	GetReportedLocations(accountNumber string, earierThan, limit int64) ([]schema.Geographic, error)
 }
 
 func (m *mongoDB) GetReportedSymptoms(accountNumber string, earierThan, limit int64, lang string) ([]*schema.SymptomReportData, error) {
@@ -95,29 +94,6 @@ func (m *mongoDB) GetReportedBehaviors(accountNumber string, earierThan, limit i
 	}
 
 	return reports, nil
-}
-
-func (m *mongoDB) GetReportedLocations(accountNumber string, earierThan, limit int64) ([]schema.Geographic, error) {
-	c := m.client.Database(m.database).Collection(schema.GeographicCollection)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	query, options := historyQuery(accountNumber, earierThan, limit)
-	cur, err := c.Find(ctx, query, options)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]schema.Geographic, 0)
-	for cur.Next(ctx) {
-		var g schema.Geographic
-		if err = cur.Decode(&g); err != nil {
-			return nil, err
-		}
-		result = append(result, g)
-	}
-
-	return result, nil
 }
 
 func historyQuery(accountNumber string, earierThan, limit int64) (bson.M, *options.FindOptions) {
