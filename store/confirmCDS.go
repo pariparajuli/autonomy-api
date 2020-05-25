@@ -17,8 +17,9 @@ import (
 type CDSCountryType string
 
 const (
-	CdsUSA    = "United States"
-	CdsTaiwan = "Taiwan"
+	CdsUSA     = "United States"
+	CdsTaiwan  = "Taiwan"
+	CdsIceland = "Iceland"
 )
 
 var (
@@ -38,8 +39,9 @@ type ConfirmCDS interface {
 }
 
 var CDSCountyCollectionMatrix = map[CDSCountryType]string{
-	CDSCountryType(CdsUSA):    "ConfirmUS",
-	CDSCountryType(CdsTaiwan): "ConfirmTaiwan",
+	CDSCountryType(CdsUSA):     "ConfirmUS",
+	CDSCountryType(CdsTaiwan):  "ConfirmTaiwan",
+	CDSCountryType(CdsIceland): "ConfirmIceland",
 }
 
 func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
@@ -129,6 +131,16 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 			return 0, 0, 0, ErrConfirmDataFetch
 		}
 		cur = curTW
+	case CdsIceland:
+		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsIceland)])
+		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
+		filter := bson.M{}
+		curIceland, err := c.Find(context.Background(), filter, opts)
+		if nil != err {
+			log.WithField("prefix", mongoLogPrefix).Errorf("CDS confirm data find  error: %s", err)
+			return 0, 0, 0, ErrConfirmDataFetch
+		}
+		cur = curIceland
 	case CdsUSA:
 		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
 		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)

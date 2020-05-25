@@ -172,7 +172,6 @@ func BehaviorListNullToEmptyArray(client *mongo.Client) error {
 }
 func setupCDSConfirmCollection(client *mongo.Client) error {
 	db := client.Database(viper.GetString("mongo.database"))
-
 	cdsIndex := mongo.IndexModel{
 		Keys:    bson.D{{"name", 1}, {"report_ts", 1}},
 		Options: options.Index().SetUnique(true),
@@ -184,6 +183,7 @@ func setupCDSConfirmCollection(client *mongo.Client) error {
 		fmt.Println("collection", usCol, "mongodb create name and report_ts combined index with error: ", err)
 		return err
 	}
+	fmt.Println("confirm collection initialized", usCol)
 	twCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsTaiwan)]
 	_, err = db.Collection(twCol).Indexes().CreateOne(context.Background(), cdsIndex)
 
@@ -191,5 +191,16 @@ func setupCDSConfirmCollection(client *mongo.Client) error {
 		fmt.Println("collection", twCol, "mongodb create name and report_ts combined index with error: ", err)
 		return err
 	}
+	fmt.Println("confirm collection initialized", twCol)
+
+	icelandCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsIceland)]
+	_, err = db.Collection(icelandCol).Indexes().CreateOne(context.Background(), cdsIndex)
+
+	if nil != err {
+		fmt.Println("collection", icelandCol, "mongodb create name and report_ts combined index with error: ", err)
+		return err
+	}
+	fmt.Println("confirm collection initialized", icelandCol)
+
 	return nil
 }

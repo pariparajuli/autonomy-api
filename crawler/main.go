@@ -118,6 +118,12 @@ func main() {
 	if cancelInitialization != nil {
 		cancelInitialization()
 	}
+	crawlerIceland := newCDSCrawler("Iceland", mStore, cdc.NewCDS("Iceland", "country", cdc.CDSDailyHTTP, nil, cdsURL))
+	crawlerIceland.Run()
+
+	if cancelInitialization != nil {
+		cancelInitialization()
+	}
 
 	crawlerUS := newCDSCrawler("United States", mStore, cdc.NewCDS("United States", "county", cdc.CDSDailyHTTP, nil, cdsURL))
 
