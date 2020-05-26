@@ -107,7 +107,46 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	s.Equal(int64(29), count)
 }
 
-
+func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
+	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)]
+	s.True(ok)
+	opts := options.Find().SetLimit(2)
+	filter := bson.M{}
+	ctx := context.Background()
+	cur, err := s.testDatabase.Collection(collection).Find(ctx, filter, opts)
+	s.NoError(err)
+	var results []schema.CDSData
+	for cur.Next(ctx) {
+		var result schema.CDSData
+		err = cur.Decode(&result)
+		s.NoError(err)
+		results = append(results, result)
+	}
+	s.Equal(2, len(results))
+	replaceCases := []float64{100, 200}
+	originalCases := []float64{0, 0}
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+	for i := 0; i < len(results); i++ {
+		originalCases[i] = results[i].Cases
+		results[i].Cases = replaceCases[i]
+	}
+	err = store.ReplaceCDS(results, CdsTaiwan)
+	for i := 0; i < len(results); i++ {
+		filter = bson.M{"name": results[i].Name, "report_ts": results[i].ReportTime}
+		cur, err = s.testDatabase.Collection(collection).Find(ctx, filter)
+		s.True(cur.Next(ctx))
+		var queryReturn schema.CDSData
+		cur.Decode(&queryReturn)
+		s.Equal(float64(replaceCases[i]), queryReturn.Cases)
+		s.False(cur.Next(ctx))
+		cur.Close(ctx)
+		queryReturn.Cases = originalCases[i]
+		store.ReplaceCDS([]schema.CDSData{queryReturn}, CdsTaiwan)
+	}
+	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
+	s.NoError(err)
+	s.Equal(int64(29), count)
+}
 
 func TestConfirmTestSuite(t *testing.T) {
 	suite.Run(t, NewConfirmTestSuite("mongodb://127.0.0.1:27017/?compressors=disabled", "test-db"))
