@@ -185,6 +185,20 @@ func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavio
 	return foundOfficial, foundCustomized, notFound, nil
 }
 
+// FindNearbyBehaviorDistribution returns the mapping of each reported symptom and the number of report times
+// in the specified area and within the specified time rage.
+//
+// Here's the example: within the specified time interval, assume there are following 5 reports:
+//
+// | user  | behaviors                                   |
+// |-------|---------------------------------------------|
+// | userA | [social_distancing, clean_hand]             |
+// | userA | [clean_hand, social_distancing, touch_face] |
+// | userB | [clean_hand]                                |
+// | userB | [clean_hand]                                |
+// | userB | [clean_hand] 		                         |
+//
+// behavior_distribution = {social_distancing: 2, clean_hand: 5, touch_face: 1}
 func (m *mongoDB) FindNearbyBehaviorDistribution(dist int, loc schema.Location, start, end int64) (map[string]int, error) {
 	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -241,6 +255,10 @@ func (m *mongoDB) FindNearbyBehaviorDistribution(dist int, loc schema.Location, 
 	return result, nil
 }
 
+// FindNearbyBehaviorReportTimes returns the number of report times in the specified area and within the specified time rage.
+//
+// Take the same case described in the above function FindNearbyBehaviorDistribution for example,
+// the result is 5.
 func (m *mongoDB) FindNearbyBehaviorReportTimes(dist int, loc schema.Location, start, end int64) (int, error) {
 	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
