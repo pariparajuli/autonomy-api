@@ -13,7 +13,7 @@ func TestUpdateBehaviorMetrics(t *testing.T) {
 	metric := &schema.Metric{
 		Details: schema.Details{
 			Behaviors: schema.BehaviorDetail{
-				ReportTimes: 100,
+				ReportTimes: 50,
 				TodayDistribution: map[string]int{
 					"clean_hand":        20,
 					"social_distancing": 10,
@@ -31,7 +31,7 @@ func TestUpdateBehaviorMetrics(t *testing.T) {
 		},
 	}
 	UpdateBehaviorMetrics(metric)
-	assert.Equal(t, "13.11", fmt.Sprintf("%.2f", metric.Details.Behaviors.Score))
+	assert.Equal(t, "25.81", fmt.Sprintf("%.2f", metric.Details.Behaviors.Score))
 	assert.Equal(t, 80.0, metric.BehaviorCount)
 	assert.Equal(t, 300.0, metric.BehaviorDelta)
 }
@@ -40,7 +40,7 @@ func TestCalculateBehaviorScoreNoReportToday(t *testing.T) {
 	metric := &schema.Metric{
 		Details: schema.Details{
 			Behaviors: schema.BehaviorDetail{
-				ReportTimes:       100,
+				ReportTimes:       0,
 				TodayDistribution: map[string]int{},
 				YesterdayDistribution: map[string]int{
 					"clean_hand": 20,
