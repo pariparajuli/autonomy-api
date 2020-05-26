@@ -17,8 +17,8 @@ type BehaviorDetail struct {
 	CustomizedBehaviorTotal float64 `json:"behavior_customized_total" bson:"behavior_customized_total"`
 
 	Score                 float64        `json:"score" bson:"score"`
-	ReportTimes           int            `json:"x" bson:"-"`
-	TodayDistribution     map[string]int `json:"y" bson:"-"`
+	ReportTimes           int            `json:"-" bson:"-"`
+	TodayDistribution     map[string]int `json:"-" bson:"-"`
 	YesterdayDistribution map[string]int `json:"-" bson:"-"`
 }
 
