@@ -114,7 +114,20 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 	}
 	return nil
 }
-
+func (m *mongoDB) DeleteCDSUnused(country string, timeBefore int64) error {
+	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
+	if !ok {
+		return errors.New("no cds country availible")
+	}
+	filter := bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
+	res, err := m.client.Database(m.database).Collection(collection).DeleteMany(context.Background(), filter)
+	if err != nil {
+		log.WithField("prefix", mongoLogPrefix).Warnf("cds delete unused record wih error: %s", err)
+		return err
+	}
+	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "records": res.DeletedCount}).Debug("DeleteCDSUnused delete data")
+	return nil
+}
 func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "state": loc.State, "county": loc.County}).Debug("GetCDSConfirm geo info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
