@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
@@ -227,7 +228,9 @@ func (m *mongoDB) GetPOIMetrics(poiID primitive.ObjectID) (*schema.Metric, error
 	// find user's POI
 	var poi schema.POI
 	query := bson.M{"_id": poiID}
-	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
+	if err := c.FindOne(ctx, query, options.FindOne().SetProjection(bson.M{
+		"metric": 1,
+	})).Decode(&poi); err != nil {
 		return nil, err
 	}
 
@@ -456,20 +459,20 @@ func (m *mongoDB) NearestPOI(distance int, cords schema.Location) ([]primitive.O
 
 	cur, err := c.Find(ctx, query)
 	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("query poi nearest distance with error: %s", err)
-		return []primitive.ObjectID{}, fmt.Errorf("poi nearest distance query with error: %s", err)
+		log.WithField("prefix", mongoLogPrefix).Errorf("query poi nearest distance with error: %s", err.Error())
+		return nil, fmt.Errorf("poi nearest distance query with error: %s", err.Error())
 	}
-	var record schema.POI
+
 	var POIs []primitive.ObjectID
 
 	// iterate
 	for cur.Next(ctx) {
-		err = cur.Decode(&record)
-		if nil != err {
-			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", err)
-			return []primitive.ObjectID{}, fmt.Errorf("nearest distance query decode record with error: %s", err)
+		var poi schema.POI
+		if err := cur.Decode(&poi); nil != err {
+			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", err.Error())
+			return nil, fmt.Errorf("nearest distance query decode record with error: %s", err.Error())
 		}
-		POIs = append(POIs, record.ID)
+		POIs = append(POIs, poi.ID)
 	}
 
 	log.WithField("prefix", mongoLogPrefix).Debugf("poi nearest distance query gets %d records near long:%v lat:%v", len(POIs),
