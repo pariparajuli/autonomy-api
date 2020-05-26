@@ -34,7 +34,7 @@ var (
 type ConfirmCDS interface {
 	ReplaceCDS(result []schema.CDSData, country string) error
 	CreateCDS(result []schema.CDSData, country string) error
-	GetCDSConfirm(loc schema.Location) (float64, float64, float64, error)
+	GetCDSActive(loc schema.Location) (float64, float64, float64, error)
 	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
@@ -66,6 +66,7 @@ func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
 			"cases":       v.Cases,
 			"deaths":      v.Deaths,
 			"recovered":   v.Recovered,
+			"active":      v.Active,
 			"report_ts":   v.ReportTime,
 			"update_ts":   v.UpdateTime,
 			"report_date": v.ReportTimeDate,
@@ -113,7 +114,7 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 	return nil
 }
 
-func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, error) {
+func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, error) {
 	log.WithFields(log.Fields{"prefix": mongoLogPrefix, "country": loc.Country, "state": loc.State, "county": loc.County}).Debug("GetCDSConfirm geo info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -176,12 +177,12 @@ func (m mongoDB) GetCDSConfirm(loc schema.Location) (float64, float64, float64, 
 		} else {
 			return 0, 0, 0, ErrConfirmDuplicateRecord
 		}
-		delta = today.Cases - yesterday.Cases
-		return today.Cases, delta, score.ChangeRate(today.Cases, yesterday.Cases), nil
+		delta = today.Active - yesterday.Active
+		return today.Active, delta, score.ChangeRate(today.Active, yesterday.Active), nil
 
 	} else if 1 == len(results) {
 		today = results[0]
-		return today.Cases, today.Cases, score.ChangeRate(today.Cases, 0), nil
+		return today.Active, today.Active, score.ChangeRate(today.Active, 0), nil
 	}
 	return 0, 0, 0, ErrInvalidConfirmDataset
 }
@@ -225,6 +226,7 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64,
 		log.WithField("prefix", mongoLogPrefix).Errorf("%v: %s", ErrConfirmDataFetch, err)
 		return nil, ErrConfirmDataFetch
 	}
+
 	now := schema.CDSScoreDataSet{}
 
 	for cur.Next(ctx) {
