@@ -105,6 +105,11 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
 	s.Equal(int64(29), count)
+	err = store.CreateCDS(data, CdsTaiwan)
+	s.NoError(err)
+	count, err = s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
+	s.NoError(err)
+	s.Equal(int64(29), count)
 }
 
 func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
@@ -146,6 +151,10 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
 	s.Equal(int64(29), count)
+}
+
+func (s *ConfirmCDSTestSuite) TestDeleteCDSUnused() {
+
 }
 
 func TestConfirmTestSuite(t *testing.T) {
