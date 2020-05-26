@@ -75,7 +75,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	// Processing confirmed case data
-	confirmedCount, confirmDiff, confirmDiffPercent, err := m.GetCDSActive(location)
+	activeCount, activeDiff, activeDiffPercent, err := m.GetCDSActive(location)
 	if err == ErrNoConfirmDataset || err == ErrInvalidConfirmDataset || err == ErrPoliticalTypeGeoInfo {
 		log.WithFields(log.Fields{
 			"prefix":   mongoLogPrefix,
@@ -89,7 +89,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 		}).Error("confirm info")
 		return nil, err
 	} else {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "confirmedCount": confirmedCount, "confirmDiff": confirmDiff, "confirmDiffPercent": confirmDiffPercent}).Debug("confirm info")
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "activeCount": activeCount, "activeDiff": activeDiff, "activeDiffPercent": activeDiffPercent}).Debug("confirm info")
 	}
 
 	confirmData, err := m.ContinuousDataCDSConfirm(location, consts.ConfirmScoreWindowSize, 0)
@@ -102,8 +102,8 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	return &schema.Metric{
-		ConfirmedCount: confirmedCount,
-		ConfirmedDelta: confirmDiffPercent,
+		ConfirmedCount: activeCount,
+		ConfirmedDelta: activeDiffPercent,
 		BehaviorCount:  float64(behaviorCount),
 		BehaviorDelta:  float64(behaviorDelta),
 		Details: schema.Details{
