@@ -1,5 +1,19 @@
 package schema
 
+type CDSCountryType string
+
+const (
+	CdsUSA     = "United States"
+	CdsTaiwan  = "Taiwan"
+	CdsIceland = "Iceland"
+)
+
+var CDSCountyCollectionMatrix = map[CDSCountryType]string{
+	CDSCountryType(CdsUSA):     "ConfirmUS",
+	CDSCountryType(CdsTaiwan):  "ConfirmTaiwan",
+	CDSCountryType(CdsIceland): "ConfirmIceland",
+}
+
 type CDSData struct {
 	Name           string   `json:"name" bson:"name"`
 	City           string   `json:"city" bson:"city"`

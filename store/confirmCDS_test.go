@@ -60,7 +60,7 @@ func (s *ConfirmCDSTestSuite) SetupSuite() {
 	if err := s.CleanMongoDB(); err != nil {
 		s.T().Fatal(err)
 	}
-	schema.NewMongoDBIndexer(s.connURI, s.testDBName).IndexAll()
+	schema.NewMongoDBIndexer(s.connURI, s.testDBName).IndexCDSConfirmCollection()
 	if err := s.LoadMongoDBFixtures(); err != nil {
 		s.T().Fatal(err)
 	}
@@ -96,16 +96,16 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	s.NoError(err)
 	s.Equal(29, len(data))
 	s.Equal("country", data[0].Level)
-	s.Equal(CdsTaiwan, data[0].Name)
+	s.Equal(schema.CdsTaiwan, data[0].Name)
 	store := NewMongoStore(s.mongoClient, s.testDBName)
-	err = store.CreateCDS(data, CdsTaiwan)
+	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
-	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)]
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
 	s.Equal(int64(29), count)
-	err = store.CreateCDS(data, CdsTaiwan)
+	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
 	count, err = s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
@@ -113,7 +113,7 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 }
 
 func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
-	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)]
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	opts := options.Find().SetLimit(2)
 	filter := bson.M{}
@@ -135,7 +135,7 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 		originalCases[i] = results[i].Cases
 		results[i].Cases = replaceCases[i]
 	}
-	err = store.ReplaceCDS(results, CdsTaiwan)
+	err = store.ReplaceCDS(results, schema.CdsTaiwan)
 	for i := 0; i < len(results); i++ {
 		filter = bson.M{"name": results[i].Name, "report_ts": results[i].ReportTime}
 		cur, err = s.testDatabase.Collection(collection).Find(ctx, filter)
@@ -146,7 +146,7 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 		s.False(cur.Next(ctx))
 		cur.Close(ctx)
 		queryReturn.Cases = originalCases[i]
-		store.ReplaceCDS([]schema.CDSData{queryReturn}, CdsTaiwan)
+		store.ReplaceCDS([]schema.CDSData{queryReturn}, schema.CdsTaiwan)
 	}
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
