@@ -69,7 +69,7 @@ var OfficialBehaviors = []Behavior{
 	{TouchFace, "Avoiding touching face", "Restraining from touching your eyes, nose, or mouth, especially with unwashed hands.", OfficialBehavior},
 	{WearMask, "Wearing a face mask or covering", "Covering your nose and mouth when in public or whenever social distancing measures are difficult to maintain.", OfficialBehavior},
 	{CoveringCough, "Covering coughs and sneezes", "Covering your mouth with the inside of your elbow or a tissue whenever you cough or sneeze.", OfficialBehavior},
-	{CleanSurface, "Cleaing and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards.", OfficialBehavior},
+	{CleanSurface, "Cleaning and disinfecting surfaces", "Cleaning and disinfecting frequently touched surfaces daily, such as doorknobs, tables, light switches, and keyboards.", OfficialBehavior},
 }
 
 // BehaviorReportData the struct to store citizen data and score
@@ -98,4 +98,19 @@ func (b *BehaviorReportData) MarshalJSON() ([]byte, error) {
 		Location:  Location{Longitude: b.Location.Coordinates[0], Latitude: b.Location.Coordinates[1]},
 		Timestamp: b.Timestamp,
 	})
+}
+
+// SplitBehaviors separates official and non-official behaviors
+func SplitBehaviors(behaviors []Behavior) ([]Behavior, []Behavior) {
+	official := make([]Behavior, 0)
+	nonOfficial := make([]Behavior, 0)
+	for _, s := range behaviors {
+		if _, ok := OfficialBehaviorMatrix[s.ID]; ok {
+			official = append(official, s)
+		} else {
+			nonOfficial = append(nonOfficial, s)
+		}
+	}
+
+	return official, nonOfficial
 }

@@ -10,11 +10,16 @@ type ConfirmDetail struct {
 }
 
 type BehaviorDetail struct {
+	// FIXME: deprecate these fields
 	BehaviorTotal           float64 `json:"behavior_total" bson:"behavior_total"`
 	TotalPeople             float64 `json:"total_people" bson:"total_people"`
 	MaxScorePerPerson       float64 `json:"max_score_per_person" bson:"max_score_per_person"`
 	CustomizedBehaviorTotal float64 `json:"behavior_customized_total" bson:"behavior_customized_total"`
-	Score                   float64 `json:"score" bson:"score"`
+
+	Score                 float64        `json:"score" bson:"score"`
+	ReportTimes           int            `json:"x" bson:"-"`
+	TodayDistribution     map[string]int `json:"y" bson:"-"`
+	YesterdayDistribution map[string]int `json:"-" bson:"-"`
 }
 
 type SymptomDetail struct {

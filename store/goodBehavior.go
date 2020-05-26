@@ -16,7 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/score"
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
@@ -30,9 +29,10 @@ var localizedBehaviors map[string][]schema.Behavior = map[string][]schema.Behavi
 type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
-	NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, score.NearestGoodBehaviorData, error)
 	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
 	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
+	FindNearbyBehaviorDistribution(dist int, loc schema.Location, start, end int64) (map[string]int, error)
+	FindNearbyBehaviorReportTimes(dist int, loc schema.Location, start, end int64) (int, error)
 	ListOfficialBehavior(string) ([]schema.Behavior, error)
 	ListCustomizedBehaviors() ([]schema.Behavior, error)
 }
@@ -185,6 +185,93 @@ func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavio
 	return foundOfficial, foundCustomized, notFound, nil
 }
 
+func (m *mongoDB) FindNearbyBehaviorDistribution(dist int, loc schema.Location, start, end int64) (map[string]int, error) {
+	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	pipeline := []bson.M{
+		aggStageGeoProximity(dist, loc),
+		aggStageReportedBetween(start, end),
+		{
+			"$project": bson.M{
+				"profile_id":     1,
+				"account_number": 1,
+				"behaviors": bson.M{
+					"$concatArrays": bson.A{
+						bson.M{"$ifNull": bson.A{"$official_behaviors", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$customized_behaviors", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$behaviors", bson.A{}}},
+					},
+				},
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$behaviors",
+				"preserveNullAndEmptyArrays": false,
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": "$behaviors._id",
+				"count": bson.M{
+					"$sum": 1,
+				},
+			},
+		},
+	}
+
+	cursor, err := c.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	var aggItem struct {
+		BehaviorID string `bson:"_id"`
+		Count      int    `bson:"count"`
+	}
+	result := make(map[string]int)
+	for cursor.Next(ctx) {
+		if err := cursor.Decode(&aggItem); err != nil {
+			return nil, err
+		}
+		result[aggItem.BehaviorID] = aggItem.Count
+	}
+
+	return result, nil
+}
+
+func (m *mongoDB) FindNearbyBehaviorReportTimes(dist int, loc schema.Location, start, end int64) (int, error) {
+	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	pipeline := []bson.M{
+		aggStageGeoProximity(dist, loc),
+		aggStageReportedBetween(start, end),
+		{
+			"$count": "count",
+		},
+	}
+	cursor, err := c.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, err
+	}
+
+	if !cursor.Next(ctx) {
+		return 0, nil
+	}
+
+	var result struct {
+		Count int `bson:"count"`
+	}
+	if err := cursor.Decode(&result); err != nil {
+		return 0, err
+	}
+
+	return result.Count, nil
+}
+
 // AreaCustomizedBehaviorList return a list  of customized behaviors within distInMeter range
 func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
 	filterStage := bson.D{{"$match", bson.M{"customized_weight": bson.M{"$gt": 0}}}}
@@ -212,69 +299,6 @@ func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Lo
 		cBehaviors = append(cBehaviors, b)
 	}
 	return cBehaviors, nil
-}
-
-// NearestGoodBehavior returns NearestGoodBehaviorData which caculates from location within distInMeter distance
-func (m *mongoDB) NearestGoodBehavior(distInMeter int, location schema.Location) (score.NearestGoodBehaviorData, score.NearestGoodBehaviorData, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	db := m.client.Database(m.database)
-	collection := db.Collection(schema.BehaviorReportCollection)
-	todayBegin := todayStartAt()
-	log.Debugf("time period today > %v, yesterday %v~ %v ", todayBegin, todayBegin-86400, todayBegin)
-	timeStageToday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin}}}}
-
-	sortStage := bson.D{{"$sort", bson.D{{"ts", -1}}}}
-	timeStageYesterday := bson.D{{"$match", bson.M{"ts": bson.M{"$gte": todayBegin - 86400, "$lt": todayBegin}}}}
-	groupStage := bson.D{{"$group", bson.D{
-		{"_id", "$profile_id"},
-		{"account_number", bson.D{{"$first", "$account_number"}}},
-		{"official_count", bson.D{{"$first", bson.D{{"$size", "$official_behaviors"}}}}},
-		{"customized_count", bson.D{{"$first", bson.D{{"$size", "$customized_behaviors"}}}}},
-		{"official_weight", bson.D{{"$first", "$official_weight"}}},
-		{"customized_weight", bson.D{{"$first", "$customized_weight"}}},
-	}}}
-	groupMergeStage := bson.D{{"$group", bson.D{
-		{"_id", 1},
-		{"officialCount", bson.D{{"$sum", "$official_count"}}},
-		{"customizedCount", bson.D{{"$sum", "$customized_count"}}},
-		{"officialWeight", bson.D{{"$sum", "$official_weight"}}},
-		{"customizedWeight", bson.D{{"$sum", "$customized_weight"}}},
-		{"totalCount", bson.D{{"$sum", 1}}},
-	}}}
-
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageToday, sortStage, groupStage, groupMergeStage})
-	if nil != err {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
-	}
-
-	var resultToday score.NearestGoodBehaviorData
-	if cursor.Next(ctx) {
-		if err := cursor.Decode(&resultToday); err != nil {
-			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
-		}
-	}
-
-	// Previous day
-	cursorYesterday, err := collection.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), timeStageYesterday, sortStage, groupStage, groupMergeStage})
-	if nil != err {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("aggregate nearest good behavior score")
-		return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
-	}
-	var resultYesterday score.NearestGoodBehaviorData
-	if cursorYesterday.Next(ctx) {
-		if err := cursorYesterday.Decode(&resultYesterday); err != nil {
-			log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("decode nearest good behavior score")
-			return score.NearestGoodBehaviorData{}, score.NearestGoodBehaviorData{}, err
-		}
-	}
-	log.Debug(fmt.Sprintf("NearestGoodBehavior TotalCount:%v OfficialWeight:%v,OfficialCount:%v, CustimizedWeight:%v, CustimizedCount:%v, TotalCountYesterday:%v, OfficialWeightYesterday:%v, OfficialCountYesterday:%v, CustimizedWeightYesterday:%v, CustimizedCountYesterday:%v",
-		resultToday.TotalCount, resultToday.OfficialWeight, resultToday.OfficialCount, resultToday.CustomizedWeight, resultToday.CustomizedCount,
-		resultYesterday.TotalCount, resultYesterday.OfficialWeight, resultYesterday.OfficialCount, resultYesterday.CustomizedWeight, resultYesterday.CustomizedCount))
-	return resultToday, resultYesterday, nil
 }
 
 func todayStartAt() int64 {
