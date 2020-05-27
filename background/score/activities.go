@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/vmihailenco/msgpack/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/cadence/activity"
 	"go.uber.org/zap"
@@ -105,7 +106,18 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 			return nil, err
 		}
 
+		// Since metric is used by all profile, we make a deep copy of metric to
+		// prvent it from mutating by calculation
+		b, err := msgpack.Marshal(metric)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, profile := range profiles {
+			var metric schema.Metric
+			if err := msgpack.Unmarshal(b, &metric); err != nil {
+				return nil, err
+			}
 
 			accountLocation := utils.GetLocation(profile.Timezone)
 			if accountLocation == nil {
@@ -175,12 +187,15 @@ func (s *ScoreUpdateWorker) RefreshLocationStateActivity(ctx context.Context, ac
 		lastSpikeDay := time.Date(lastSpikeUpdate.Year(), lastSpikeUpdate.Month(), lastSpikeUpdate.Day(), 0, 0, 0, 0, accountLocation)
 
 		if currentSpikeLength := len(metric.Details.Symptoms.LastSpikeList); currentSpikeLength > 0 {
-			if accountToday.Sub(lastSpikeDay) == 0 { // spike in the same day
+			if spikeDayDelta := accountToday.Sub(lastSpikeDay); spikeDayDelta == 0 { // spike in the same day
 				if currentSpikeLength > len(profile.Metric.Details.Symptoms.LastSpikeList) {
 					symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
 				}
-			} else {
+			} else if spikeDayDelta > 0 {
 				symptomsSpikeAccounts = append(symptomsSpikeAccounts, profile.AccountNumber)
+			} else {
+				logger.Warn("last spike day is greater than today", zap.String("accountNumber", accountNumber),
+					zap.Any("accountToday", accountToday), zap.Any("lastSpikeDay", lastSpikeDay))
 			}
 		}
 

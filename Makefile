@@ -79,6 +79,15 @@ mockgen:
 test: mockgen
 	go test ./...
 
+fast-test:
+	go test ./...
+
+cover-report: mockgen
+	go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
+
+fast-cover-report:
+	go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
+
 clean:
 	rm -r bin
 	rm -r mocks

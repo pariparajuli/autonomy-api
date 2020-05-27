@@ -1,6 +1,11 @@
 *.pem
 config.yaml
+
+# Testing
 mocks
+gomock_reflect*
+cover.out
+
 
 # Binaries
 bin
