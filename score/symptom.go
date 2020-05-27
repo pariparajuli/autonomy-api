@@ -50,15 +50,12 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 	metric.SymptomCount = float64(totalCountToday)
 	metric.SymptomDelta = ChangeRate(float64(totalCountToday), float64(totalCountYesterday))
 	metric.Details.Symptoms = schema.SymptomDetail{
-		Score:             score,
-		SymptomTotal:      weightedSum,
-		MaxScorePerPerson: totalWeight,
-		TotalPeople:       float64(rawData.TotalPeople),
-		CustomizedWeight:  float64(nonOfficialCount),
-		TodayData:         metric.Details.Symptoms.TodayData,
-		YesterdayData:     metric.Details.Symptoms.YesterdayData,
-		LastSpikeList:     spikeList,
-		LastSpikeUpdate:   time.Now().UTC(),
+		Score:           score,
+		TotalPeople:     float64(rawData.TotalPeople),
+		TodayData:       metric.Details.Symptoms.TodayData,
+		YesterdayData:   metric.Details.Symptoms.YesterdayData,
+		LastSpikeList:   spikeList,
+		LastSpikeUpdate: time.Now().UTC(),
 	}
 
 	return metric

@@ -10,12 +10,6 @@ type ConfirmDetail struct {
 }
 
 type BehaviorDetail struct {
-	// FIXME: deprecate these fields
-	BehaviorTotal           float64 `json:"behavior_total" bson:"behavior_total"`
-	TotalPeople             float64 `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson       float64 `json:"max_score_per_person" bson:"max_score_per_person"`
-	CustomizedBehaviorTotal float64 `json:"behavior_customized_total" bson:"behavior_customized_total"`
-
 	Score                 float64        `json:"score" bson:"score"`
 	ReportTimes           int            `json:"-" bson:"-"`
 	TodayDistribution     map[string]int `json:"-" bson:"-"`
@@ -23,15 +17,12 @@ type BehaviorDetail struct {
 }
 
 type SymptomDetail struct {
-	Score             float64            `json:"score" bson:"score"`
-	SymptomTotal      float64            `json:"total_weight" bson:"total_weight"`
-	TotalPeople       float64            `json:"total_people" bson:"total_people"`
-	MaxScorePerPerson float64            `json:"max_weight" bson:"max_weight"`
-	CustomizedWeight  float64            `json:"customized_weight" bson:"customized_weight"`
-	TodayData         NearestSymptomData `json:"today_data"  bson:"today_data"`
-	YesterdayData     NearestSymptomData `json:"-"  bson:"-"`
-	LastSpikeUpdate   time.Time          `json:"-" bson:"last_spike_update"`
-	LastSpikeList     []string           `json:"-" bson:"last_spike_types"`
+	Score           float64            `json:"score" bson:"score"`
+	TotalPeople     float64            `json:"-" bson:"-"`
+	TodayData       NearestSymptomData `json:"-"  bson:"-"`
+	YesterdayData   NearestSymptomData `json:"-"  bson:"-"`
+	LastSpikeUpdate time.Time          `json:"-" bson:"last_spike_update"`
+	LastSpikeList   []string           `json:"-" bson:"last_spike_types"`
 }
 
 type NearestSymptomData struct {
