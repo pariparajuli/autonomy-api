@@ -1,43 +1,39 @@
 package score
 
 import (
+	"math"
+
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-type NearestGoodBehaviorData struct {
-	TotalCount       int32   `json:"totalCount" bson:"totalCount`
-	OfficialWeight   float64 `json:"officialWeight" bson:"officialWeight"`
-	OfficialCount    int32   `json:"officialCount" bson:"officialCount"`
-	CustomizedWeight float64 `json:"customizedWeight" bson:"customizedWeight"`
-	CustomizedCount  int32   `json:"customizedCount" bson:"customizedCount"`
-}
+func UpdateBehaviorMetrics(metric *schema.Metric) {
+	todayTotal := 0
+	yesterdayTotal := 0
+	officialWeightedSum := float64(0)
+	nonOfficialWeightedSum := float64(0)
 
-func BehaviorScore(rawDataToday NearestGoodBehaviorData, rawDataYesterday NearestGoodBehaviorData) (float64, float64, float64, float64) {
-	// Score Rule:  Self defined weight can not exceed more than 1/2 of weight, if it exceeds 1/2 of weight, it counts as 1/2 of weight
-	topScore := float64(rawDataToday.TotalCount)*schema.TotalOfficialBehaviorWeight + rawDataToday.CustomizedWeight
-	nearbyScore := rawDataToday.OfficialWeight + rawDataToday.CustomizedWeight
-	topScorePast := float64(rawDataYesterday.TotalCount)*schema.TotalOfficialBehaviorWeight + rawDataYesterday.CustomizedWeight
-
-	if topScore <= 0 && topScorePast <= 0 {
-		return 0, 0, 0, 0
-	}
-
-	if topScore > 0 {
-		if portion := float64(rawDataToday.CustomizedWeight) / float64(topScore); portion > 0.5 {
-			nearbyScore = topScore/2 + rawDataToday.OfficialWeight
+	for behaviorID, cnt := range metric.Details.Behaviors.TodayDistribution {
+		w, ok := schema.DefaultBehaviorWeightMatrix[schema.GoodBehaviorType(behaviorID)]
+		if ok {
+			officialWeightedSum += w.Weight * float64(cnt)
+		} else {
+			nonOfficialWeightedSum += float64(cnt)
 		}
+
+		todayTotal += cnt
 	}
-	score := float64(0)
-	if topScore > 0 {
-		score = 100 * nearbyScore / topScore
+	for _, cnt := range metric.Details.Behaviors.YesterdayDistribution {
+		yesterdayTotal += cnt
 	}
 
-	totalReportedCountPast := float64(rawDataYesterday.CustomizedCount + rawDataYesterday.OfficialCount)
-	totalReportedCount := float64(rawDataToday.OfficialCount + rawDataToday.CustomizedCount)
-	deltaCountInPercent := float64(100)
-	if totalReportedCountPast > 0 {
-		deltaCountInPercent = ((totalReportedCount - totalReportedCountPast) / totalReportedCountPast) * 100
+	maxWeightedSum := float64(metric.Details.Behaviors.ReportTimes)*schema.TotalOfficialBehaviorWeight + nonOfficialWeightedSum
+	// cap weighted sum of non-official behaviors
+	nonOfficialWeightedSum = math.Min(nonOfficialWeightedSum, maxWeightedSum/2)
+	weightedSum := officialWeightedSum + nonOfficialWeightedSum
+	if maxWeightedSum > 0 {
+		metric.Details.Behaviors.Score = 100 * weightedSum / maxWeightedSum
 	}
 
-	return score, deltaCountInPercent, totalReportedCount, float64(rawDataToday.TotalCount)
+	metric.BehaviorCount = float64(todayTotal)
+	metric.BehaviorDelta = ChangeRate(float64(todayTotal), float64(yesterdayTotal))
 }

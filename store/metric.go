@@ -33,23 +33,18 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	todayStartAtUnix := todayStartAt.Unix()
 	tomorrowStartAtUnix := todayStartAt.AddDate(0, 0, 1).Unix()
 
-	// Processing behaviors data
-	behaviorToday, behaviorYesterday, err := m.NearestGoodBehavior(consts.CORHORT_DISTANCE_RANGE, location)
+	behaviorDistrToday, err := m.FindNearbyBehaviorDistribution(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"prefix": mongoLogPrefix,
-			"error":  err,
-		}).Error("nearest good behavior")
 		return nil, err
-	} else {
-		log.WithFields(log.Fields{
-			"prefix":            mongoLogPrefix,
-			"behaviorToday":     behaviorToday,
-			"behaviorYesterday": behaviorYesterday,
-		}).Debug("nearest good behavior")
 	}
-
-	behaviorScore, behaviorDelta, behaviorCount, totalPeopleReport := score.BehaviorScore(behaviorToday, behaviorYesterday)
+	behaviorDistrYesterday, err := m.FindNearbyBehaviorDistribution(consts.NEARBY_DISTANCE_RANGE, location, yesterdayStartAtUnix, todayStartAtUnix)
+	if err != nil {
+		return nil, err
+	}
+	behaviorReportTimes, err := m.FindNearbyBehaviorReportTimes(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
+	if err != nil {
+		return nil, err
+	}
 
 	symptomDistToday, err := m.FindNearbySymptomDistribution(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
 	if err != nil {
@@ -104,8 +99,6 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	return &schema.Metric{
 		ConfirmedCount: activeCount,
 		ConfirmedDelta: activeDiffPercent,
-		BehaviorCount:  float64(behaviorCount),
-		BehaviorDelta:  float64(behaviorDelta),
 		Details: schema.Details{
 			Confirm: schema.ConfirmDetail{
 				ContinuousData: confirmData,
@@ -120,11 +113,9 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 				},
 			},
 			Behaviors: schema.BehaviorDetail{
-				BehaviorTotal:           behaviorCount,
-				TotalPeople:             totalPeopleReport,
-				MaxScorePerPerson:       schema.TotalOfficialBehaviorWeight,
-				CustomizedBehaviorTotal: float64(behaviorToday.CustomizedCount),
-				Score: behaviorScore,
+				ReportTimes:           behaviorReportTimes,
+				TodayDistribution:     behaviorDistrToday,
+				YesterdayDistribution: behaviorDistrYesterday,
 			},
 		},
 	}, nil

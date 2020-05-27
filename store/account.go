@@ -119,10 +119,7 @@ func (s *AutonomyStore) UpdateAccountGeoPosition(accountNumber string, latitude,
 	}
 
 	if exist {
-		err = s.mongo.UpdateAccountGeoPosition(a.AccountNumber, latitude, longitude)
-		if nil != err {
-			return err
-		}
+		return s.mongo.UpdateAccountGeoPosition(a.AccountNumber, latitude, longitude)
 	}
 
 	return s.mongo.CreateAccountWithGeoPosition(&a, latitude, longitude)

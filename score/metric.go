@@ -67,6 +67,8 @@ func CheckSymptomSpike(yesterdayDistribution, currentDistribution schema.Symptom
 // CalculateMetric will calculate, summarize and return a metric based on collected raw metrics
 func CalculateMetric(rawMetrics schema.Metric, coefficient *schema.ScoreCoefficient) schema.Metric {
 	metric := rawMetrics
+
+	UpdateBehaviorMetrics(&metric)
 	CalculateConfirmScore(&metric)
 
 	if coefficient != nil {
