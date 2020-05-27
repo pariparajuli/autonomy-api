@@ -88,12 +88,22 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	}
 
 	confirmData, err := m.ContinuousDataCDSConfirm(location, consts.ConfirmScoreWindowSize, 0)
-	if err != nil {
-		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "error": err}).Error("confirm continuous data")
-		return nil, err
-	}
-	if nil == confirmData {
+
+	if err == ErrNoConfirmDataset || err == ErrInvalidConfirmDataset || err == ErrPoliticalTypeGeoInfo {
+		log.WithFields(log.Fields{
+			"prefix":   mongoLogPrefix,
+			"location": location,
+			"err":      err,
+		}).Warn("collect continuous confirm raw metrics")
 		confirmData = []schema.CDSScoreDataSet{}
+	} else if err != nil {
+		log.WithFields(log.Fields{
+			"prefix": mongoLogPrefix,
+			"error":  err,
+		}).Error("continuous confirm info")
+		return nil, err
+	} else {
+		log.WithFields(log.Fields{"prefix": mongoLogPrefix, "activeCount": activeCount, "activeDiff": activeDiff, "activeDiffPercent": activeDiffPercent}).Debug("confirm info")
 	}
 
 	return &schema.Metric{
