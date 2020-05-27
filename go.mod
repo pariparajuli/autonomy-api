@@ -28,6 +28,7 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/tally v3.3.15+incompatible
+	github.com/vmihailenco/msgpack/v4 v4.3.11
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.3.1

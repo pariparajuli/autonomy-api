@@ -44,7 +44,7 @@ func (s *ScoreUpdateWorker) Register() {
 	activity.RegisterWithOptions(s.CalculatePOIStateActivity, activity.RegisterOptions{Name: "CalculatePOIStateActivity"})
 	activity.RegisterWithOptions(s.CalculateAccountStateActivity, activity.RegisterOptions{Name: "CalculateAccountStateActivity"})
 
-	activity.RegisterWithOptions(s.RefreshLocationStateActivity, activity.RegisterOptions{Name: "UpdateLocationStateActivity"})
+	activity.RegisterWithOptions(s.RefreshLocationStateActivity, activity.RegisterOptions{Name: "RefreshLocationStateActivity"})
 	activity.RegisterWithOptions(s.NotifyLocationStateActivity, activity.RegisterOptions{Name: "NotifyLocationStateActivity"})
 
 	activity.RegisterWithOptions(s.CheckLocationSpikeActivity, activity.RegisterOptions{Name: "CheckLocationSpikeActivity"})
@@ -54,8 +54,9 @@ func (s *ScoreUpdateWorker) Start(service workflowserviceclient.Interface, logge
 	// TaskListName identifies set of client workflows, activities, and workers.
 	// It could be your group or client or application name.
 	workerOptions := worker.Options{
-		Logger:       logger,
-		MetricsScope: tally.NewTestScope(TaskListName, map[string]string{}),
+		Logger:        logger,
+		MetricsScope:  tally.NewTestScope(TaskListName, map[string]string{}),
+		DataConverter: background.NewMsgPackDataConverter(),
 	}
 
 	worker := worker.New(

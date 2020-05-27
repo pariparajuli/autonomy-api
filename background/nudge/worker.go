@@ -57,8 +57,9 @@ func (n *NudgeWorker) Start(service workflowserviceclient.Interface, logger *zap
 	// TaskListName identifies set of client workflows, activities, and workers.
 	// It could be your group or client or application name.
 	workerOptions := worker.Options{
-		Logger:       logger,
-		MetricsScope: tally.NewTestScope(TaskListName, map[string]string{}),
+		Logger:        logger,
+		MetricsScope:  tally.NewTestScope(TaskListName, map[string]string{}),
+		DataConverter: background.NewMsgPackDataConverter(),
 	}
 
 	worker := worker.New(

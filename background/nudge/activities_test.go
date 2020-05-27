@@ -62,6 +62,7 @@ func (ts *NudgeActivityTestSuite) SetupTest() {
 	ts.env = ts.NewTestActivityEnvironment()
 	ts.env.SetWorkerOptions(worker.Options{
 		BackgroundActivityContext: context.Background(),
+		DataConverter:             background.NewMsgPackDataConverter(),
 	})
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"go.uber.org/cadence/testsuite"
+	"go.uber.org/cadence/worker"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +30,9 @@ func (ts *NudgeWorkflowTestSuite) SetupSuite() {
 
 func (ts *NudgeWorkflowTestSuite) SetupTest() {
 	ts.env = ts.NewTestWorkflowEnvironment()
-
+	ts.env.SetWorkerOptions(worker.Options{
+		DataConverter: background.NewMsgPackDataConverter(),
+	})
 }
 
 func (ts *NudgeWorkflowTestSuite) TestAccountSelfReportedHighRiskFollowUpWorkflowNoFollowThisTime() {
