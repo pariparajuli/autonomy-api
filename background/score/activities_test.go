@@ -56,6 +56,7 @@ type ScoreActivityTestSuite struct {
 	worker            *ScoreUpdateWorker
 	mockCtrl          *gomock.Controller
 	mongoMock         *mocks.MockMongoStore
+	notificationMock  *mocks.MockNotificationCenter
 	testAccountNumber string
 	testPOIID         string
 }
@@ -76,8 +77,12 @@ func (ts *ScoreActivityTestSuite) SetupTest() {
 	ts.mockCtrl = gomock.NewController(ts.T())
 
 	mongoMock = mocks.NewMockMongoStore(ts.mockCtrl)
+	nc := mocks.NewMockNotificationCenter(ts.mockCtrl)
+
 	testWorker.mongo = mongoMock
+	testWorker.notificationCenter = nc
 	ts.mongoMock = mongoMock
+	ts.notificationMock = nc
 	ts.worker = testWorker
 }
 
@@ -902,6 +907,33 @@ func (ts *ScoreActivityTestSuite) TestCalculateAccountStateActivityWithCollectEr
 
 	_, err := ts.env.ExecuteActivity(ts.worker.CalculateAccountStateActivity, ts.testAccountNumber)
 	ts.EqualError(err, "can not collect metrics")
+}
+
+func (ts *ScoreActivityTestSuite) TestNotifyLocationStateActivity() {
+	ts.notificationMock.EXPECT().NotifyAccountsByTemplate(
+		gomock.Eq([]string{ts.testAccountNumber}),
+		gomock.AssignableToTypeOf(""),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "RISK_LEVEL_CHANGED",
+		})).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifyLocationStateActivity, "", []string{ts.testAccountNumber})
+	ts.NoError(err)
+}
+
+func (ts *ScoreActivityTestSuite) TestNotifyLocationStateActivityWithSpecificPOIID() {
+	ts.notificationMock.EXPECT().NotifyAccountsByTemplate(
+		gomock.Eq([]string{ts.testAccountNumber}),
+		gomock.AssignableToTypeOf(""),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "RISK_LEVEL_CHANGED",
+			"poi_id":            ts.testPOIID,
+		})).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifyLocationStateActivity, ts.testPOIID, []string{ts.testAccountNumber})
+	ts.NoError(err)
 }
 
 func TestScoreActivity(t *testing.T) {

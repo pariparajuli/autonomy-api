@@ -44,19 +44,16 @@ type NudgeActivityTestSuite struct {
 	testsuite.WorkflowTestSuite
 	env               *testsuite.TestActivityEnvironment
 	worker            *NudgeWorker
+	mockCtrl          *gomock.Controller
 	mongoMock         *mocks.MockMongoStore
+	notificationMock  *mocks.MockNotificationCenter
 	testAccountNumber string
 }
 
 func (ts *NudgeActivityTestSuite) SetupSuite() {
 	ts.SetLogger(zap.NewNop())
 	ts.testAccountNumber = "e5KNBJCzwBqAyQzKx1pv8CR4MacrUBBTQpWwAbmcLbYNsEg5WS"
-	ctrl := gomock.NewController(ts.T())
 
-	mongoMock = mocks.NewMockMongoStore(ctrl)
-	nudgeWorker.mongo = mongoMock
-	ts.mongoMock = mongoMock
-	ts.worker = nudgeWorker
 }
 
 func (ts *NudgeActivityTestSuite) SetupTest() {
@@ -65,6 +62,19 @@ func (ts *NudgeActivityTestSuite) SetupTest() {
 		BackgroundActivityContext: context.Background(),
 		DataConverter:             cadence.NewMsgPackDataConverter(),
 	})
+
+	ts.mockCtrl = gomock.NewController(ts.T())
+	mongoMock = mocks.NewMockMongoStore(ts.mockCtrl)
+	nc := mocks.NewMockNotificationCenter(ts.mockCtrl)
+	nudgeWorker.mongo = mongoMock
+	nudgeWorker.notificationCenter = nc
+	ts.mongoMock = mongoMock
+	ts.notificationMock = nc
+	ts.worker = nudgeWorker
+}
+
+func (ts *NudgeActivityTestSuite) TearDownTest() {
+	ts.mockCtrl.Finish()
 }
 
 func (ts *NudgeActivityTestSuite) TestGetNotificationReceiverActivityByAccount() {
@@ -449,7 +459,121 @@ func (ts *NudgeActivityTestSuite) TestCheckSelfHasHighRiskSymptomsAndNeedToFollo
 	ts.False(needToFollow)
 }
 
+func (ts *NudgeActivityTestSuite) TestNotifySymptomFollowUpActivity() {
+	symptoms := []schema.Symptom{
+		schema.COVID19Symptoms[0],
+		schema.COVID19Symptoms[1],
+	}
+
+	symptomsIDs := []string{}
+
+	for _, s := range symptoms {
+		symptomsIDs = append(symptomsIDs, s.ID)
+	}
+
+	ts.notificationMock.EXPECT().NotifyAccountByText(
+		gomock.Eq(ts.testAccountNumber),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "ACCOUNT_SYMPTOM_FOLLOW_UP",
+			"symptoms":          symptomsIDs,
+		})).
+		Return(nil).Times(1)
+
+	ts.mongoMock.EXPECT().
+		UpdateAccountNudge(gomock.Eq(ts.testAccountNumber), gomock.Eq(schema.NudgeSymptomFollowUp)).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifySymptomFollowUpActivity, ts.testAccountNumber, symptoms)
+	ts.NoError(err)
+}
+
+func (ts *NudgeActivityTestSuite) TestNotifySymptomSpikeActivity() {
+	symptoms := []schema.Symptom{
+		schema.COVID19Symptoms[0],
+		schema.COVID19Symptoms[1],
+	}
+
+	symptomsIDs := []string{}
+
+	for _, s := range symptoms {
+		symptomsIDs = append(symptomsIDs, s.ID)
+	}
+
+	ts.notificationMock.EXPECT().NotifyAccountByText(
+		gomock.Eq(ts.testAccountNumber),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "ACCOUNT_SYMPTOM_SPIKE",
+			"symptoms":          symptomsIDs,
+		})).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifySymptomSpikeActivity, ts.testAccountNumber, symptoms)
+	ts.NoError(err)
+}
+
+func (ts *NudgeActivityTestSuite) TestNotifyBehaviorNudgeActivity() {
+	ts.notificationMock.EXPECT().NotifyAccountByText(
+		gomock.Eq(ts.testAccountNumber),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
+			"behaviors":         []schema.GoodBehaviorType{schema.CleanHand, schema.SocialDistancing, schema.WearMask},
+		})).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifyBehaviorNudgeActivity, ts.testAccountNumber)
+	ts.NoError(err)
+}
+
+func (ts *NudgeActivityTestSuite) TestNotifyBehaviorFollowUpWhenSelfIsInHighRiskActivityWithSymptomSpikeArea() {
+	ts.notificationMock.EXPECT().NotifyAccountByText(
+		gomock.Eq(ts.testAccountNumber),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
+			"behaviors":         []schema.GoodBehaviorType{schema.SocialDistancing, schema.WearMask},
+		})).
+		Return(nil).Times(1)
+
+	ts.mongoMock.EXPECT().
+		UpdateAccountNudge(gomock.Eq(ts.testAccountNumber), gomock.Eq(schema.NudgeBehaviorOnSymptomSpikeArea)).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity, ts.testAccountNumber, schema.NudgeBehaviorOnSymptomSpikeArea)
+	ts.NoError(err)
+}
+
+func (ts *NudgeActivityTestSuite) TestNotifyBehaviorFollowUpWhenSelfIsInHighRiskActivityWithOnSelfHighRiskSymptoms() {
+	ts.notificationMock.EXPECT().NotifyAccountByText(
+		gomock.Eq(ts.testAccountNumber),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.AssignableToTypeOf(map[string]string{}),
+		gomock.Eq(map[string]interface{}{
+			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
+			"behaviors":         []schema.GoodBehaviorType{schema.SocialDistancing, schema.WearMask},
+		})).
+		Return(nil).Times(1)
+
+	ts.mongoMock.EXPECT().
+		UpdateAccountNudge(gomock.Eq(ts.testAccountNumber), gomock.Eq(schema.NudgeBehaviorOnSelfHighRiskSymptoms)).
+		Return(nil).Times(1)
+
+	_, err := ts.env.ExecuteActivity(ts.worker.NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity, ts.testAccountNumber, schema.NudgeBehaviorOnSelfHighRiskSymptoms)
+	ts.NoError(err)
+}
+
 func TestNudgeActivity(t *testing.T) {
+	os.Setenv("TEST_I18N_DIR", "../../i18n")
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("test")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	utils.InitI18NBundle()
 	suite.Run(t, new(NudgeActivityTestSuite))
 }
 

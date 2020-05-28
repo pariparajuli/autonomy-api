@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/uber-go/tally"
 	"go.uber.org/cadence/.gen/go/cadence/workflowserviceclient"
 	"go.uber.org/cadence/activity"
@@ -20,9 +21,9 @@ import (
 const TaskListName = "autonomy-nudge-tasks"
 
 type NudgeWorker struct {
-	background.Background
-	domain string
-	mongo  store.MongoStore
+	domain             string
+	mongo              store.MongoStore
+	notificationCenter background.NotificationCenter
 }
 
 func NewNudgeWorker(domain string, mongo store.MongoStore) *NudgeWorker {
@@ -30,11 +31,10 @@ func NewNudgeWorker(domain string, mongo store.MongoStore) *NudgeWorker {
 		Timeout: 15 * time.Second,
 	})
 
-	b := background.Background{o}
 	return &NudgeWorker{
-		Background: b,
-		domain:     domain,
-		mongo:      mongo,
+		domain:             domain,
+		mongo:              mongo,
+		notificationCenter: background.NewOnesignalNotificationCenter(viper.GetString("onesignal.appid"), o),
 	}
 }
 

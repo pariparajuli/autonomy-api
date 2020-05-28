@@ -238,14 +238,14 @@ func (s *ScoreUpdateWorker) NotifyLocationStateActivity(ctx context.Context, id 
 	}
 
 	if id == "" {
-		return s.Background.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.new_location_status_change"),
+		return s.notificationCenter.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.new_location_status_change"),
 			map[string]interface{}{
 				"notification_type": "RISK_LEVEL_CHANGED",
 			},
 		)
 	}
 
-	return s.Background.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.saved_location_status_change"),
+	return s.notificationCenter.NotifyAccountsByTemplate(accounts, viper.GetString("onesignal.template.saved_location_status_change"),
 		map[string]interface{}{
 			"notification_type": "RISK_LEVEL_CHANGED",
 			"poi_id":            id,

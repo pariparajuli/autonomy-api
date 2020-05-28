@@ -170,7 +170,7 @@ func (n *NudgeWorker) NotifySymptomFollowUpActivity(ctx context.Context, account
 		return err
 	}
 
-	if err := n.Background.NotifyAccountByText(accountNumber,
+	if err := n.notificationCenter.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "ACCOUNT_SYMPTOM_FOLLOW_UP",
@@ -204,7 +204,7 @@ func (n *NudgeWorker) NotifySymptomSpikeActivity(ctx context.Context, accountNum
 		return err
 	}
 
-	if err := n.Background.NotifyAccountByText(accountNumber,
+	if err := n.notificationCenter.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "ACCOUNT_SYMPTOM_SPIKE",
@@ -252,7 +252,7 @@ func (n *NudgeWorker) NotifyBehaviorNudgeActivity(ctx context.Context, accountNu
 		contents[key] = content
 	}
 
-	if err := n.Background.NotifyAccountByText(accountNumber,
+	if err := n.notificationCenter.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_RISK_AREA",
@@ -367,7 +367,7 @@ func (n *NudgeWorker) NotifyBehaviorFollowUpWhenSelfIsInHighRiskActivity(ctx con
 		contents[key] = content
 	}
 
-	if err := n.Background.NotifyAccountByText(accountNumber,
+	if err := n.notificationCenter.NotifyAccountByText(accountNumber,
 		headings, contents,
 		map[string]interface{}{
 			"notification_type": "BEHAVIOR_REPORT_ON_SELF_HIGH_RISK",
