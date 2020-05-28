@@ -6,11 +6,11 @@ import (
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
-func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) schema.Metric {
+func UpdateSymptomMetrics(metric *schema.Metric) {
 	rawData := metric.Details.Symptoms
 
 	totalWeight := float64(0)
-	for _, w := range weights {
+	for _, w := range schema.DefaultSymptomWeights {
 		totalWeight += w
 	}
 
@@ -18,12 +18,8 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 	officialCount := 0
 	nonOfficialCount := 0
 	for symptomID, cnt := range rawData.TodayData.WeightDistribution {
-		var weight float64
-		var ok bool
-		if schema.OfficialSymptoms[symptomID] {
-			if weight, ok = weights[symptomID]; !ok {
-				weight = schema.DefaultSymptomWeights[symptomID]
-			}
+		weight, ok := schema.DefaultSymptomWeights[symptomID]
+		if ok {
 			officialCount += cnt
 		} else {
 			weight = 1
@@ -57,6 +53,4 @@ func CalculateSymptomScore(weights schema.SymptomWeights, metric schema.Metric) 
 		LastSpikeList:   spikeList,
 		LastSpikeUpdate: time.Now().UTC(),
 	}
-
-	return metric
 }

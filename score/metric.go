@@ -68,14 +68,13 @@ func CheckSymptomSpike(yesterdayDistribution, currentDistribution schema.Symptom
 func CalculateMetric(rawMetrics schema.Metric, coefficient *schema.ScoreCoefficient) schema.Metric {
 	metric := rawMetrics
 
+	UpdateSymptomMetrics(&metric)
 	UpdateBehaviorMetrics(&metric)
 	CalculateConfirmScore(&metric)
 
 	if coefficient != nil {
-		metric = CalculateSymptomScore(coefficient.SymptomWeights, metric)
 		metric.Score = TotalScoreV1(*coefficient, metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 	} else {
-		metric = CalculateSymptomScore(schema.DefaultSymptomWeights, metric)
 		metric.Score = DefaultTotalScore(metric.Details.Symptoms.Score, metric.Details.Behaviors.Score, metric.Details.Confirm.Score)
 	}
 
