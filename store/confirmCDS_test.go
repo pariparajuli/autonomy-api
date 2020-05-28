@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"testing"
@@ -19,6 +20,10 @@ import (
 	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
+const (
+	numberOfConfirmTaiwan = 29
+)
+
 type ConfirmCDSTestSuite struct {
 	suite.Suite
 	connURI       string
@@ -26,6 +31,12 @@ type ConfirmCDSTestSuite struct {
 	mongoClient   *mongo.Client
 	testDatabase  *mongo.Database
 	geoClientMock *mocks.MockGeoInfo
+	ConfirmExpectedData
+}
+
+type ConfirmExpectedData struct {
+	ExpectContinueData           []schema.CDSScoreDataSet
+	ExpectContinueDataTimeBefore []schema.CDSScoreDataSet
 }
 
 func NewConfirmTestSuite(connURI, dbName string) *ConfirmCDSTestSuite {
@@ -63,9 +74,19 @@ func (s *ConfirmCDSTestSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 	schema.NewMongoDBIndexer(s.connURI, s.testDBName).IndexCDSConfirmCollection()
-	if err := s.LoadMongoDBFixtures(); err != nil {
+	s.LoadExpectedData()
+}
+
+func (s *ConfirmCDSTestSuite) SetupTest() {
+	err := s.RemoveAllDocument()
+	if err != nil {
 		s.T().Fatal(err)
 	}
+	err = s.LoadMongoDBFixtures()
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
 
 // CleanMongoDB drop the whole test mongodb
@@ -75,11 +96,29 @@ func (s *ConfirmCDSTestSuite) CleanMongoDB() error {
 
 // LoadMongoDBFixtures will preload fixtures into test mongodb
 func (s *ConfirmCDSTestSuite) LoadMongoDBFixtures() error {
+	f := "fixtures/confirm_taiwan.json"
+	data, err := s.LoadConfirmFixtures(f)
+	if err != nil {
+		return err
+	}
+	if len(data) != numberOfConfirmTaiwan {
+		return fmt.Errorf("not a expected number of records")
+	}
+	if data[0].Name != schema.CdsTaiwan {
+		return fmt.Errorf("not a expected data set")
+	}
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
+	if !ok {
+		s.T().Fatal("not a supported collection")
+	}
+	for i := 0; i < len(data); i++ {
+		s.testDatabase.Collection(collection).InsertOne(context.Background(), data[i])
+	}
 	return nil
 }
 
-func (s *ConfirmCDSTestSuite) LoadConfirmFixtures() ([]schema.CDSData, error) {
-	f, err := os.Open("fixtures/confirm_taiwan.json")
+func (s *ConfirmCDSTestSuite) LoadConfirmFixtures(file string) ([]schema.CDSData, error) {
+	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
@@ -92,29 +131,83 @@ func (s *ConfirmCDSTestSuite) LoadConfirmFixtures() ([]schema.CDSData, error) {
 	return testData, nil
 }
 
-func (s *ConfirmCDSTestSuite) TestCreateCDS() {
-	data, err := s.LoadConfirmFixtures()
-	// validate data set
-	s.NoError(err)
-	s.Equal(29, len(data))
-	s.Equal("country", data[0].Level)
-	s.Equal(schema.CdsTaiwan, data[0].Name)
-	store := NewMongoStore(s.mongoClient, s.testDBName)
-	err = store.CreateCDS(data, schema.CdsTaiwan)
-	s.NoError(err)
+func (s *ConfirmCDSTestSuite) RemoveAllDocument() error {
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
+	if !ok {
+		s.T().Fatal("not a supported collection")
+	}
+	_, err := s.testDatabase.Collection(collection).DeleteMany(context.Background(), bson.M{})
+	if err != nil {
+		return err
+	}
+	s.DocumentCount(schema.CdsTaiwan, 0)
+	return nil
+}
+
+func (s *ConfirmCDSTestSuite) DocumentCount(country string, expectCount int64) {
 	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
 	s.NoError(err)
-	s.Equal(int64(29), count)
+	s.Equal(expectCount, count)
+}
+
+func (s *ConfirmCDSTestSuite) LoadExpectedData() {
+	s.ExpectContinueData = []schema.CDSScoreDataSet{
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 1},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+	}
+	s.ExpectContinueDataTimeBefore = []schema.CDSScoreDataSet{
+		schema.CDSScoreDataSet{Cases: 1},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+		schema.CDSScoreDataSet{Cases: 0},
+	}
+}
+
+func (s *ConfirmCDSTestSuite) TestCreateCDS() {
+	err := s.RemoveAllDocument()
+	s.NoError(err)
+	f := "fixtures/confirm_taiwan.json"
+	data, err := s.LoadConfirmFixtures(f)
+	s.NoError(err)
+	s.Equal(29, len(data))
+	store := NewMongoStore(s.mongoClient, s.testDBName)
 	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
-	count, err = s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
+	//s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
+
+	// Test Duplicate
+	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
-	s.Equal(int64(29), count)
+	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
 
 func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
+	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	opts := options.Find().SetLimit(2)
@@ -150,10 +243,9 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 		queryReturn.Cases = originalCases[i]
 		store.ReplaceCDS([]schema.CDSData{queryReturn}, schema.CdsTaiwan)
 	}
-	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
-	s.NoError(err)
-	s.Equal(int64(29), count)
+	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
+
 func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 	loc := schema.Location{Country: schema.CdsTaiwan}
 	store := NewMongoStore(s.mongoClient, s.testDBName)
@@ -172,46 +264,24 @@ func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 	s.Equal(float64(0), delta)
 	s.Equal(float64(0), changeRate)
 }
+
 func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
+	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 	loc := schema.Location{Country: schema.CdsTaiwan}
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	dataset, err := store.ContinuousDataCDSConfirm(loc, consts.ConfirmScoreWindowSize, 0)
 	s.NoError(err)
-	s.Equal(15, len(dataset))
-
-	expectDataSet := []schema.CDSScoreDataSet{
-		schema.CDSScoreDataSet{Cases: 441},
-		schema.CDSScoreDataSet{Cases: 441},
-		schema.CDSScoreDataSet{Cases: 441},
-		schema.CDSScoreDataSet{Cases: 441},
-		schema.CDSScoreDataSet{Cases: 441},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-		schema.CDSScoreDataSet{Cases: 440},
-	}
-	s.Equal(15, len(dataset))
-	for i := 0; i < len(expectDataSet); i++ {
-		s.Equal(expectDataSet[i].Cases, dataset[i].Cases)
+	s.Equal(14, len(dataset))
+	for i := 0; i < len(dataset); i++ {
+		s.Equal(float64(s.ExpectContinueData[i].Cases), dataset[i].Cases)
 	}
 	dataset, err = store.ContinuousDataCDSConfirm(loc, consts.ConfirmScoreWindowSize, 1589904000)
 	s.NoError(err)
-	s.Equal(10, len(dataset))
-	for i := 5; i < len(dataset); i++ {
-		s.Equal(expectDataSet[i].Cases, dataset[i].Cases)
+	s.Equal(14, len(dataset))
+	for i := 0; i < len(dataset); i++ {
+		s.Equal(float64(s.ExpectContinueDataTimeBefore[i].Cases), dataset[i].Cases)
 	}
 }
-
-func (s *ConfirmCDSTestSuite) TestDeleteCDSUnused() {
-
-}
-
 func TestConfirmTestSuite(t *testing.T) {
 	suite.Run(t, NewConfirmTestSuite("mongodb://127.0.0.1:27017/?compressors=disabled", "test-db"))
 }
