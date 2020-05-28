@@ -73,18 +73,8 @@ func migrateMongo() error {
 		return err
 	}
 
-	if err := BehaviorListNullToEmptyArray(client); err != nil {
-		fmt.Println("failed to convert null to empty array in  `behavior` list : ", err)
-		return err
-	}
-
 	if err := setupCollectionSymptom(ctx, client); err != nil {
 		fmt.Println("failed to set up collection `symptom`: ", err)
-		return err
-	}
-
-	if err := setupCDSConfirmCollection(client); err != nil {
-		fmt.Println("failed to set up collection `cds confirm`: ", err)
 		return err
 	}
 
@@ -98,14 +88,6 @@ func setupCollectionBehavior(ctx context.Context, client *mongo.Client) error {
 	behaviors := make([]interface{}, 0, len(schema.OfficialBehaviorMatrix))
 	for _, b := range schema.OfficialBehaviors {
 		behaviors = append(behaviors, b)
-	}
-
-	if _, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys: bson.M{
-			"source": 1,
-		},
-	}); err != nil {
-		return err
 	}
 
 	_, err := c.InsertMany(ctx, behaviors)
@@ -123,14 +105,6 @@ func setupCollectionBehavior(ctx context.Context, client *mongo.Client) error {
 func setupCollectionSymptom(ctx context.Context, client *mongo.Client) error {
 	fmt.Println("initialize symptom collection")
 	c := client.Database(viper.GetString("mongo.database")).Collection(schema.SymptomCollection)
-
-	if _, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys: bson.M{
-			"source": 1,
-		},
-	}); err != nil {
-		return err
-	}
 
 	if _, err := c.DeleteMany(ctx, bson.M{"source": schema.OfficialSymptom}); err != nil {
 		return err
@@ -155,59 +129,6 @@ func setupCollectionSymptom(ctx context.Context, client *mongo.Client) error {
 			}
 		}
 	}
-
-	return nil
-}
-
-func BehaviorListNullToEmptyArray(client *mongo.Client) error {
-	c := client.Database(viper.GetString("mongo.database")).Collection(schema.BehaviorReportCollection)
-	filter := bson.D{{"official_behaviors", bson.M{"$type": 10}}}
-	update := bson.D{{"$set", bson.D{{"official_behaviors", []schema.Behavior{}}}}}
-	result, err := c.UpdateMany(context.Background(), filter, update)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Migration: replace Official Behavior List with Empty Array result:", result.MatchedCount)
-	filter = bson.D{{"customized_behaviors", bson.M{"$type": 10}}}
-	update = bson.D{{"$set", bson.D{{"customized_behaviors", []schema.Behavior{}}}}}
-	result, err = c.UpdateMany(context.Background(), filter, update)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Migration: replace Customized Behavior List with Empty Array result:", result.MatchedCount)
-	return nil
-}
-func setupCDSConfirmCollection(client *mongo.Client) error {
-	db := client.Database(viper.GetString("mongo.database"))
-	cdsIndex := mongo.IndexModel{
-		Keys:    bson.D{{"name", 1}, {"report_ts", 1}},
-		Options: options.Index().SetUnique(true),
-	}
-	usCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsUSA)]
-	_, err := db.Collection(usCol).Indexes().CreateOne(context.Background(), cdsIndex)
-
-	if nil != err {
-		fmt.Println("collection", usCol, "mongodb create name and report_ts combined index with error: ", err)
-		return err
-	}
-	fmt.Println("confirm collection initialized", usCol)
-	twCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsTaiwan)]
-	_, err = db.Collection(twCol).Indexes().CreateOne(context.Background(), cdsIndex)
-
-	if nil != err {
-		fmt.Println("collection", twCol, "mongodb create name and report_ts combined index with error: ", err)
-		return err
-	}
-	fmt.Println("confirm collection initialized", twCol)
-
-	icelandCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsIceland)]
-	_, err = db.Collection(icelandCol).Indexes().CreateOne(context.Background(), cdsIndex)
-
-	if nil != err {
-		fmt.Println("collection", icelandCol, "mongodb create name and report_ts combined index with error: ", err)
-		return err
-	}
-	fmt.Println("confirm collection initialized", icelandCol)
 
 	return nil
 }

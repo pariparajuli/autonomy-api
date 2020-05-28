@@ -2,11 +2,14 @@ package schema
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var supportedCountries = []string{"Taiwan", "US", "Iceland"}
 
 type MongoDBIndexer struct {
 	ctx      context.Context
@@ -137,4 +140,19 @@ func (m *MongoDBIndexer) IndexSymptomReportCollection() error {
 			"location": "2dsphere",
 		},
 	})
+}
+
+func (m *MongoDBIndexer) IndexCDSConfirmCollections() error {
+	for country := range supportedCountries {
+		if err := m.createIndex(fmt.Sprintf("Confirm%s", country), mongo.IndexModel{
+			Keys: bson.D{
+				{"name", 1},
+				{"report_ts", 1},
+			},
+			Options: options.Index().SetUnique(true),
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
