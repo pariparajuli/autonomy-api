@@ -2,28 +2,12 @@ package store
 
 import (
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
-
-func matchReportedToday(todayBeginTime int64) bson.M {
-	return bson.M{
-		"ts": bson.M{
-			"$gte": todayBeginTime,
-		},
-	}
-}
-
-func matchReportedYesterday(todayBeginTime int64) bson.M {
-	return bson.M{
-		"ts": bson.M{
-			"$gte": todayBeginTime - 24*60*60,
-			"$lt":  todayBeginTime,
-		},
-	}
-}
 
 func aggStageGeoProximity(maxDistance int, location schema.Location) bson.M {
 	return bson.M{
@@ -37,18 +21,6 @@ func aggStageGeoProximity(maxDistance int, location schema.Location) bson.M {
 			"spherical":     true,
 			"includeLocs":   "location",
 		},
-	}
-}
-
-func aggStageReportedToday(todayBeginTime int64) bson.M {
-	return bson.M{
-		"$match": matchReportedToday(todayBeginTime),
-	}
-}
-
-func aggStageReportedYesterday(todayBeginTime int64) bson.M {
-	return bson.M{
-		"$match": matchReportedYesterday(todayBeginTime),
 	}
 }
 
@@ -71,54 +43,13 @@ func aggStagePreventNullArray(fields ...string) bson.M {
 	return bson.M{"$project": targets}
 }
 
-// aggStageReportedItemCount counts the length of items of each report type and adds them up.
-/*
-{
-	"$project": {
-		count: {
-			$sum: {
-				$add: [
-					{$size: $addendFields[0]},
-					{$size: $addendFields[1]},
-					...
-				]
-			}
-		}
-	}
-}
-*/
-func aggStageReportedItemCount(resultField string, addendFields ...string) bson.M {
-	terms := bson.A{}
-	for _, field := range addendFields {
-		terms = append(terms, bson.M{"$size": specifyField(field)})
-	}
-	return bson.M{
-		"$project": bson.M{
-			resultField: bson.M{"$sum": bson.M{"$add": terms}},
-		},
-	}
-}
-
-// aggStageSumValues sums up the values of the specified field.
-/*
-{
-	_id: null,
-	resultField: {
-		$sum: "$targetField"
-	}
-}
-*/
-func aggStageSumValues(targetField, resultField string) bson.M {
-	return bson.M{
-		"$group": bson.M{
-			"_id": nil,
-			resultField: bson.M{
-				"$sum": specifyField(targetField),
-			},
-		},
-	}
-}
-
 func specifyField(fieldName string) string {
 	return fmt.Sprintf("$%s", fieldName)
+}
+
+func getStartTimeOfConsecutiveDays(now time.Time) (yesterdayStartAt time.Time, todayStartAt time.Time, tomorrowStartAt time.Time) {
+	todayStartAt = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	yesterdayStartAt = todayStartAt.AddDate(0, 0, -1)
+	tomorrowStartAt = todayStartAt.AddDate(0, 0, 1)
+	return
 }

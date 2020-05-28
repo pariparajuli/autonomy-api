@@ -4,6 +4,13 @@ import (
 	"encoding/json"
 )
 
+type ReportType string
+
+const (
+	ReportTypeSymptom  = "symptom"
+	ReportTypeBehavior = "behavior"
+)
+
 type SymptomSource string
 
 const (

@@ -176,6 +176,85 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorReportTimes() {
 	assert.Equal(s.T(), 3, count)
 }
 
+func (s *BehaviorTestSuite) TestGetBehaviorCountForIndividual() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err := store.GetBehaviorCount("userA", nil, 0, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 2, todayCount)
+	assert.Equal(s.T(), 0, yesterdayCount)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 4, todayCount)
+	assert.Equal(s.T(), 2, yesterdayCount)
+
+	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, todayCount)
+	assert.Equal(s.T(), 4, yesterdayCount)
+}
+
+func (s *BehaviorTestSuite) TestGetBehaviorCountForCommunity() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	loc := &schema.Location{
+		Longitude: locationBitmark.Coordinates[0],
+		Latitude:  locationBitmark.Coordinates[1],
+	}
+	dist := consts.CORHORT_DISTANCE_RANGE
+
+	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err := store.GetBehaviorCount("", loc, dist, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 2, todayCount)
+	assert.Equal(s.T(), 0, yesterdayCount)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 6, todayCount)
+	assert.Equal(s.T(), 2, yesterdayCount)
+
+	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, todayCount)
+	assert.Equal(s.T(), 6, yesterdayCount)
+}
+
+func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	dist := consts.CORHORT_DISTANCE_RANGE
+
+	now := time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	count, err := store.GetNearbyReportingUserCount(
+		schema.ReportTypeSymptom,
+		dist,
+		schema.Location{
+			Longitude: locationBitmark.Coordinates[0],
+			Latitude:  locationBitmark.Coordinates[1],
+		},
+		now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 2, count)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	count, err = store.GetNearbyReportingUserCount(
+		schema.ReportTypeSymptom,
+		dist,
+		schema.Location{
+			Longitude: locationTaipeiTrainStation.Coordinates[0],
+			Latitude:  locationTaipeiTrainStation.Coordinates[1],
+		}, now)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, count)
+}
+
 func TestBehaviorTestSuite(t *testing.T) {
 	suite.Run(t, NewBehaviorTestSuite("mongodb://127.0.0.1:27017/?compressors=disabled", "test-db"))
 }

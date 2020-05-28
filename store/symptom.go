@@ -30,8 +30,8 @@ type Symptom interface {
 	SymptomReportSave(data *schema.SymptomReportData) error
 	FindSymptomsByIDs(ids []string) ([]schema.Symptom, error)
 	FindNearbySymptomDistribution(dist int, loc schema.Location, start, end int64) (schema.SymptomDistribution, error)
-	FindNearbyReporterCount(dist int, loc schema.Location, start, end int64) (int, error)
 	FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) ([]schema.Symptom, error)
+	GetSymptomCount(profileID string, loc *schema.Location, dist int, now time.Time) (int, int, error)
 }
 
 func (m *mongoDB) CreateSymptom(symptom schema.Symptom) (string, error) {
@@ -300,52 +300,6 @@ func (m *mongoDB) FindNearbySymptomDistribution(dist int, loc schema.Location, s
 	return result, nil
 }
 
-// FindNearbyReporterCount returns the number of users who have reported symptoms
-// in the specified area and within the specified time rage.
-func (m *mongoDB) FindNearbyReporterCount(dist int, loc schema.Location, start, end int64) (int, error) {
-	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	pipeline := []bson.M{
-		aggStageGeoProximity(dist, loc),
-		aggStageReportedBetween(start, end),
-		{
-			"$group": bson.M{
-				"_id": "$profile_id",
-				"count": bson.M{
-					"$sum": 1,
-				},
-			},
-		},
-		{
-			"$group": bson.M{
-				"_id": nil,
-				"count": bson.M{
-					"$sum": 1,
-				},
-			},
-		},
-	}
-	cursor, err := c.Aggregate(ctx, pipeline)
-	if err != nil {
-		return 0, err
-	}
-
-	if !cursor.Next(ctx) {
-		return 0, nil
-	}
-
-	var result struct {
-		Count int `bson:"count"`
-	}
-	if err := cursor.Decode(&result); err != nil {
-		return 0, err
-	}
-
-	return result.Count, nil
-}
-
 // FindNearbyNonOfficialSymptoms returns non-official symptoms reported today in the specified area.
 func (m *mongoDB) FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) ([]schema.Symptom, error) {
 	distribution, err := m.FindNearbySymptomDistribution(dist, loc, 0, 9223372036854775807)
@@ -379,4 +333,105 @@ func (m *mongoDB) FindNearbyNonOfficialSymptoms(dist int, loc schema.Location) (
 	}
 
 	return symptoms, nil
+}
+
+// GetSymptomCount returns the number of reported symptoms for today and yesterday.
+//
+// Either profileID of loc is required.
+// If profileID is provided, returned values are personal metrics.
+// Otherwise, if location is provided, returned values are community metrics.
+//
+// Duplicated reported symptoms of a user are seen as one symptom.
+func (m *mongoDB) GetSymptomCount(profileID string, loc *schema.Location, dist int, now time.Time) (int, int, error) {
+	c := m.client.Database(m.database).Collection(schema.SymptomReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	var filter bson.M
+	switch {
+	case profileID != "":
+		filter = bson.M{
+			"$match": bson.M{
+				"profile_id": profileID,
+			},
+		}
+	case loc != nil:
+		filter = aggStageGeoProximity(dist, *loc)
+	default:
+		return 0, 0, errors.New("either profile ID or location not provided")
+	}
+
+	yesterdayStartAt, todayStartAt, tomorrowStartAt := getStartTimeOfConsecutiveDays(now)
+
+	pipeline := []bson.M{
+		filter,
+		aggStageReportedBetween(yesterdayStartAt.Unix(), tomorrowStartAt.Unix()),
+		{
+			"$project": bson.M{
+				"profile_id": 1,
+				"day": bson.M{
+					"$dateToString": bson.M{
+						"format": "%Y-%m-%d",
+						"date": bson.M{
+							"$toDate": bson.M{
+								"$multiply": bson.A{"$ts", 1000},
+							},
+						},
+					},
+				},
+				"symptoms": bson.M{
+					"$concatArrays": bson.A{
+						bson.M{"$ifNull": bson.A{"$official_symptoms", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$customized_symptoms", bson.A{}}},
+						bson.M{"$ifNull": bson.A{"$symptoms", bson.A{}}},
+					},
+				},
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$symptoms",
+				"preserveNullAndEmptyArrays": false,
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": bson.M{
+					"profile_id": "$profile_id",
+					"day":        "$day",
+				},
+				"symptoms": bson.M{
+					"$addToSet": "$symptoms._id",
+				},
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": "$_id.day",
+				"count": bson.M{
+					"$sum": bson.M{"$size": "$symptoms"},
+				},
+			},
+		},
+	}
+
+	cursor, err := c.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, 0, err
+	}
+	var aggItem struct {
+		Date  string `bson:"_id"`
+		Count int    `bson:"count"`
+	}
+	result := make(map[string]int)
+	for cursor.Next(ctx) {
+		if err := cursor.Decode(&aggItem); err != nil {
+			return 0, 0, err
+		}
+		result[aggItem.Date] = aggItem.Count
+	}
+
+	today := todayStartAt.Format("2006-01-02")
+	yesterday := yesterdayStartAt.Format("2006-01-02")
+	return result[today], result[yesterday], nil
 }

@@ -54,7 +54,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	if err != nil {
 		return nil, err
 	}
-	symptomUserCount, err := m.FindNearbyReporterCount(consts.NEARBY_DISTANCE_RANGE, location, todayStartAtUnix, tomorrowStartAtUnix)
+	symptomUserCount, err := m.GetNearbyReportingUserCount(schema.ReportTypeSymptom, consts.NEARBY_DISTANCE_RANGE, location, now)
 	if err != nil {
 		return nil, err
 	}

@@ -35,6 +35,7 @@ type GoodBehaviorReport interface {
 	FindNearbyNonOfficialBehaviors(dist int, loc schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior(string) ([]schema.Behavior, error)
 	ListCustomizedBehaviors() ([]schema.Behavior, error)
+	GetBehaviorCount(profileID string, loc *schema.Location, dist int, now time.Time) (int, int, error)
 }
 
 func (m *mongoDB) ListOfficialBehavior(lang string) ([]schema.Behavior, error) {
@@ -316,6 +317,85 @@ func (m *mongoDB) FindNearbyNonOfficialBehaviors(dist int, loc schema.Location) 
 	}
 
 	return behaviors, nil
+}
+
+// GetBehaviorCount returns the number of reported behaviors for today and yesterday.
+//
+// Either profileID of loc is required.
+// If profileID is provided, returned values are personal metrics.
+// Otherwise, if location is provided, returned values are community metrics.
+//
+// Either profileID of loc is required.
+func (m *mongoDB) GetBehaviorCount(profileID string, loc *schema.Location, dist int, now time.Time) (int, int, error) {
+	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	var filter bson.M
+	switch {
+	case profileID != "":
+		filter = bson.M{
+			"$match": bson.M{
+				"profile_id": profileID,
+			},
+		}
+	case loc != nil:
+		filter = aggStageGeoProximity(dist, *loc)
+	default:
+		return 0, 0, errors.New("either profile ID or location not provided")
+	}
+
+	yesterdayStartAt, todayStartAt, tomorrowStartAt := getStartTimeOfConsecutiveDays(now)
+
+	pipeline := []bson.M{
+		filter,
+		aggStageReportedBetween(yesterdayStartAt.Unix(), tomorrowStartAt.Unix()),
+		{
+			"$project": bson.M{
+				"day": bson.M{
+					"$dateToString": bson.M{
+						"format": "%Y-%m-%d",
+						"date":   bson.M{"$toDate": bson.M{"$multiply": bson.A{"$ts", 1000}}},
+					},
+				},
+				"count": bson.M{
+					"$add": bson.A{
+						bson.M{"$size": bson.M{"$ifNull": bson.A{"$official_behaviors", bson.A{}}}},
+						bson.M{"$size": bson.M{"$ifNull": bson.A{"$customized_behaviors", bson.A{}}}},
+						bson.M{"$size": bson.M{"$ifNull": bson.A{"$behaviors", bson.A{}}}},
+					},
+				},
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": "$day",
+				"count": bson.M{
+					"$sum": "$count",
+				},
+			},
+		},
+	}
+	cursor, err := c.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, 0, err
+	}
+	var aggItem struct {
+		Date  string `bson:"_id"`
+		Count int    `bson:"count"`
+	}
+	result := make(map[string]int)
+	for cursor.Next(ctx) {
+		if err := cursor.Decode(&aggItem); err != nil {
+			return 0, 0, err
+		}
+		result[aggItem.Date] = aggItem.Count
+	}
+
+	today := todayStartAt.Format("2006-01-02")
+	yesterday := yesterdayStartAt.Format("2006-01-02")
+	return result[today], result[yesterday], nil
+
 }
 
 func todayStartAt() int64 {

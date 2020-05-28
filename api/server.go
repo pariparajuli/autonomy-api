@@ -229,7 +229,8 @@ func (s *Server) setupRouter() *gin.Engine {
 	metricsRoute := apiRoute.Group("/metrics")
 	metricsRoute.Use(s.recognizeAccountMiddleware())
 	{
-		metricsRoute.GET("/:reportType", s.getMetrics)
+		metricsRoute.GET("/symptom", s.getSymptomMetrics)
+		metricsRoute.GET("/behavior", s.getBehaviorMetrics)
 	}
 
 	debugRoute := apiRoute.Group("/debug")

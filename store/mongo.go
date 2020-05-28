@@ -27,7 +27,7 @@ type MongoStore interface {
 	History
 	Metric
 	ConfirmCDS
-	AcknowledgementMetrics
+	Report
 }
 
 // Closer - close db connection

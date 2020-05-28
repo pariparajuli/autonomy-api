@@ -11,3 +11,10 @@ func ChangeRate(new, old float64) float64 {
 
 	return (new - old) / old * 100
 }
+
+func DivOrDefault(numerator, denominator, def float64) float64 {
+	if denominator == 0 {
+		return def
+	}
+	return numerator / denominator
+}
