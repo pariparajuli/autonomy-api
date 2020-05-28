@@ -29,10 +29,10 @@ var localizedBehaviors map[string][]schema.Behavior = map[string][]schema.Behavi
 type GoodBehaviorReport interface {
 	CreateBehavior(behavior schema.Behavior) (string, error)
 	GoodBehaviorSave(data *schema.BehaviorReportData) error
-	IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error)
-	AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error)
+	FindBehaviorsByIDs(ids []string) ([]schema.Behavior, error)
 	FindNearbyBehaviorDistribution(dist int, loc schema.Location, start, end int64) (map[string]int, error)
 	FindNearbyBehaviorReportTimes(dist int, loc schema.Location, start, end int64) (int, error)
+	FindNearbyNonOfficialBehaviors(dist int, loc schema.Location) ([]schema.Behavior, error)
 	ListOfficialBehavior(string) ([]schema.Behavior, error)
 	ListCustomizedBehaviors() ([]schema.Behavior, error)
 }
@@ -136,11 +136,8 @@ func (m *mongoDB) CreateBehavior(behavior schema.Behavior) (string, error) {
 
 // GoodBehaviorData save a GoodBehaviorData into mongoDB
 func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
-	if 0 == len(data.OfficialBehaviors) {
-		data.OfficialBehaviors = []schema.Behavior{}
-	}
-	if 0 == len(data.CustomizedBehaviors) {
-		data.CustomizedBehaviors = []schema.Behavior{}
+	if 0 == len(data.Behaviors) {
+		data.Behaviors = []schema.Behavior{}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -156,36 +153,32 @@ func (m *mongoDB) GoodBehaviorSave(data *schema.BehaviorReportData) error {
 	return nil
 }
 
-// IDToBehaviors return official and customized behavuiors from a list of GoodBehaviorType ID
-func (m *mongoDB) IDToBehaviors(ids []schema.GoodBehaviorType) ([]schema.Behavior, []schema.Behavior, []schema.GoodBehaviorType, error) {
+func (m *mongoDB) FindBehaviorsByIDs(ids []string) ([]schema.Behavior, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	c := m.client.Database(m.database)
-	var foundOfficial []schema.Behavior
-	var foundCustomized []schema.Behavior
-	var notFound []schema.GoodBehaviorType
-	for _, id := range ids {
-		query := bson.M{"_id": string(id)}
-		var result schema.Behavior
-		err := c.Collection(schema.BehaviorCollection).FindOne(ctx, query).Decode(&result)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				notFound = append(notFound, id)
-			} else {
-				return nil, nil, nil, err
-			}
-		}
-		if result.Source == schema.OfficialBehavior {
-			foundOfficial = append(foundOfficial, result)
-		} else {
-			foundCustomized = append(foundCustomized, result)
-		}
 
+	c := m.client.Database(m.database).Collection(schema.BehaviorCollection)
+
+	query := bson.M{"_id": bson.M{"$in": ids}}
+
+	cursor, err := c.Find(ctx, query)
+	if err != nil {
+		return nil, err
 	}
-	return foundOfficial, foundCustomized, notFound, nil
+
+	behaviors := make([]schema.Behavior, 0)
+	for cursor.Next(ctx) {
+		var b schema.Behavior
+		if err := cursor.Decode(&b); err != nil {
+			return nil, err
+		}
+		behaviors = append(behaviors, b)
+	}
+
+	return behaviors, nil
 }
 
-// FindNearbyBehaviorDistribution returns the mapping of each reported symptom and the number of report times
+// FindNearbyBehaviorDistribution returns the mapping of each reported behavior and the number of report times
 // in the specified area and within the specified time rage.
 //
 // Here's the example: within the specified time interval, assume there are following 5 reports:
@@ -290,46 +283,43 @@ func (m *mongoDB) FindNearbyBehaviorReportTimes(dist int, loc schema.Location, s
 	return result.Count, nil
 }
 
-// AreaCustomizedBehaviorList return a list  of customized behaviors within distInMeter range
-func (m *mongoDB) AreaCustomizedBehaviorList(distInMeter int, location schema.Location) ([]schema.Behavior, error) {
-	filterStage := bson.D{{"$match", bson.M{"customized_weight": bson.M{"$gt": 0}}}}
-	c := m.client.Database(m.database).Collection(schema.BehaviorReportCollection)
+// FindNearbyNonOfficialBehaviors returns non-official behaviors in the specified area.
+func (m *mongoDB) FindNearbyNonOfficialBehaviors(dist int, loc schema.Location) ([]schema.Behavior, error) {
+	distribution, err := m.FindNearbyBehaviorDistribution(dist, loc, 0, 9223372036854775807)
+	if err != nil {
+		return nil, err
+	}
+
+	nonOfficialBehaviorIDs := make([]string, 0)
+	for id := range distribution {
+		if _, ok := schema.OfficialBehaviorMatrix[schema.GoodBehaviorType(id)]; !ok {
+			nonOfficialBehaviorIDs = append(nonOfficialBehaviorIDs, id)
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
-	cur, err := c.Aggregate(ctx, mongo.Pipeline{geoAggregate(distInMeter, location), filterStage})
-	if nil != err {
-		log.WithField("prefix", mongoLogPrefix).Errorf("nearest  distance  customized behavio with error: %s", err)
-		return nil, fmt.Errorf("nearest  distance  customized behavior list query with error: %s", err)
+
+	c := m.client.Database(m.database).Collection(schema.BehaviorCollection)
+	query := bson.M{"_id": bson.M{"$in": nonOfficialBehaviorIDs}}
+	cursor, err := c.Find(ctx, query, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
 	}
-	cbMap := make(map[schema.GoodBehaviorType]schema.Behavior, 0)
-	for cur.Next(ctx) {
-		var b schema.BehaviorReportData
-		if errDecode := cur.Decode(&b); errDecode != nil {
-			log.WithField("prefix", mongoLogPrefix).Infof("query nearest distance with error: %s", errDecode)
-			return nil, fmt.Errorf("nearest distance query decode record with error: %s", errDecode)
+	behaviors := make([]schema.Behavior, 0)
+	for cursor.Next(ctx) {
+		var b schema.Behavior
+		if err := cursor.Decode(&b); err != nil {
+			return nil, err
 		}
-		for _, behavior := range b.CustomizedBehaviors {
-			cbMap[behavior.ID] = behavior
-		}
+		behaviors = append(behaviors, b)
 	}
-	cBehaviors := make([]schema.Behavior, 0)
-	for _, b := range cbMap {
-		cBehaviors = append(cBehaviors, b)
-	}
-	return cBehaviors, nil
+
+	return behaviors, nil
 }
 
 func todayStartAt() int64 {
 	curTime := time.Now().UTC()
 	start := time.Date(curTime.Year(), curTime.Month(), curTime.Day(), 0, 0, 0, 0, time.UTC)
 	return start.Unix()
-}
-
-func geoAggregate(maxDist int, loc schema.Location) bson.D {
-	return bson.D{{"$geoNear", bson.M{
-		"near":          bson.M{"type": "Point", "coordinates": bson.A{loc.Longitude, loc.Latitude}},
-		"distanceField": "dist",
-		"spherical":     true,
-		"maxDistance":   maxDist,
-	}}}
 }

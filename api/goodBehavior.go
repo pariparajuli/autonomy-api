@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
+
 	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
-	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) createBehavior(c *gin.Context) {
@@ -72,14 +73,13 @@ func (s *Server) goodBehaviors(c *gin.Context) {
 		return
 	}
 
-	customized, err := s.mongoStore.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, *loc)
-
+	nonOfficialBehaviors, err := s.mongoStore.FindNearbyNonOfficialBehaviors(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		c.Error(err)
 	}
 
-	if customized != nil {
-		behaviors = append(behaviors, customized...)
+	if nonOfficialBehaviors != nil {
+		behaviors = append(behaviors, nonOfficialBehaviors...)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"behaviors": behaviors})
@@ -135,7 +135,7 @@ func (s *Server) getBehaviorsV2(c *gin.Context) {
 		return
 	}
 
-	customized, err := s.mongoStore.AreaCustomizedBehaviorList(consts.NEARBY_DISTANCE_RANGE, *loc)
+	customized, err := s.mongoStore.FindNearbyNonOfficialBehaviors(consts.NEARBY_DISTANCE_RANGE, *loc)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
@@ -173,22 +173,19 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		abortWithEncoding(c, http.StatusBadRequest, errorInvalidParameters, errors.New(errorMessageMap[1010]))
 		return
 	}
-	official, customized, err := s.getBehaviors(params.Behaviors)
+
+	behaviors, err := s.mongoStore.FindBehaviorsByIDs(params.Behaviors)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer)
 		return
 	}
-	behaviorWeight, selfDefinedWeight := behaviorWeight(official, customized)
 
 	data := schema.BehaviorReportData{
-		ProfileID:           account.Profile.ID.String(),
-		AccountNumber:       account.Profile.AccountNumber,
-		OfficialBehaviors:   official,
-		CustomizedBehaviors: customized,
-		OfficialWeight:      behaviorWeight,
-		CustomizedWeight:    selfDefinedWeight,
-		Location:            schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
-		Timestamp:           time.Now().UTC().Unix(),
+		ProfileID:     account.Profile.ID.String(),
+		AccountNumber: account.Profile.AccountNumber,
+		Behaviors:     behaviors,
+		Location:      schema.GeoJSON{Type: "Point", Coordinates: []float64{loc.Longitude, loc.Latitude}},
+		Timestamp:     time.Now().UTC().Unix(),
 	}
 
 	err = s.mongoStore.GoodBehaviorSave(&data)
@@ -197,8 +194,9 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 		return
 	}
 
-	if len(data.CustomizedBehaviors) > 0 {
-		err = s.mongoStore.UpdateAreaProfileBehavior(data.CustomizedBehaviors, *loc)
+	_, nonOfficial := schema.SplitBehaviors(behaviors)
+	if len(nonOfficial) > 0 {
+		err = s.mongoStore.UpdateAreaProfileBehavior(nonOfficial, *loc)
 		if err != nil { // do nothing
 			c.Error(err)
 		}
@@ -230,24 +228,4 @@ func (s *Server) reportBehaviors(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "OK"})
 	return
-}
-
-func (s *Server) getBehaviors(ids []string) ([]schema.Behavior, []schema.Behavior, error) {
-	var behviorIDs []schema.GoodBehaviorType
-	for _, id := range ids {
-		behviorIDs = append(behviorIDs, schema.GoodBehaviorType(id))
-	}
-	official, customeried, _, err := s.mongoStore.IDToBehaviors(behviorIDs)
-	return official, customeried, err
-}
-
-func behaviorWeight(official []schema.Behavior, customized []schema.Behavior) (float64, float64) {
-	var sum float64
-	for _, behavior := range official {
-		w, ok := schema.DefaultBehaviorWeightMatrix[behavior.ID]
-		if ok {
-			sum = sum + float64(w.Weight)
-		}
-	}
-	return sum, float64(len(customized))
 }

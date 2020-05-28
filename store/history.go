@@ -102,14 +102,14 @@ func (m *mongoDB) GetReportedBehaviors(accountNumber string, earierThan, limit i
 		if err := cur.Decode(&r); err != nil {
 			return nil, err
 		}
-		// TODO: make OfficialBehaviors as []*schema.Behavior
 		translatedBehaviors := make([]schema.Behavior, 0)
-		for _, b := range r.OfficialBehaviors {
-			b.Name = mapping[b.ID].Name
-			b.Desc = mapping[b.ID].Desc
+		for _, b := range r.Behaviors {
+			if _, ok := schema.OfficialBehaviorMatrix[b.ID]; ok {
+				b.Name = mapping[b.ID].Name
+			}
 			translatedBehaviors = append(translatedBehaviors, b)
 		}
-		r.OfficialBehaviors = translatedBehaviors
+		r.Behaviors = translatedBehaviors
 		reports = append(reports, &r)
 	}
 

@@ -74,27 +74,20 @@ var OfficialBehaviors = []Behavior{
 
 // BehaviorReportData the struct to store citizen data and score
 type BehaviorReportData struct {
-	ProfileID           string     `json:"profile_id" bson:"profile_id"`
-	AccountNumber       string     `json:"account_number" bson:"account_number"`
-	OfficialBehaviors   []Behavior `json:"official_behaviors" bson:"official_behaviors"`
-	CustomizedBehaviors []Behavior `json:"customized_behaviors" bson:"customized_behaviors"`
-	Location            GeoJSON    `json:"location" bson:"location"`
-	OfficialWeight      float64    `json:"official_weight" bson:"official_weight"`
-	CustomizedWeight    float64    `json:"customized_weight" bson:"customized_weight"`
-	Timestamp           int64      `json:"ts" bson:"ts"`
+	ProfileID     string     `json:"profile_id" bson:"profile_id"`
+	AccountNumber string     `json:"account_number" bson:"account_number"`
+	Behaviors     []Behavior `json:"behaviors" bson:"behaviors"`
+	Location      GeoJSON    `json:"location" bson:"location"`
+	Timestamp     int64      `json:"ts" bson:"ts"`
 }
 
 func (b *BehaviorReportData) MarshalJSON() ([]byte, error) {
-	allBehaviors := append(b.OfficialBehaviors, b.CustomizedBehaviors...)
-	if allBehaviors == nil {
-		allBehaviors = make([]Behavior, 0)
-	}
 	return json.Marshal(&struct {
 		Behaviors []Behavior `json:"behaviors"`
 		Location  Location   `json:"location"`
 		Timestamp int64      `json:"timestamp"`
 	}{
-		Behaviors: allBehaviors,
+		Behaviors: b.Behaviors,
 		Location:  Location{Longitude: b.Location.Coordinates[0], Latitude: b.Location.Coordinates[1]},
 		Timestamp: b.Timestamp,
 	})

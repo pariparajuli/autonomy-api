@@ -40,7 +40,7 @@ var (
 	// because they are near Bitmark Taipei office and are reported during 2020 May 25
 	behaviorReport1 = schema.BehaviorReportData{
 		ProfileID: "userA",
-		OfficialBehaviors: []schema.Behavior{
+		Behaviors: []schema.Behavior{
 			{ID: "clean_hand"},
 			{ID: "social_distancing"},
 		},
@@ -49,7 +49,7 @@ var (
 	}
 	behaviorReport2 = schema.BehaviorReportData{
 		ProfileID: "userA",
-		OfficialBehaviors: []schema.Behavior{
+		Behaviors: []schema.Behavior{
 			{ID: "clean_hand"},
 			{ID: "social_distancing"},
 		},
@@ -58,7 +58,7 @@ var (
 	}
 	behaviorReport3 = schema.BehaviorReportData{
 		ProfileID: "userA",
-		OfficialBehaviors: []schema.Behavior{
+		Behaviors: []schema.Behavior{
 			{ID: "clean_hand"},
 			{ID: "social_distancing"},
 		},
@@ -67,10 +67,8 @@ var (
 	}
 	behaviorReport4 = schema.BehaviorReportData{
 		ProfileID: "userB",
-		OfficialBehaviors: []schema.Behavior{
+		Behaviors: []schema.Behavior{
 			{ID: "touch_face"},
-		},
-		CustomizedBehaviors: []schema.Behavior{
 			{ID: "new_behavior"},
 		},
 		Location:  locationBitmark,
@@ -78,7 +76,7 @@ var (
 	}
 	behaviorReport5 = schema.BehaviorReportData{
 		ProfileID: "userB",
-		CustomizedBehaviors: []schema.Behavior{
+		Behaviors: []schema.Behavior{
 			{ID: "new_behavior"},
 		},
 		Location:  locationTaipeiTrainStation,
