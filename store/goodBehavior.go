@@ -395,7 +395,6 @@ func (m *mongoDB) GetBehaviorCount(profileID string, loc *schema.Location, dist 
 	today := todayStartAt.Format("2006-01-02")
 	yesterday := yesterdayStartAt.Format("2006-01-02")
 	return result[today], result[yesterday], nil
-
 }
 
 func todayStartAt() int64 {
