@@ -31,12 +31,19 @@ type ConfirmCDSTestSuite struct {
 	mongoClient   *mongo.Client
 	testDatabase  *mongo.Database
 	geoClientMock *mocks.MockGeoInfo
-	ConfirmExpectedData
+	ConfirmExpected
 }
 
-type ConfirmExpectedData struct {
-	ExpectContinueData           []schema.CDSScoreDataSet
-	ExpectContinueDataTimeBefore []schema.CDSScoreDataSet
+type ConfirmExpected struct {
+	ExpectContinue           []schema.CDSScoreDataSet
+	ExpectContinueTimeBefore []schema.CDSScoreDataSet
+	ExpectActiveConfirm
+	ExpectActiveNoDataSet ExpectActiveConfirm
+}
+type ExpectActiveConfirm struct {
+	Active              float64
+	Delta               float64
+	RateChangeRoundEven float64
 }
 
 func NewConfirmTestSuite(connURI, dbName string) *ConfirmCDSTestSuite {
@@ -153,7 +160,7 @@ func (s *ConfirmCDSTestSuite) DocumentCount(country string, expectCount int64) {
 }
 
 func (s *ConfirmCDSTestSuite) LoadExpectedData() {
-	s.ExpectContinueData = []schema.CDSScoreDataSet{
+	s.ExpectContinue = []schema.CDSScoreDataSet{
 		schema.CDSScoreDataSet{Cases: 0},
 		schema.CDSScoreDataSet{Cases: 0},
 		schema.CDSScoreDataSet{Cases: 0},
@@ -169,7 +176,7 @@ func (s *ConfirmCDSTestSuite) LoadExpectedData() {
 		schema.CDSScoreDataSet{Cases: 0},
 		schema.CDSScoreDataSet{Cases: 0},
 	}
-	s.ExpectContinueDataTimeBefore = []schema.CDSScoreDataSet{
+	s.ExpectContinueTimeBefore = []schema.CDSScoreDataSet{
 		schema.CDSScoreDataSet{Cases: 1},
 		schema.CDSScoreDataSet{Cases: 0},
 		schema.CDSScoreDataSet{Cases: 0},
@@ -186,6 +193,9 @@ func (s *ConfirmCDSTestSuite) LoadExpectedData() {
 		schema.CDSScoreDataSet{Cases: 0},
 		schema.CDSScoreDataSet{Cases: 0},
 	}
+
+	s.ExpectActiveConfirm = ExpectActiveConfirm{Active: 19, Delta: -1, RateChangeRoundEven: -5}
+	s.ExpectActiveNoDataSet = ExpectActiveConfirm{Active: 0, Delta: 0, RateChangeRoundEven: 0}
 }
 
 func (s *ConfirmCDSTestSuite) TestCreateCDS() {
@@ -198,8 +208,6 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
-	//s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
-
 	// Test Duplicate
 	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
@@ -253,16 +261,16 @@ func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 	s.NoError(err)
 	// "cases" : 441.0,     "deaths" : 7.0,    "active" : 19.0,  "report_ts":1590451200
 	// "cases" : 441.0,      "deaths" : 7.0,     "recovered" : 414.0,     "active" : 20.0,  "report_ts":1590249600
-	s.Equal(float64(19), active)
-	s.Equal(float64(-1), delta)
-	s.Equal(float64(-5), math.RoundToEven(changeRate))
+	s.Equal(s.ConfirmExpected.ExpectActiveConfirm.Active, active)
+	s.Equal(s.ConfirmExpected.ExpectActiveConfirm.Delta, delta)
+	s.Equal(s.ConfirmExpected.ExpectActiveConfirm.RateChangeRoundEven, math.RoundToEven(changeRate))
 
 	loc = schema.Location{Country: "Neverland"}
 	active, delta, changeRate, err = store.GetCDSActive(loc)
 	s.Equal(err, ErrNoConfirmDataset)
-	s.Equal(float64(0), active)
-	s.Equal(float64(0), delta)
-	s.Equal(float64(0), changeRate)
+	s.Equal(s.ConfirmExpected.ExpectActiveNoDataSet.Active, active)
+	s.Equal(s.ConfirmExpected.ExpectActiveNoDataSet.Delta, delta)
+	s.Equal(s.ConfirmExpected.ExpectActiveNoDataSet.RateChangeRoundEven, math.RoundToEven(changeRate))
 }
 
 func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
@@ -273,13 +281,13 @@ func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
 	s.NoError(err)
 	s.Equal(14, len(dataset))
 	for i := 0; i < len(dataset); i++ {
-		s.Equal(float64(s.ExpectContinueData[i].Cases), dataset[i].Cases)
+		s.Equal(float64(s.ConfirmExpected.ExpectContinue[i].Cases), dataset[i].Cases)
 	}
 	dataset, err = store.ContinuousDataCDSConfirm(loc, consts.ConfirmScoreWindowSize, 1589904000)
 	s.NoError(err)
 	s.Equal(14, len(dataset))
 	for i := 0; i < len(dataset); i++ {
-		s.Equal(float64(s.ExpectContinueDataTimeBefore[i].Cases), dataset[i].Cases)
+		s.Equal(float64(s.ConfirmExpected.ExpectContinueTimeBefore[i].Cases), dataset[i].Cases)
 	}
 }
 func TestConfirmTestSuite(t *testing.T) {
