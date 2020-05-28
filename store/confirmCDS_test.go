@@ -93,7 +93,7 @@ func (s *ConfirmCDSTestSuite) SetupTest() {
 	if err != nil {
 		s.T().Fatal(err)
 	}
-	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
+	s.ExpectDocCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
 
 // CleanMongoDB drop the whole test mongodb
@@ -147,11 +147,10 @@ func (s *ConfirmCDSTestSuite) RemoveAllDocument() error {
 	if err != nil {
 		return err
 	}
-	s.DocumentCount(schema.CdsTaiwan, 0)
 	return nil
 }
 
-func (s *ConfirmCDSTestSuite) DocumentCount(country string, expectCount int64) {
+func (s *ConfirmCDSTestSuite) ExpectDocCount(country string, expectCount int64) {
 	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	count, err := s.testDatabase.Collection(collection).CountDocuments(context.Background(), bson.M{})
@@ -211,11 +210,11 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	// Test Duplicate
 	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
-	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
+	s.ExpectDocCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
 
 func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
-	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
+	s.ExpectDocCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	s.True(ok)
 	opts := options.Find().SetLimit(2)
@@ -251,7 +250,7 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 		queryReturn.Cases = originalCases[i]
 		store.ReplaceCDS([]schema.CDSData{queryReturn}, schema.CdsTaiwan)
 	}
-	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
+	s.ExpectDocCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 }
 
 func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
@@ -274,7 +273,6 @@ func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 }
 
 func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
-	s.DocumentCount(schema.CdsTaiwan, numberOfConfirmTaiwan)
 	loc := schema.Location{Country: schema.CdsTaiwan}
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	dataset, err := store.ContinuousDataCDSConfirm(loc, consts.ConfirmScoreWindowSize, 0)
@@ -289,6 +287,16 @@ func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
 	for i := 0; i < len(dataset); i++ {
 		s.Equal(float64(s.ConfirmExpected.ExpectContinueTimeBefore[i].Cases), dataset[i].Cases)
 	}
+}
+
+func (s *ConfirmCDSTestSuite) TestDeleteCDSUnused() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+	err := store.DeleteCDSUnused(schema.CdsTaiwan, 1589126400)
+	s.NoError(err)
+	s.ExpectDocCount(schema.CdsTaiwan, 14)
+	err = store.DeleteCDSUnused(schema.CdsTaiwan, 2589126400)
+	s.NoError(err)
+	s.ExpectDocCount(schema.CdsTaiwan, 0)
 }
 func TestConfirmTestSuite(t *testing.T) {
 	suite.Run(t, NewConfirmTestSuite("mongodb://127.0.0.1:27017/?compressors=disabled", "test-db"))
