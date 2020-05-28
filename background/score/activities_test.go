@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/golang/mock/gomock"
@@ -70,7 +70,7 @@ func (ts *ScoreActivityTestSuite) SetupTest() {
 	ts.env = ts.NewTestActivityEnvironment()
 	ts.env.SetWorkerOptions(worker.Options{
 		BackgroundActivityContext: context.Background(),
-		DataConverter:             background.NewMsgPackDataConverter(),
+		DataConverter:             cadence.NewMsgPackDataConverter(),
 	})
 
 	ts.mockCtrl = gomock.NewController(ts.T())

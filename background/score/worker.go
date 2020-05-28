@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
@@ -56,7 +57,7 @@ func (s *ScoreUpdateWorker) Start(service workflowserviceclient.Interface, logge
 	workerOptions := worker.Options{
 		Logger:        logger,
 		MetricsScope:  tally.NewTestScope(TaskListName, map[string]string{}),
-		DataConverter: background.NewMsgPackDataConverter(),
+		DataConverter: cadence.NewMsgPackDataConverter(),
 	}
 
 	worker := worker.New(

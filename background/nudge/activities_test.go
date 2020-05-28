@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/utils"
@@ -62,7 +63,7 @@ func (ts *NudgeActivityTestSuite) SetupTest() {
 	ts.env = ts.NewTestActivityEnvironment()
 	ts.env.SetWorkerOptions(worker.Options{
 		BackgroundActivityContext: context.Background(),
-		DataConverter:             background.NewMsgPackDataConverter(),
+		DataConverter:             cadence.NewMsgPackDataConverter(),
 	})
 }
 

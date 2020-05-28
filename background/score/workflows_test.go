@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -53,7 +53,7 @@ func (ts *ScoreWorkflowTestSuite) SetupSuite() {
 func (ts *ScoreWorkflowTestSuite) SetupTest() {
 	ts.env = ts.NewTestWorkflowEnvironment()
 	ts.env.SetWorkerOptions(worker.Options{
-		DataConverter: background.NewMsgPackDataConverter(),
+		DataConverter: cadence.NewMsgPackDataConverter(),
 	})
 }
 

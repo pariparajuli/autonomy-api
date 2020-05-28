@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bitmark-inc/autonomy-api/background"
+	"github.com/bitmark-inc/autonomy-api/external/cadence"
 	"github.com/bitmark-inc/autonomy-api/external/onesignal"
 	"github.com/bitmark-inc/autonomy-api/store"
 )
@@ -59,7 +60,7 @@ func (n *NudgeWorker) Start(service workflowserviceclient.Interface, logger *zap
 	workerOptions := worker.Options{
 		Logger:        logger,
 		MetricsScope:  tally.NewTestScope(TaskListName, map[string]string{}),
-		DataConverter: background.NewMsgPackDataConverter(),
+		DataConverter: cadence.NewMsgPackDataConverter(),
 	}
 
 	worker := worker.New(

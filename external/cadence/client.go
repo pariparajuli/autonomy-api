@@ -46,7 +46,10 @@ func NewClient() *CadenceClient {
 		client: client.NewClient(
 			service,
 			viper.GetString("cadence.domain"),
-			&client.Options{MetricsScope: tally.NoopScope},
+			&client.Options{
+				MetricsScope:  tally.NoopScope,
+				DataConverter: NewMsgPackDataConverter(),
+			},
 		),
 	}
 }
