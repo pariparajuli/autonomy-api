@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -85,16 +84,18 @@ var (
 
 type BehaviorTestSuite struct {
 	suite.Suite
-	connURI      string
-	testDBName   string
-	mongoClient  *mongo.Client
-	testDatabase *mongo.Database
+	connURI            string
+	testDBName         string
+	mongoClient        *mongo.Client
+	testDatabase       *mongo.Database
+	neighborhoodRadius int
 }
 
 func NewBehaviorTestSuite(connURI, dbName string) *BehaviorTestSuite {
 	return &BehaviorTestSuite{
-		connURI:    connURI,
-		testDBName: dbName,
+		connURI:            connURI,
+		testDBName:         dbName,
+		neighborhoodRadius: 5000, // 5 km
 	}
 }
 
@@ -146,7 +147,7 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorDistribution() {
 	start := time.Date(2020, 5, 26, 0, 0, 0, 0, time.UTC).UTC().Unix()
 	end := time.Date(2020, 5, 26, 24, 0, 0, 0, time.UTC).UTC().Unix()
 	distribution, err := store.FindNearbyBehaviorDistribution(
-		consts.CORHORT_DISTANCE_RANGE,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
@@ -166,7 +167,7 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorReportTimes() {
 	start := time.Date(2020, 5, 26, 0, 0, 0, 0, time.UTC).UTC().Unix()
 	end := time.Date(2020, 5, 26, 24, 0, 0, 0, time.UTC).UTC().Unix()
 	count, err := store.FindNearbyBehaviorReportTimes(
-		consts.CORHORT_DISTANCE_RANGE,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
@@ -204,36 +205,33 @@ func (s *BehaviorTestSuite) TestGetBehaviorCountForCommunity() {
 		Longitude: locationBitmark.Coordinates[0],
 		Latitude:  locationBitmark.Coordinates[1],
 	}
-	dist := consts.CORHORT_DISTANCE_RANGE
 
 	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
-	todayCount, yesterdayCount, err := store.GetBehaviorCount("", loc, dist, now)
+	todayCount, yesterdayCount, err := store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
 	s.NoError(err)
 	s.Equal(2, todayCount)
 	s.Equal(0, yesterdayCount)
 
 	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
-	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
 	s.NoError(err)
 	s.Equal(6, todayCount)
 	s.Equal(2, yesterdayCount)
 
 	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
-	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
 	s.NoError(err)
 	s.Equal(0, todayCount)
 	s.Equal(6, yesterdayCount)
 }
 
-func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
+func (s *BehaviorTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
 	store := NewMongoStore(s.mongoClient, s.testDBName)
-
-	dist := consts.CORHORT_DISTANCE_RANGE
 
 	now := time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
 	count, err := store.GetNearbyReportingUserCount(
-		schema.ReportTypeSymptom,
-		dist,
+		schema.ReportTypeBehavior,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
@@ -244,8 +242,8 @@ func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
 
 	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
 	count, err = store.GetNearbyReportingUserCount(
-		schema.ReportTypeSymptom,
-		dist,
+		schema.ReportTypeBehavior,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationTaipeiTrainStation.Coordinates[0],
 			Latitude:  locationTaipeiTrainStation.Coordinates[1],
