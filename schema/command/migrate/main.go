@@ -183,7 +183,7 @@ func setupCDSConfirmCollection(client *mongo.Client) error {
 		Keys:    bson.D{{"name", 1}, {"report_ts", 1}},
 		Options: options.Index().SetUnique(true),
 	}
-	usCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsUSA)]
+	usCol := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsUSA)]
 	_, err := db.Collection(usCol).Indexes().CreateOne(context.Background(), cdsIndex)
 
 	if nil != err {
@@ -191,7 +191,7 @@ func setupCDSConfirmCollection(client *mongo.Client) error {
 		return err
 	}
 	fmt.Println("confirm collection initialized", usCol)
-	twCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsTaiwan)]
+	twCol := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)]
 	_, err = db.Collection(twCol).Indexes().CreateOne(context.Background(), cdsIndex)
 
 	if nil != err {
@@ -200,7 +200,7 @@ func setupCDSConfirmCollection(client *mongo.Client) error {
 	}
 	fmt.Println("confirm collection initialized", twCol)
 
-	icelandCol := store.CDSCountyCollectionMatrix[store.CDSCountryType(store.CdsIceland)]
+	icelandCol := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsIceland)]
 	_, err = db.Collection(icelandCol).Indexes().CreateOne(context.Background(), cdsIndex)
 
 	if nil != err {

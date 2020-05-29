@@ -14,14 +14,6 @@ import (
 	"github.com/bitmark-inc/autonomy-api/score"
 )
 
-type CDSCountryType string
-
-const (
-	CdsUSA     = "United States"
-	CdsTaiwan  = "Taiwan"
-	CdsIceland = "Iceland"
-)
-
 var (
 	ErrNoConfirmDataset       = fmt.Errorf("no data-set")
 	ErrInvalidConfirmDataset  = fmt.Errorf("invalid confirm data-set")
@@ -39,14 +31,8 @@ type ConfirmCDS interface {
 	ContinuousDataCDSConfirm(loc schema.Location, num int64, timeBefore int64) ([]schema.CDSScoreDataSet, error)
 }
 
-var CDSCountyCollectionMatrix = map[CDSCountryType]string{
-	CDSCountryType(CdsUSA):     "ConfirmUS",
-	CDSCountryType(CdsTaiwan):  "ConfirmTaiwan",
-	CDSCountryType(CdsIceland): "ConfirmIceland",
-}
-
 func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
-	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(country)]
 	if !ok {
 		return errors.New("no cds country availible")
 	}
@@ -91,7 +77,7 @@ func (m *mongoDB) ReplaceCDS(result []schema.CDSData, country string) error {
 }
 
 func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
-	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(country)]
 	if !ok {
 		return errors.New("no cds country availible")
 	}
@@ -115,7 +101,7 @@ func (m *mongoDB) CreateCDS(result []schema.CDSData, country string) error {
 	return nil
 }
 func (m *mongoDB) DeleteCDSUnused(country string, timeBefore int64) error {
-	collection, ok := CDSCountyCollectionMatrix[CDSCountryType(country)]
+	collection, ok := schema.CDSCountyCollectionMatrix[schema.CDSCountryType(country)]
 	if !ok {
 		return errors.New("no cds country availible")
 	}
@@ -136,8 +122,8 @@ func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, e
 	var c *mongo.Collection
 	var cur *mongo.Cursor
 	switch loc.Country { //  Currently this function support only USA data
-	case CdsTaiwan:
-		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+	case schema.CdsTaiwan:
+		c = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)])
 		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
 		filter := bson.M{}
 		curTW, err := c.Find(context.Background(), filter, opts)
@@ -146,8 +132,8 @@ func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, e
 			return 0, 0, 0, ErrConfirmDataFetch
 		}
 		cur = curTW
-	case CdsIceland:
-		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsIceland)])
+	case schema.CdsIceland:
+		c = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsIceland)])
 		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
 		filter := bson.M{}
 		curIceland, err := c.Find(context.Background(), filter, opts)
@@ -156,8 +142,8 @@ func (m mongoDB) GetCDSActive(loc schema.Location) (float64, float64, float64, e
 			return 0, 0, 0, ErrConfirmDataFetch
 		}
 		cur = curIceland
-	case CdsUSA:
-		c = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+	case schema.CdsUSA:
+		c = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsUSA)])
 		opts := options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(2)
 		filter := bson.M{"county": loc.County, "state": loc.State}
 		curUSA, err := c.Find(context.Background(), filter, opts)
@@ -210,22 +196,22 @@ func (m mongoDB) ContinuousDataCDSConfirm(loc schema.Location, windowSize int64,
 	var filter bson.M
 	var opts *options.FindOptions
 	switch loc.Country { //  Currently this function support only USA data
-	case CdsTaiwan:
-		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)])
+	case schema.CdsTaiwan:
+		col = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsTaiwan)])
 		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
 		filter = bson.M{}
 		if timeBefore > 0 {
 			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
 		}
-	case CdsIceland:
-		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsIceland)])
+	case schema.CdsIceland:
+		col = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsIceland)])
 		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
 		filter = bson.M{}
 		if timeBefore > 0 {
 			filter = bson.M{"report_ts": bson.D{{"$lte", timeBefore}}}
 		}
-	case CdsUSA:
-		col = m.client.Database(m.database).Collection(CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)])
+	case schema.CdsUSA:
+		col = m.client.Database(m.database).Collection(schema.CDSCountyCollectionMatrix[schema.CDSCountryType(schema.CdsUSA)])
 		opts = options.Find().SetSort(bson.M{"report_ts": -1}).SetLimit(windowSize + 1)
 		filter = bson.M{"county": loc.County, "state": loc.State}
 		if timeBefore > 0 {

@@ -53,6 +53,7 @@ func (m *MongoDBIndexer) IndexAll() {
 	panicIfError(m.IndexBehaviorReportCollection())
 	panicIfError(m.IndexSymptomCollection())
 	panicIfError(m.IndexSymptomReportCollection())
+	panicIfError(m.IndexCDSConfirmCollection())
 }
 
 func (m *MongoDBIndexer) IndexProfileCollection() error {
@@ -137,4 +138,24 @@ func (m *MongoDBIndexer) IndexSymptomReportCollection() error {
 			"location": "2dsphere",
 		},
 	})
+}
+
+func (m *MongoDBIndexer) IndexCDSConfirmCollection() error {
+	cdsIndex := mongo.IndexModel{
+		Keys:    bson.D{{"name", 1}, {"report_ts", 1}},
+		Options: options.Index().SetUnique(true),
+	}
+	usCollection := CDSCountyCollectionMatrix[CDSCountryType(CdsUSA)]
+	if err := m.createIndex(usCollection, cdsIndex); err != nil {
+		return err
+	}
+	twCollection := CDSCountyCollectionMatrix[CDSCountryType(CdsTaiwan)]
+	if err := m.createIndex(twCollection, cdsIndex); err != nil {
+		return err
+	}
+	icelandCollection := CDSCountyCollectionMatrix[CDSCountryType(CdsIceland)]
+	if err := m.createIndex(icelandCollection, cdsIndex); err != nil {
+		return err
+	}
+	return nil
 }

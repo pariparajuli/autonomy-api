@@ -1,0 +1,901 @@
+[
+  {
+    "_id": {
+      "$oid": "5eccc3a1ae63ffe4df05fb1e"
+    },
+    "city": "",
+    "stateId": "",
+    "tz": [
+      "Asia/Taipei"
+    ],
+    "level": "country",
+    "recovered": 415.0,
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "report_ts": 1590451200,
+    "update_ts": 1590483574,
+    "report_date": "2020-05-26",
+    "countryId": "iso1:TW",
+    "name": "Taiwan",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "cases": 441.0,
+    "deaths": 7.0,
+    "active": 19.0,
+    "countyId": ""
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c4"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 441.0,
+    "deaths": 7.0,
+    "recovered": 414.0,
+    "active": 20.0,
+    "report_ts": 1590249600,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-24",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c6"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 441.0,
+    "deaths": 7.0,
+    "recovered": 411.0,
+    "active": 23.0,
+    "report_ts": 1590163200,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-23",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c5"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 441.0,
+    "deaths": 7.0,
+    "recovered": 408.0,
+    "active": 26.0,
+    "report_ts": 1590076800,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-22",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c0"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 441.0,
+    "deaths": 7.0,
+    "recovered": 407.0,
+    "active": 27.0,
+    "report_ts": 1589990400,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-21",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c1"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 402.0,
+    "active": 31.0,
+    "report_ts": 1589904000,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-20",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295bf"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 401.0,
+    "active": 32.0,
+    "report_ts": 1589817600,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-19",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295be"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 398.0,
+    "active": 35.0,
+    "report_ts": 1589731200,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-18",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295bc"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 395.0,
+    "active": 38.0,
+    "report_ts": 1589644800,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-17",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c3"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 389.0,
+    "active": 44.0,
+    "report_ts": 1589558400,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-16",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295bd"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 387.0,
+    "active": 46.0,
+    "report_ts": 1589472000,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-15",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295ba"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 383.0,
+    "active": 50.0,
+    "report_ts": 1589385600,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-14",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c9"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 375.0,
+    "active": 58.0,
+    "report_ts": 1589299200,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-13",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295c8"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 372.0,
+    "active": 61.0,
+    "report_ts": 1589212800,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-12",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295b7"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 7.0,
+    "recovered": 368.0,
+    "active": 65.0,
+    "report_ts": 1589126400,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-11",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecb795946ad0584ab1295b9"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 6.0,
+    "recovered": 366.0,
+    "active": 68.0,
+    "report_ts": 1589040000,
+    "update_ts": 1590393177,
+    "report_date": "2020-05-10",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecbb3b4b286a5f10e5d57d5"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 6.0,
+    "recovered": 361.0,
+    "active": 73.0,
+    "report_ts": 1588953600,
+    "update_ts": 1590408116,
+    "report_date": "2020-05-09",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecbb3b4b286a5f10e5d57d0"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 6.0,
+    "recovered": 355.0,
+    "active": 79.0,
+    "report_ts": 1588867200,
+    "update_ts": 1590408116,
+    "report_date": "2020-05-08",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5ecbb3b4b286a5f10e5d57cd"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 440.0,
+    "deaths": 6.0,
+    "recovered": 347.0,
+    "active": 87.0,
+    "report_ts": 1588780800,
+    "update_ts": 1590408116,
+    "report_date": "2020-05-07",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c77"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 439.0,
+    "deaths": 6.0,
+    "recovered": 339.0,
+    "active": 94.0,
+    "report_ts": 1588694400,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-06",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c6e"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 438.0,
+    "deaths": 6.0,
+    "recovered": 334.0,
+    "active": 98.0,
+    "report_ts": 1588608000,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-05",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c79"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 438.0,
+    "deaths": 6.0,
+    "recovered": 334.0,
+    "active": 98.0,
+    "report_ts": 1588521600,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-04",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c65"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 436.0,
+    "deaths": 6.0,
+    "recovered": 332.0,
+    "active": 98.0,
+    "report_ts": 1588435200,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-03",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c6b"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 432.0,
+    "deaths": 6.0,
+    "recovered": 324.0,
+    "active": 102.0,
+    "report_ts": 1588348800,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-02",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c74"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 429.0,
+    "deaths": 6.0,
+    "recovered": 324.0,
+    "active": 99.0,
+    "report_ts": 1588262400,
+    "update_ts": 1590492919,
+    "report_date": "2020-05-01",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c71"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 429.0,
+    "deaths": 6.0,
+    "recovered": 322.0,
+    "active": 101.0,
+    "report_ts": 1588176000,
+    "update_ts": 1590492919,
+    "report_date": "2020-04-30",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c64"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 429.0,
+    "deaths": 6.0,
+    "recovered": 311.0,
+    "active": 112.0,
+    "report_ts": 1588089600,
+    "update_ts": 1590492919,
+    "report_date": "2020-04-29",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c7d"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 429.0,
+    "deaths": 6.0,
+    "recovered": 307.0,
+    "active": 116.0,
+    "report_ts": 1588003200,
+    "update_ts": 1590492919,
+    "report_date": "2020-04-28",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "5eccfef7d40e566440099c6c"
+    },
+    "name": "Taiwan",
+    "city": "",
+    "county": "",
+    "state": "",
+    "country": "Taiwan",
+    "level": "country",
+    "cases": 429.0,
+    "deaths": 6.0,
+    "recovered": 290.0,
+    "active": 133.0,
+    "report_ts": 1587916800,
+    "update_ts": 1590492919,
+    "report_date": "2020-04-27",
+    "countryId": "iso1:TW",
+    "stateId": "",
+    "countyId": "",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        120.1175,
+        24.073999999999998
+      ]
+    },
+    "tz": [
+      "Asia/Taipei"
+    ]
+  }
+]
