@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -152,8 +151,8 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorDistribution() {
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
 		}, start, end)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), map[string]int{
+	s.NoError(err)
+	s.Equal(map[string]int{
 		"clean_hand":        2,
 		"social_distancing": 2,
 		"touch_face":        1,
@@ -172,8 +171,8 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorReportTimes() {
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
 		}, start, end)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 3, count)
+	s.NoError(err)
+	s.Equal(3, count)
 }
 
 func (s *BehaviorTestSuite) TestGetBehaviorCountForIndividual() {
@@ -181,21 +180,21 @@ func (s *BehaviorTestSuite) TestGetBehaviorCountForIndividual() {
 
 	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err := store.GetBehaviorCount("userA", nil, 0, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, todayCount)
-	assert.Equal(s.T(), 0, yesterdayCount)
+	s.NoError(err)
+	s.Equal(2, todayCount)
+	s.Equal(0, yesterdayCount)
 
 	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 4, todayCount)
-	assert.Equal(s.T(), 2, yesterdayCount)
+	s.NoError(err)
+	s.Equal(4, todayCount)
+	s.Equal(2, yesterdayCount)
 
 	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, todayCount)
-	assert.Equal(s.T(), 4, yesterdayCount)
+	s.NoError(err)
+	s.Equal(0, todayCount)
+	s.Equal(4, yesterdayCount)
 }
 
 func (s *BehaviorTestSuite) TestGetBehaviorCountForCommunity() {
@@ -209,21 +208,21 @@ func (s *BehaviorTestSuite) TestGetBehaviorCountForCommunity() {
 
 	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err := store.GetBehaviorCount("", loc, dist, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, todayCount)
-	assert.Equal(s.T(), 0, yesterdayCount)
+	s.NoError(err)
+	s.Equal(2, todayCount)
+	s.Equal(0, yesterdayCount)
 
 	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 6, todayCount)
-	assert.Equal(s.T(), 2, yesterdayCount)
+	s.NoError(err)
+	s.Equal(6, todayCount)
+	s.Equal(2, yesterdayCount)
 
 	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
 	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, dist, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, todayCount)
-	assert.Equal(s.T(), 6, yesterdayCount)
+	s.NoError(err)
+	s.Equal(0, todayCount)
+	s.Equal(6, yesterdayCount)
 }
 
 func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
@@ -240,8 +239,8 @@ func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
 			Latitude:  locationBitmark.Coordinates[1],
 		},
 		now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, count)
+	s.NoError(err)
+	s.Equal(2, count)
 
 	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
 	count, err = store.GetNearbyReportingUserCount(
@@ -251,8 +250,8 @@ func (s *SymptomTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
 			Longitude: locationTaipeiTrainStation.Coordinates[0],
 			Latitude:  locationTaipeiTrainStation.Coordinates[1],
 		}, now)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 1, count)
+	s.NoError(err)
+	s.Equal(1, count)
 }
 
 func TestBehaviorTestSuite(t *testing.T) {
