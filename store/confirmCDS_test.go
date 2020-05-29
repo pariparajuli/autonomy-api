@@ -203,7 +203,7 @@ func (s *ConfirmCDSTestSuite) TestCreateCDS() {
 	f := "fixtures/confirm_taiwan.json"
 	data, err := s.LoadConfirmFixtures(f)
 	s.NoError(err)
-	s.Equal(29, len(data))
+	s.Equal(numberOfConfirmTaiwan, len(data))
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	err = store.CreateCDS(data, schema.CdsTaiwan)
 	s.NoError(err)
