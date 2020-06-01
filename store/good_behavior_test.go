@@ -5,12 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/bitmark-inc/autonomy-api/consts"
 	"github.com/bitmark-inc/autonomy-api/schema"
 )
 
@@ -86,16 +84,18 @@ var (
 
 type BehaviorTestSuite struct {
 	suite.Suite
-	connURI      string
-	testDBName   string
-	mongoClient  *mongo.Client
-	testDatabase *mongo.Database
+	connURI            string
+	testDBName         string
+	mongoClient        *mongo.Client
+	testDatabase       *mongo.Database
+	neighborhoodRadius int
 }
 
 func NewBehaviorTestSuite(connURI, dbName string) *BehaviorTestSuite {
 	return &BehaviorTestSuite{
-		connURI:    connURI,
-		testDBName: dbName,
+		connURI:            connURI,
+		testDBName:         dbName,
+		neighborhoodRadius: 5000, // 5 km
 	}
 }
 
@@ -147,13 +147,13 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorDistribution() {
 	start := time.Date(2020, 5, 26, 0, 0, 0, 0, time.UTC).UTC().Unix()
 	end := time.Date(2020, 5, 26, 24, 0, 0, 0, time.UTC).UTC().Unix()
 	distribution, err := store.FindNearbyBehaviorDistribution(
-		consts.CORHORT_DISTANCE_RANGE,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
 		}, start, end)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), map[string]int{
+	s.NoError(err)
+	s.Equal(map[string]int{
 		"clean_hand":        2,
 		"social_distancing": 2,
 		"touch_face":        1,
@@ -167,13 +167,89 @@ func (s *BehaviorTestSuite) TestFindNearbyBehaviorReportTimes() {
 	start := time.Date(2020, 5, 26, 0, 0, 0, 0, time.UTC).UTC().Unix()
 	end := time.Date(2020, 5, 26, 24, 0, 0, 0, time.UTC).UTC().Unix()
 	count, err := store.FindNearbyBehaviorReportTimes(
-		consts.CORHORT_DISTANCE_RANGE,
+		s.neighborhoodRadius,
 		schema.Location{
 			Longitude: locationBitmark.Coordinates[0],
 			Latitude:  locationBitmark.Coordinates[1],
 		}, start, end)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 3, count)
+	s.NoError(err)
+	s.Equal(3, count)
+}
+
+func (s *BehaviorTestSuite) TestGetBehaviorCountForIndividual() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err := store.GetBehaviorCount("userA", nil, 0, now)
+	s.NoError(err)
+	s.Equal(2, todayCount)
+	s.Equal(0, yesterdayCount)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
+	s.NoError(err)
+	s.Equal(4, todayCount)
+	s.Equal(2, yesterdayCount)
+
+	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("userA", nil, 0, now)
+	s.NoError(err)
+	s.Equal(0, todayCount)
+	s.Equal(4, yesterdayCount)
+}
+
+func (s *BehaviorTestSuite) TestGetBehaviorCountForCommunity() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	loc := &schema.Location{
+		Longitude: locationBitmark.Coordinates[0],
+		Latitude:  locationBitmark.Coordinates[1],
+	}
+
+	now := time.Date(2020, 5, 25, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err := store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
+	s.NoError(err)
+	s.Equal(2, todayCount)
+	s.Equal(0, yesterdayCount)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
+	s.NoError(err)
+	s.Equal(6, todayCount)
+	s.Equal(2, yesterdayCount)
+
+	now = time.Date(2020, 5, 27, 12, 0, 0, 0, time.UTC)
+	todayCount, yesterdayCount, err = store.GetBehaviorCount("", loc, s.neighborhoodRadius, now)
+	s.NoError(err)
+	s.Equal(0, todayCount)
+	s.Equal(6, yesterdayCount)
+}
+
+func (s *BehaviorTestSuite) TestGetNearbyReportingBehaviorsUserCount() {
+	store := NewMongoStore(s.mongoClient, s.testDBName)
+
+	now := time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	count, err := store.GetNearbyReportingUserCount(
+		schema.ReportTypeBehavior,
+		s.neighborhoodRadius,
+		schema.Location{
+			Longitude: locationBitmark.Coordinates[0],
+			Latitude:  locationBitmark.Coordinates[1],
+		},
+		now)
+	s.NoError(err)
+	s.Equal(2, count)
+
+	now = time.Date(2020, 5, 26, 12, 0, 0, 0, time.UTC)
+	count, err = store.GetNearbyReportingUserCount(
+		schema.ReportTypeBehavior,
+		s.neighborhoodRadius,
+		schema.Location{
+			Longitude: locationTaipeiTrainStation.Coordinates[0],
+			Latitude:  locationTaipeiTrainStation.Coordinates[1],
+		}, now)
+	s.NoError(err)
+	s.Equal(1, count)
 }
 
 func TestBehaviorTestSuite(t *testing.T) {
