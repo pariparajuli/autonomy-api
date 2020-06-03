@@ -10,11 +10,17 @@ import (
 )
 
 type Location struct {
+	AddressComponent `json:"-" bson:",inline"`
+
 	Latitude  float64 `json:"latitude" bson:"latitude"`
 	Longitude float64 `json:"longitude" bson:"longitude"`
-	Country   string  `json:"-" bson:"-"`
-	County    string  `json:"-" bson:"-"`
-	State     string  `json:"-" bson:"-"`
+}
+
+type AddressComponent struct {
+	Country string `json:"-" bson:"country"`
+	County  string `json:"-" bson:"county"`
+	State   string `json:"-" bson:"state"`
+	Address string `json:"-" bson:"address"`
 }
 
 type ActivityState struct {

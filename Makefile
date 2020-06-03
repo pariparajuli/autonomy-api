@@ -1,6 +1,7 @@
 .PHONY: api
 
 dist =
+map_apikey =
 
 default: build
 
@@ -74,20 +75,24 @@ build: build-api-image build-score-worker-image build-nudge-worker-image build-c
 mockgen:
 	mockgen -package=mocks -destination=mocks/mongo.go "github.com/bitmark-inc/autonomy-api/store" MongoStore
 	mockgen -package=mocks -destination=mocks/autonomy.go "github.com/bitmark-inc/autonomy-api/store" AutonomyCore
+	mockgen -package=mocks -destination=geo/mocks/resolver.go "github.com/bitmark-inc/autonomy-api/geo" LocationResolver
 	mockgen -package=mocks -destination=external/mocks/geo.go "github.com/bitmark-inc/autonomy-api/external/geoinfo" GeoInfo
 	mockgen -package=mocks -destination=mocks/notification.go "github.com/bitmark-inc/autonomy-api/background" NotificationCenter
 
-test: mockgen
-	go test ./...
+pull-lfs:
+	git lfs pull
 
-fast-test:
-	go test ./...
+test: pull-lfs mockgen
+	MAP_APIKEY=$(map_apikey) go test ./...
 
-cover-report: mockgen
-	go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
+fast-test: pull-lfs
+	MAP_APIKEY=$(map_apikey) go test ./...
 
-fast-cover-report:
-	go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
+cover-report: pull-lfs mockgen
+	MAP_APIKEY=$(map_apikey) go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
+
+fast-cover-report: pull-lfs
+	MAP_APIKEY=$(map_apikey) go test -cover -coverprofile=cover.out ./...; go tool cover -html=cover.out
 
 clean:
 	rm -r bin

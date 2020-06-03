@@ -53,9 +53,11 @@ func (s *ScoreUpdateWorker) CalculatePOIStateActivity(ctx context.Context, id st
 	location := schema.Location{
 		Latitude:  poi.Location.Coordinates[1],
 		Longitude: poi.Location.Coordinates[0],
-		Country:   poi.Country,
-		State:     poi.State,
-		County:    poi.County,
+		AddressComponent: schema.AddressComponent{
+			Country: poi.Country,
+			State:   poi.State,
+			County:  poi.County,
+		},
 	}
 
 	logger.Info("Calculate POI metric by location.", zap.Any("location", location))

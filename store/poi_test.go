@@ -16,9 +16,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"googlemaps.github.io/maps"
 
-	"github.com/bitmark-inc/autonomy-api/external/mocks"
+	"github.com/bitmark-inc/autonomy-api/geo"
+	"github.com/bitmark-inc/autonomy-api/geo/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var addedPOIID = primitive.NewObjectID()
@@ -26,6 +26,16 @@ var addedPOIID2 = primitive.NewObjectID()
 var existedPOIID = primitive.NewObjectID()
 var noCountryPOIID = primitive.NewObjectID()
 var metricPOIID = primitive.NewObjectID()
+
+var testLocation = schema.Location{
+	Latitude:  40.7385105,
+	Longitude: -73.98697609999999,
+	AddressComponent: schema.AddressComponent{
+		Country: "United States",
+		State:   "New York",
+		County:  "New York County",
+	},
+}
 
 var (
 	noCountryPOI = schema.POI{
@@ -89,11 +99,11 @@ var originAlias = "origin POI"
 
 type POITestSuite struct {
 	suite.Suite
-	connURI       string
-	testDBName    string
-	mongoClient   *mongo.Client
-	testDatabase  *mongo.Database
-	geoClientMock *mocks.MockGeoInfo
+	connURI      string
+	testDBName   string
+	mongoClient  *mongo.Client
+	testDatabase *mongo.Database
+	mockResolver *mocks.MockLocationResolver
 }
 
 func NewPOITestSuite(connURI, dbName string) *POITestSuite {
@@ -115,14 +125,14 @@ func (s *POITestSuite) SetupSuite() {
 	}
 	ctrl := gomock.NewController(s.T())
 
-	geoClientMock := mocks.NewMockGeoInfo(ctrl)
-	utils.SetGeoClient(geoClientMock)
+	mockResolver := mocks.NewMockLocationResolver(ctrl)
+	geo.SetLocationResolver(mockResolver)
 
 	if err = mongoClient.Connect(context.Background()); nil != err {
 		s.T().Fatalf("connect mongo database with error: %s", err.Error())
 	}
 
-	s.geoClientMock = geoClientMock
+	s.mockResolver = mockResolver
 	s.mongoClient = mongoClient
 	s.testDatabase = mongoClient.Database(s.testDBName)
 
@@ -246,12 +256,9 @@ func (s *POITestSuite) LoadGeocodingFixtures() ([]maps.GeocodingResult, error) {
 func (s *POITestSuite) TestAddPOIWithNonExistAccount() {
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 
-	geocoding, err := s.LoadGeocodingFixtures()
-	s.NoError(err)
-
-	s.geoClientMock.EXPECT().
-		Get(gomock.AssignableToTypeOf(schema.Location{})).
-		Return(geocoding, nil)
+	s.mockResolver.EXPECT().
+		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
+		Return(testLocation, nil)
 
 	poi, err := store.AddPOI("account-not-found-test-poi", "test-poi", "", 120, 25)
 	s.EqualError(err, "fail to update poi into profile")
@@ -263,12 +270,9 @@ func (s *POITestSuite) TestAddPOI() {
 	ctx := context.Background()
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 
-	geocoding, err := s.LoadGeocodingFixtures()
-	s.NoError(err)
-
-	s.geoClientMock.EXPECT().
-		Get(gomock.AssignableToTypeOf(schema.Location{})).
-		Return(geocoding, nil)
+	s.mockResolver.EXPECT().
+		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
+		Return(testLocation, nil)
 
 	poi, err := store.AddPOI("account-test-add-poi", "test-poi", "", 120.1, 25.1)
 	s.NoError(err)
@@ -296,12 +300,9 @@ func (s *POITestSuite) TestAddExistentPOI() {
 	ctx := context.Background()
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 
-	geocoding, err := s.LoadGeocodingFixtures()
-	s.NoError(err)
-
-	s.geoClientMock.EXPECT().
-		Get(gomock.AssignableToTypeOf(schema.Location{})).
-		Return(geocoding, nil)
+	s.mockResolver.EXPECT().
+		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
+		Return(testLocation, nil)
 
 	count, err := s.testDatabase.Collection(schema.ProfileCollection).CountDocuments(context.Background(), bson.M{
 		"account_number":        "account-test-add-poi",
@@ -336,12 +337,9 @@ func (s *POITestSuite) TestAddDuplicatedPOI() {
 	ctx := context.Background()
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 
-	geocoding, err := s.LoadGeocodingFixtures()
-	s.NoError(err)
-
-	s.geoClientMock.EXPECT().
-		Get(gomock.AssignableToTypeOf(schema.Location{})).
-		Return(geocoding, nil)
+	s.mockResolver.EXPECT().
+		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
+		Return(testLocation, nil)
 
 		// poi is not in the profile at beginning
 	count, err := s.testDatabase.Collection(schema.ProfileCollection).CountDocuments(context.Background(), bson.M{
@@ -414,12 +412,9 @@ func (s *POITestSuite) TestGetPOINormal() {
 func (s *POITestSuite) TestGetPOIWithoutCountry() {
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 
-	geocoding, err := s.LoadGeocodingFixtures()
-	s.NoError(err)
-
-	s.geoClientMock.EXPECT().
-		Get(gomock.AssignableToTypeOf(schema.Location{})).
-		Return(geocoding, nil)
+	s.mockResolver.EXPECT().
+		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
+		Return(testLocation, nil)
 
 	poi, err := store.GetPOI(noCountryPOIID)
 	s.NoError(err)

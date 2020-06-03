@@ -48,6 +48,7 @@ func panicIfError(err error) {
 
 func (m *MongoDBIndexer) IndexAll() {
 	panicIfError(m.IndexProfileCollection())
+	panicIfError(m.IndexBoundryCollection())
 	panicIfError(m.IndexPOICollection())
 	panicIfError(m.IndexBehaviorCollection())
 	panicIfError(m.IndexBehaviorReportCollection())
@@ -136,6 +137,25 @@ func (m *MongoDBIndexer) IndexSymptomReportCollection() error {
 	return m.createIndex(SymptomReportCollection, mongo.IndexModel{
 		Keys: bson.M{
 			"location": "2dsphere",
+		},
+	})
+}
+
+func (m *MongoDBIndexer) IndexBoundryCollection() error {
+	if err := m.createIndex(BoundaryCollection, mongo.IndexModel{
+		Keys: bson.M{
+			"county":  1,
+			"country": 1,
+			"state":   1,
+		},
+		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		return err
+	}
+
+	return m.createIndex(BoundaryCollection, mongo.IndexModel{
+		Keys: bson.M{
+			"geometry": "2dsphere",
 		},
 	})
 }

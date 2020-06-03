@@ -12,11 +12,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"googlemaps.github.io/maps"
 
 	scoreWorker "github.com/bitmark-inc/autonomy-api/background/score"
 	cadence "github.com/bitmark-inc/autonomy-api/external/cadence"
+	"github.com/bitmark-inc/autonomy-api/geo"
 	"github.com/bitmark-inc/autonomy-api/store"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var logger *zap.Logger
@@ -92,7 +93,17 @@ func main() {
 		logger.Panic("connect mongo database with error", zap.Error(err))
 	}
 
-	utils.InitGeoInfo(viper.GetString("map.key"))
+	mapClient, err := maps.NewClient(maps.WithAPIKey(viper.GetString("map.key")))
+	if err != nil {
+		logger.Panic("init goolge map client with error", zap.Error(err))
+	}
+
+	geo.SetLocationResolver(
+		geo.NewMultipleLocationResolver(
+			geo.NewMongodbLocationResolver(mongoClient, viper.GetString("mongo.database")),
+			geo.NewGeocodingLocationResolver(mapClient),
+		),
+	)
 
 	mongoStore := store.NewMongoStore(
 		mongoClient,

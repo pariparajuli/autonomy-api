@@ -8,16 +8,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
-	"github.com/bitmark-inc/autonomy-api/external/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 const (
@@ -26,11 +23,10 @@ const (
 
 type ConfirmCDSTestSuite struct {
 	suite.Suite
-	connURI       string
-	testDBName    string
-	mongoClient   *mongo.Client
-	testDatabase  *mongo.Database
-	geoClientMock *mocks.MockGeoInfo
+	connURI      string
+	testDBName   string
+	mongoClient  *mongo.Client
+	testDatabase *mongo.Database
 	ConfirmExpected
 }
 
@@ -63,16 +59,11 @@ func (s *ConfirmCDSTestSuite) SetupSuite() {
 	if nil != err {
 		s.T().Fatalf("create mongo client with error: %s", err)
 	}
-	ctrl := gomock.NewController(s.T())
-
-	geoClientMock := mocks.NewMockGeoInfo(ctrl)
-	utils.SetGeoClient(geoClientMock)
 
 	if err = mongoClient.Connect(context.Background()); nil != err {
 		s.T().Fatalf("connect mongo database with error: %s", err.Error())
 	}
 
-	s.geoClientMock = geoClientMock
 	s.mongoClient = mongoClient
 	s.testDatabase = mongoClient.Database(s.testDBName)
 
@@ -254,7 +245,7 @@ func (s *ConfirmCDSTestSuite) TestReplaceCDS() {
 }
 
 func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
-	loc := schema.Location{Country: schema.CdsTaiwan}
+	loc := schema.Location{AddressComponent: schema.AddressComponent{Country: schema.CdsTaiwan}}
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	active, delta, changeRate, err := store.GetCDSActive(loc)
 	s.NoError(err)
@@ -264,7 +255,7 @@ func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 	s.Equal(s.ConfirmExpected.ExpectActiveConfirm.Delta, delta)
 	s.Equal(s.ConfirmExpected.ExpectActiveConfirm.RateChangeRoundEven, math.RoundToEven(changeRate))
 
-	loc = schema.Location{Country: "Neverland"}
+	loc = schema.Location{AddressComponent: schema.AddressComponent{Country: "Neverland"}}
 	active, delta, changeRate, err = store.GetCDSActive(loc)
 	s.Equal(err, ErrNoConfirmDataset)
 	s.Equal(s.ConfirmExpected.ExpectActiveNoDataSet.Active, active)
@@ -273,7 +264,7 @@ func (s *ConfirmCDSTestSuite) TestGetCDSActive() {
 }
 
 func (s *ConfirmCDSTestSuite) TestContinuousDataCDSConfirm() {
-	loc := schema.Location{Country: schema.CdsTaiwan}
+	loc := schema.Location{AddressComponent: schema.AddressComponent{Country: schema.CdsTaiwan}}
 	store := NewMongoStore(s.mongoClient, s.testDBName)
 	dataset, err := store.ContinuousDataCDSConfirm(loc, consts.ConfirmScoreWindowSize, 0)
 	s.NoError(err)

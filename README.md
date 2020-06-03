@@ -71,3 +71,13 @@ Now, You can run the server:
 ## Run Test
 
 Use `make test` to run all test cases. It will also build the `mocks` package which required for test cases.
+
+### Tests with google map api
+
+Since `apikey` is required for testing resolver using google map api, you will need to provide the key by argument:
+
+```
+make map_apikey=<your-key-here> test
+```
+
+Otherwise, the resolver's test suite will be skipped.

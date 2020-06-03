@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/bitmark-inc/autonomy-api/consts"
+	"github.com/bitmark-inc/autonomy-api/geo"
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/score"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 const (
@@ -62,7 +62,7 @@ func (m *mongoDB) CollectRawMetrics(location schema.Location) (*schema.Metric, e
 	if location.Country == "" {
 		log.Info("fetch poi geo info from external service")
 		var err error
-		location, err = utils.PoliticalGeoInfo(location)
+		location, err = geo.PoliticalGeoInfo(location)
 		if err != nil {
 			log.WithError(err).WithField("location", location).Error("fail to fetch geo info")
 			return nil, err
@@ -177,9 +177,11 @@ func (m *mongoDB) SyncAccountPOIMetrics(accountNumber string, coefficient *schem
 			location := schema.Location{
 				Longitude: poi.Location.Coordinates[0],
 				Latitude:  poi.Location.Coordinates[1],
-				Country:   poi.Country,
-				State:     poi.State,
-				County:    poi.County,
+				AddressComponent: schema.AddressComponent{
+					Country: poi.Country,
+					State:   poi.State,
+					County:  poi.County,
+				},
 			}
 
 			rawMetrics, err := m.CollectRawMetrics(location)

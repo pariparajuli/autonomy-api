@@ -11,8 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/bitmark-inc/autonomy-api/geo"
 	"github.com/bitmark-inc/autonomy-api/schema"
-	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var (
@@ -52,7 +52,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 
 	if err := c.FindOne(ctx, query).Decode(&poi); err != nil {
 		if err == mongo.ErrNoDocuments {
-			location, err := utils.PoliticalGeoInfo(schema.Location{
+			location, err := geo.PoliticalGeoInfo(schema.Location{
 				Latitude:  lat,
 				Longitude: lon,
 			})
@@ -90,9 +90,11 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		newMetric, err := m.SyncPOIMetrics(poi.ID, schema.Location{
 			Latitude:  lat,
 			Longitude: lon,
-			Country:   poi.Country,
-			State:     poi.State,
-			County:    poi.County,
+			AddressComponent: schema.AddressComponent{
+				Country: poi.Country,
+				State:   poi.State,
+				County:  poi.County,
+			},
 		})
 		if err == nil {
 			poi.Metric = *newMetric
@@ -199,7 +201,7 @@ func (m *mongoDB) GetPOI(poiID primitive.ObjectID) (*schema.POI, error) {
 			Latitude:  poi.Location.Coordinates[1],
 			Longitude: poi.Location.Coordinates[0],
 		}
-		location, err := utils.PoliticalGeoInfo(location)
+		location, err := geo.PoliticalGeoInfo(location)
 		if err != nil {
 			log.WithError(err).Error("can not fetch geo info")
 			return nil, err
