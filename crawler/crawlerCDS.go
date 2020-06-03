@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bitmark-inc/autonomy-api/external/cdc"
@@ -30,13 +28,6 @@ func (c cdsCrawler) Run() {
 			return
 		}
 		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "data count": count}).Debug("data from CDS")
-		days := time.Now().UTC().Unix() - keepNumberOfDaysInDB*86400
-		err = c.mongoStore.DeleteCDSUnused(cdc.Country, days)
-		if err != nil {
-			log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country, "error": err}).Error("delete CDS data")
-			return
-		}
-
 	} else {
 		log.WithFields(log.Fields{"prefix": logPrefix, "country": c.country}).Error("get TW data  from CDC failed!")
 	}
