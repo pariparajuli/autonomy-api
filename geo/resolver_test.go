@@ -34,12 +34,12 @@ var TaiwanLocationTestData = []schema.Location{
 }
 
 var USLocationTestData = []schema.Location{
-	{Latitude: -77.433901, Longitude: 38.876408, AddressComponent: schema.AddressComponent{Country: "United States", State: "Virginia", County: "Fairfax County"}},
-	{Latitude: -116.765943, Longitude: 33.068212, AddressComponent: schema.AddressComponent{Country: "United States", State: "California", County: "San Diego County"}},
-	{Latitude: -84.522030, Longitude: 30.151855, AddressComponent: schema.AddressComponent{Country: "United States", State: "Florida", County: "Wakulla County"}},
-	{Latitude: -73.959463, Longitude: 40.776032, AddressComponent: schema.AddressComponent{Country: "United States", State: "New York", County: "New York County"}},
-	{Latitude: -157.072916, Longitude: 69.553596, AddressComponent: schema.AddressComponent{Country: "United States", State: "Alaska", County: "North Slope"}},
-	{Latitude: 25.147057, Longitude: 121.593191, AddressComponent: schema.AddressComponent{Country: "United States", State: "Louisiana", County: "Lincoln Parish"}},
+	{Latitude: -77.433901, Longitude: 38.876408, AddressComponent: schema.AddressComponent{Country: "United States", State: "VA", County: "Fairfax County"}},
+	{Latitude: -116.765943, Longitude: 33.068212, AddressComponent: schema.AddressComponent{Country: "United States", State: "CA", County: "San Diego County"}},
+	{Latitude: -84.522030, Longitude: 30.151855, AddressComponent: schema.AddressComponent{Country: "United States", State: "FL", County: "Wakulla County"}},
+	{Latitude: -73.959463, Longitude: 40.776032, AddressComponent: schema.AddressComponent{Country: "United States", State: "NY", County: "New York County"}},
+	{Latitude: -157.072916, Longitude: 69.553596, AddressComponent: schema.AddressComponent{Country: "United States", State: "AK", County: "North Slope"}},
+	{Latitude: 25.147057, Longitude: 121.593191, AddressComponent: schema.AddressComponent{Country: "United States", State: "LA", County: "Lincoln Parish"}},
 }
 
 var OtherLocationTestData = []schema.Location{
