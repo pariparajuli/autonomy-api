@@ -2,7 +2,6 @@ package geo
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"googlemaps.github.io/maps"
 
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/share/geojson"
 )
 
 type ResolverTestSuite struct {
@@ -33,10 +33,16 @@ var TaiwanLocationTestData = []schema.Location{
 	{Latitude: 25.147057, Longitude: 121.593191, AddressComponent: schema.AddressComponent{Country: "Taiwan", State: "", County: "Taipei City"}},
 }
 
-var OtherLocationTestData = []schema.Location{
+var USLocationTestData = []schema.Location{
 	{Latitude: 33.036147, Longitude: -117.2842319, AddressComponent: schema.AddressComponent{Country: "United States", State: "California", County: "San Diego County"}},
 	{Latitude: 40.733992, Longitude: -73.993641, AddressComponent: schema.AddressComponent{Country: "United States", State: "New York", County: "New York County"}},
-	{Latitude: 64.1499893, Longitude: -21.954031, AddressComponent: schema.AddressComponent{Country: "Iceland", State: "", County: "Capital Region"}},
+}
+
+var OtherLocationTestData = []schema.Location{
+	{Latitude: 64.1499893, Longitude: -21.954031, AddressComponent: schema.AddressComponent{Country: "Iceland", State: "", County: ""}},
+	{Latitude: 16.056142, Longitude: 108.200845, AddressComponent: schema.AddressComponent{Country: "Vietnam", State: "", County: ""}},
+	{Latitude: 35.6599743, Longitude: 139.7432433, AddressComponent: schema.AddressComponent{Country: "Japan", State: "", County: ""}},
+	{Latitude: 49.0096941, Longitude: 2.5457358, AddressComponent: schema.AddressComponent{Country: "France", State: "", County: ""}},
 }
 
 func NewResolverTestSuite(connURI, dbName, mapAPIKey string) *ResolverTestSuite {
@@ -82,42 +88,11 @@ func (s *ResolverTestSuite) SetupSuite() {
 }
 
 func (s *ResolverTestSuite) LoadMongoDBFixtures() error {
-	type GeoFeature struct {
-		Type       string            `json:"type"`
-		Properties map[string]string `json:"properties"`
-		Geometry   schema.Geometry   `json:"geometry"`
-	}
-
-	type GeoJSONTW struct {
-		Name     string       `json:"name"`
-		Features []GeoFeature `json:"features"`
-	}
-
-	var result GeoJSONTW
-
-	file, err := os.Open("../share/geojson/tw-boundary.json")
-	if err != nil {
+	if err := geojson.ImportTaiwanBoundary(s.mongoClient, s.testDBName, "../share/geojson/tw-boundary.json"); err != nil {
 		return err
 	}
 
-	if err := json.NewDecoder(file).Decode(&result); err != nil {
-		return err
-	}
-	var boundaries []interface{}
-	for _, b := range result.Features {
-		boundaries = append(boundaries, schema.Boundary{
-			Country:  "Taiwan",
-			State:    "",
-			County:   b.Properties["COUNTYENG"],
-			Geometry: b.Geometry,
-		})
-	}
-
-	if _, err := s.testDatabase.Collection(schema.BoundaryCollection).InsertMany(context.Background(), boundaries); err != nil {
-		return err
-	}
-
-	return nil
+	return geojson.ImportWorldCountryBoundary(s.mongoClient, s.testDBName, "../share/geojson/world-boundary.json")
 }
 
 func (s *ResolverTestSuite) CleanMongoDB() error {
@@ -140,10 +115,10 @@ func (s *ResolverTestSuite) TestGeocodingLocationResolverForTaiwan() {
 	}
 }
 
-func (s *ResolverTestSuite) TestGeocodingLocationResolverForOtherLocation() {
+func (s *ResolverTestSuite) TestGeocodingLocationResolverForUSLocation() {
 	r := NewGeocodingLocationResolver(s.mapClient)
 
-	for _, testdata := range OtherLocationTestData {
+	for _, testdata := range USLocationTestData {
 		location, err := r.GetPoliticalInfo(schema.Location{
 			Latitude:  testdata.Latitude,
 			Longitude: testdata.Longitude,
@@ -187,6 +162,22 @@ func (s *ResolverTestSuite) TestMongodbLocationResolverForTaiwan() {
 	}
 }
 
+func (s *ResolverTestSuite) TestMongodbLocationResolverForOtherLocation() {
+	r := NewMongodbLocationResolver(s.mongoClient, s.testDBName)
+
+	for _, testdata := range OtherLocationTestData {
+		location, err := r.GetPoliticalInfo(schema.Location{
+			Latitude:  testdata.Latitude,
+			Longitude: testdata.Longitude,
+		})
+
+		s.NoError(err)
+		s.Equal(testdata.Country, location.Country)
+		s.Equal(testdata.State, location.State)
+		s.Equal(testdata.County, location.County)
+	}
+}
+
 func (s *ResolverTestSuite) TestMongodbLocationResolverNotFound() {
 	r := NewMongodbLocationResolver(s.mongoClient, s.testDBName)
 
@@ -209,6 +200,25 @@ func (s *ResolverTestSuite) TestMultipleLocationResolverForTaiwan() {
 	)
 
 	for _, testdata := range TaiwanLocationTestData {
+		location, err := r.GetPoliticalInfo(schema.Location{
+			Latitude:  testdata.Latitude,
+			Longitude: testdata.Longitude,
+		})
+
+		s.NoError(err)
+		s.Equal(testdata.Country, location.Country)
+		s.Equal(testdata.State, location.State)
+		s.Equal(testdata.County, location.County)
+	}
+}
+
+func (s *ResolverTestSuite) TestMultipleLocationResolverForUSLocation() {
+	r := NewMultipleLocationResolver(
+		NewMongodbLocationResolver(s.mongoClient, s.testDBName),
+		NewGeocodingLocationResolver(s.mapClient),
+	)
+
+	for _, testdata := range USLocationTestData {
 		location, err := r.GetPoliticalInfo(schema.Location{
 			Latitude:  testdata.Latitude,
 			Longitude: testdata.Longitude,

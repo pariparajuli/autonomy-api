@@ -137,7 +137,7 @@ func (g *MongodbLocationResolver) GetPoliticalInfo(location schema.Location) (sc
 				},
 			},
 		},
-	}, options.FindOne().SetProjection(bson.M{
+	}, options.FindOne().SetSort(bson.M{"county": -1}).SetProjection(bson.M{
 		"country": 1,
 		"state":   1,
 		"county":  1,

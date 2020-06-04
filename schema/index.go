@@ -145,10 +145,19 @@ func (m *MongoDBIndexer) IndexBoundryCollection() error {
 	if err := m.createIndex(BoundaryCollection, mongo.IndexModel{
 		Keys: bson.M{
 			"county":  1,
+			"island":  1,
 			"country": 1,
 			"state":   1,
 		},
 		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		return err
+	}
+
+	if err := m.createIndex(BoundaryCollection, mongo.IndexModel{
+		Keys: bson.M{
+			"country": 1,
+		},
 	}); err != nil {
 		return err
 	}

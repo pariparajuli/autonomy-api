@@ -11,6 +11,7 @@ type Geometry struct {
 
 type Boundary struct {
 	Country  string   `bson:"country"`
+	Island   string   `bson:"island"`
 	State    string   `bson:"state"`
 	County   string   `bson:"county"`
 	Geometry Geometry `bson:"geometry"`
