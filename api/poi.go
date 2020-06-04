@@ -9,14 +9,17 @@ import (
 
 	"github.com/bitmark-inc/autonomy-api/schema"
 	"github.com/bitmark-inc/autonomy-api/store"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 type userPOI struct {
-	ID       string           `json:"id"`
-	Alias    string           `json:"alias"`
-	Address  string           `json:"address"`
-	Location *schema.Location `json:"location"`
-	Score    float64          `json:"score"`
+	ID        string           `json:"id"`
+	Alias     string           `json:"alias"`
+	Address   string           `json:"address"`
+	Location  *schema.Location `json:"location"`
+	Score     float64          `json:"score"`
+	Types     []string         `json:"types,omitempty"`
+	PlaceType string           `json:"place_type"`
 }
 
 func (s *Server) addPOI(c *gin.Context) {
@@ -37,7 +40,9 @@ func (s *Server) addPOI(c *gin.Context) {
 		return
 	}
 
-	poi, err := s.mongoStore.AddPOI(account.AccountNumber, body.Alias, body.Address,
+	placeType := utils.ReadPlaceType(body.Types)
+
+	poi, err := s.mongoStore.AddPOI(account.AccountNumber, body.Alias, body.Address, placeType,
 		body.Location.Longitude, body.Location.Latitude)
 	if err != nil {
 		abortWithEncoding(c, http.StatusInternalServerError, errorInternalServer, err)
@@ -58,6 +63,8 @@ func (s *Server) addPOI(c *gin.Context) {
 
 	body.ID = poi.ID.Hex()
 	body.Score = metric.Score
+	body.Types = nil
+	body.PlaceType = poi.PlaceType
 	c.JSON(http.StatusOK, body)
 }
 

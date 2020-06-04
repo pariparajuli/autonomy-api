@@ -19,6 +19,7 @@ import (
 	"github.com/bitmark-inc/autonomy-api/geo"
 	"github.com/bitmark-inc/autonomy-api/geo/mocks"
 	"github.com/bitmark-inc/autonomy-api/schema"
+	"github.com/bitmark-inc/autonomy-api/utils"
 )
 
 var addedPOIID = primitive.NewObjectID()
@@ -44,6 +45,7 @@ var (
 			Type:        "Point",
 			Coordinates: []float64{-73.98697609999999, 40.7385105},
 		},
+		PlaceType: "unknown",
 	}
 
 	addedPOI = schema.POI{
@@ -52,9 +54,10 @@ var (
 			Type:        "Point",
 			Coordinates: []float64{120.123, 25.123},
 		},
-		Country: "Taiwan",
-		State:   "",
-		County:  "Yilan County",
+		Country:   "Taiwan",
+		State:     "",
+		County:    "Yilan County",
+		PlaceType: "unknown",
 	}
 
 	addedPOI2 = schema.POI{
@@ -63,9 +66,10 @@ var (
 			Type:        "Point",
 			Coordinates: []float64{120.1234, 25.1234},
 		},
-		Country: "Taiwan",
-		State:   "",
-		County:  "Taipei City",
+		Country:   "Taiwan",
+		State:     "",
+		County:    "Taipei City",
+		PlaceType: "unknown",
 	}
 
 	existedPOI = schema.POI{
@@ -74,9 +78,10 @@ var (
 			Type:        "Point",
 			Coordinates: []float64{120.12, 25.12},
 		},
-		Country: "Taiwan",
-		State:   "",
-		County:  "Yilan County",
+		Country:   "Taiwan",
+		State:     "",
+		County:    "Yilan County",
+		PlaceType: "unknown",
 	}
 
 	metricPOI = schema.POI{
@@ -92,6 +97,7 @@ var (
 			Score:      87,
 			LastUpdate: time.Now().Unix(),
 		},
+		PlaceType: "unknown",
 	}
 )
 
@@ -260,7 +266,7 @@ func (s *POITestSuite) TestAddPOIWithNonExistAccount() {
 		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
 		Return(testLocation, nil)
 
-	poi, err := store.AddPOI("account-not-found-test-poi", "test-poi", "", 120, 25)
+	poi, err := store.AddPOI("account-not-found-test-poi", "test-poi", "", utils.UnknownPlace, 120, 25)
 	s.EqualError(err, "fail to update poi into profile")
 	s.Nil(poi)
 }
@@ -274,11 +280,12 @@ func (s *POITestSuite) TestAddPOI() {
 		GetPoliticalInfo(gomock.AssignableToTypeOf(schema.Location{})).
 		Return(testLocation, nil)
 
-	poi, err := store.AddPOI("account-test-add-poi", "test-poi", "", 120.1, 25.1)
+	poi, err := store.AddPOI("account-test-add-poi", "test-poi", "", utils.UnknownPlace, 120.1, 25.1)
 	s.NoError(err)
 	s.Equal("United States", poi.Country)
 	s.Equal("New York", poi.State)
 	s.Equal("New York County", poi.County)
+	s.Equal(utils.UnknownPlace, poi.PlaceType)
 	s.Equal([]float64{120.1, 25.1}, poi.Location.Coordinates)
 
 	count, err := s.testDatabase.Collection(schema.POICollection).CountDocuments(ctx, bson.M{"_id": poi.ID})
@@ -311,11 +318,12 @@ func (s *POITestSuite) TestAddExistentPOI() {
 	s.NoError(err)
 	s.Equal(int64(0), count)
 
-	poi, err := store.AddPOI("account-test-add-poi", "test-existent-poi", "", existedPOI.Location.Coordinates[0], existedPOI.Location.Coordinates[1])
+	poi, err := store.AddPOI("account-test-add-poi", "test-existent-poi", "", utils.UnknownPlace, existedPOI.Location.Coordinates[0], existedPOI.Location.Coordinates[1])
 	s.NoError(err)
 	s.Equal("Taiwan", poi.Country)
 	s.Equal("", poi.State)
 	s.Equal("Yilan County", poi.County)
+	s.Equal(utils.UnknownPlace, poi.PlaceType)
 	s.Equal([]float64{existedPOI.Location.Coordinates[0], existedPOI.Location.Coordinates[1]}, poi.Location.Coordinates)
 
 	count, err = s.testDatabase.Collection(schema.POICollection).CountDocuments(ctx, bson.M{"_id": existedPOIID})
@@ -350,11 +358,12 @@ func (s *POITestSuite) TestAddDuplicatedPOI() {
 	s.Equal(int64(1), count)
 
 	// use a different name to add an added poi
-	poi, err := store.AddPOI("account-test-add-poi", "test-duplicated-add-poi", "", addedPOI.Location.Coordinates[0], addedPOI.Location.Coordinates[1])
+	poi, err := store.AddPOI("account-test-add-poi", "test-duplicated-add-poi", "", utils.UnknownPlace, addedPOI.Location.Coordinates[0], addedPOI.Location.Coordinates[1])
 	s.NoError(err)
 	s.Equal("Taiwan", poi.Country)
 	s.Equal("", poi.State)
 	s.Equal("Yilan County", poi.County)
+	s.Equal(utils.UnknownPlace, poi.PlaceType)
 	s.Equal([]float64{addedPOI.Location.Coordinates[0], addedPOI.Location.Coordinates[1]}, poi.Location.Coordinates)
 
 	count, err = s.testDatabase.Collection(schema.POICollection).CountDocuments(ctx, bson.M{"_id": addedPOIID})

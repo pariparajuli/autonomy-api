@@ -23,7 +23,7 @@ var (
 )
 
 type POI interface {
-	AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error)
+	AddPOI(accountNumber string, alias, address, placeType string, lon, lat float64) (*schema.POI, error)
 	ListPOI(accountNumber string) ([]schema.POIDetail, error)
 
 	GetPOI(poiID primitive.ObjectID) (*schema.POI, error)
@@ -38,7 +38,7 @@ type POI interface {
 }
 
 // AddPOI inserts a new POI record if it doesn't exist and append it to user's profile
-func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat float64) (*schema.POI, error) {
+func (m *mongoDB) AddPOI(accountNumber string, alias, address, placeType string, lon, lat float64) (*schema.POI, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -68,10 +68,11 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 			}
 
 			result, err := c.InsertOne(ctx, bson.M{
-				"location": poi.Location,
-				"country":  location.Country,
-				"state":    location.State,
-				"county":   location.County,
+				"location":   poi.Location,
+				"country":    location.Country,
+				"state":      location.State,
+				"county":     location.County,
+				"place_type": placeType,
 			})
 
 			if err != nil {
@@ -81,6 +82,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 			poi.Country = location.Country
 			poi.State = location.State
 			poi.County = location.County
+			poi.PlaceType = placeType
 		} else {
 			return nil, err
 		}
@@ -108,6 +110,7 @@ func (m *mongoDB) AddPOI(accountNumber string, alias, address string, lon, lat f
 		ID:        poi.ID,
 		Alias:     alias,
 		Address:   address,
+		PlaceType: poi.PlaceType,
 		UpdatedAt: time.Now().UTC(),
 	}
 
