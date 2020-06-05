@@ -23,21 +23,9 @@ type GeoJSON struct {
 }
 
 type GeoFeatureUS struct {
-	Type       string        `json:"type"`
-	Properties PropertiesUS  `json:"properties"`
-	Geometry   schema.Geometry      `json:"geometry"`
-}
-
-type Geometry struct {
-	Type        string      `bson:"type"`
-	Coordinates interface{} `bson:"coordinates"`
-}
-
-type Boundary struct {
-	Country  string   `bson:"country"`
-	State    string   `bson:"state"`
-	County   string   `bson:"county"`
-	Geometry Geometry `bson:"geometry"`
+	Type       string          `json:"type"`
+	Properties PropertiesUS    `json:"properties"`
+	Geometry   schema.Geometry `json:"geometry"`
 }
 
 type PropertiesUS struct {
@@ -49,8 +37,8 @@ type PropertiesUS struct {
 }
 
 type GeoJSONUS struct {
-	Name     string          `json:"name"`
-	Features []GeoFeatureUS  `json:"features"`
+	Name     string         `json:"name"`
+	Features []GeoFeatureUS `json:"features"`
 }
 
 func ImportTaiwanBoundary(client *mongo.Client, dbName, geoJSONFile string) error {

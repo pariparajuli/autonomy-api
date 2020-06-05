@@ -34,12 +34,12 @@ var TaiwanLocationTestData = []schema.Location{
 }
 
 var USLocationTestData = []schema.Location{
-	{Latitude: -77.433901, Longitude: 38.876408, AddressComponent: schema.AddressComponent{Country: "United States", State: "VA", County: "Fairfax County"}},
-	{Latitude: -116.765943, Longitude: 33.068212, AddressComponent: schema.AddressComponent{Country: "United States", State: "CA", County: "San Diego County"}},
-	{Latitude: -84.522030, Longitude: 30.151855, AddressComponent: schema.AddressComponent{Country: "United States", State: "FL", County: "Wakulla County"}},
-	{Latitude: -73.959463, Longitude: 40.776032, AddressComponent: schema.AddressComponent{Country: "United States", State: "NY", County: "New York County"}},
-	{Latitude: -157.072916, Longitude: 69.553596, AddressComponent: schema.AddressComponent{Country: "United States", State: "AK", County: "North Slope"}},
-	{Latitude: 25.147057, Longitude: 121.593191, AddressComponent: schema.AddressComponent{Country: "United States", State: "LA", County: "Lincoln Parish"}},
+	{Latitude: 38.876408, Longitude: -77.433901, AddressComponent: schema.AddressComponent{Country: "United States", State: "VA", County: "Fairfax County"}},
+	{Latitude: 33.068212, Longitude: -116.765943, AddressComponent: schema.AddressComponent{Country: "United States", State: "CA", County: "San Diego County"}},
+	{Latitude: 30.151855, Longitude: -84.522030, AddressComponent: schema.AddressComponent{Country: "United States", State: "FL", County: "Wakulla County"}},
+	{Latitude: 40.776032, Longitude: -73.959463, AddressComponent: schema.AddressComponent{Country: "United States", State: "NY", County: "New York County"}},
+	{Latitude: 69.553596, Longitude: -157.072916, AddressComponent: schema.AddressComponent{Country: "United States", State: "AK", County: "North Slope"}},
+	{Latitude: 32.601252, Longitude: -92.671741, AddressComponent: schema.AddressComponent{Country: "United States", State: "LA", County: "Lincoln Parish Borough"}},
 }
 
 var OtherLocationTestData = []schema.Location{
