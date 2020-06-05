@@ -22,25 +22,6 @@ type GeoJSON struct {
 	Features []GeoFeature `json:"features"`
 }
 
-type GeoFeatureUS struct {
-	Type       string          `json:"type"`
-	Properties PropertiesUS    `json:"properties"`
-	Geometry   schema.Geometry `json:"geometry"`
-}
-
-type PropertiesUS struct {
-	Intptlat   string    `json:"intptlat"`
-	GeoPoint2d []float64 `json:"geo_point_2d"`
-	Stusab     string    `json:"stusab"`
-	Namelsad   string    `json:"namelsad"`
-	Awater     int       `json:"awater"`
-}
-
-type GeoJSONUS struct {
-	Name     string         `json:"name"`
-	Features []GeoFeatureUS `json:"features"`
-}
-
 func ImportTaiwanBoundary(client *mongo.Client, dbName, geoJSONFile string) error {
 	var result GeoJSON
 
@@ -76,7 +57,7 @@ func ImportTaiwanBoundary(client *mongo.Client, dbName, geoJSONFile string) erro
 }
 
 func ImportUSBoundary(client *mongo.Client, dbName, geoJSONFile string) error {
-	var result GeoJSONUS
+	var result GeoJSON
 
 	file, err := os.Open(geoJSONFile)
 	if err != nil {
@@ -89,11 +70,20 @@ func ImportUSBoundary(client *mongo.Client, dbName, geoJSONFile string) error {
 
 	var boundaries []interface{}
 	for _, b := range result.Features {
-		county:= b.Properties.Namelsad
+		county, ok := b.Properties["namelsad"].(string)
+		if !ok {
+			return fmt.Errorf("invalid county value, %+v", b.Properties["namelsad"])
+		}
+
+		state, ok := b.Properties["stusab"].(string)
+		if !ok {
+			return fmt.Errorf("invalid state value, %+v", b.Properties["stusab"])
+		}
+
 		boundaries = append(boundaries, schema.Boundary{
 			Country:  "United States",
 			Island:   "",
-			State:    b.Properties.Stusab,
+			State:    state,
 			County:   county,
 			Geometry: b.Geometry,
 		})
