@@ -59,6 +59,119 @@ func ImportTaiwanBoundary(client *mongo.Client, dbName, geoJSONFile string) erro
 func ImportUSBoundary(client *mongo.Client, dbName, geoJSONFile string) error {
 	var result GeoJSON
 
+	stateAbbrToName := map[string]string{
+		"AL": "Alabama",
+
+		"AK": "Alaska",
+
+		"AZ": "Arizona",
+
+		"AR": "Arkansas",
+
+		"CA": "California",
+
+		"CO": "Colorado",
+
+		"CT": "Connecticut",
+
+		"DE": "Delaware",
+
+		"FL": "Florida",
+
+		"GA": "Georgia",
+
+		"HI": "Hawaii",
+
+		"ID": "Idaho",
+
+		"IL": "Illinois",
+
+		"IN": "Indiana",
+
+		"IA": "Iowa",
+
+		"KS": "Kansas",
+
+		"KY": "Kentucky",
+
+		"LA": "Louisiana",
+
+		"ME": "Maine",
+
+		"MD": "Maryland",
+
+		"MA": "Massachusetts",
+
+		"MI": "Michigan",
+
+		"MN": "Minnesota",
+
+		"MS": "Mississippi",
+
+		"MO": "Missouri",
+
+		"MT": "Montana",
+
+		"NE": "Nebraska",
+
+		"NV": "Nevada",
+
+		"NH": "New Hampshire",
+
+		"NJ": "New Jersey",
+
+		"NM": "New Mexico",
+
+		"NY": "New York",
+
+		"NC": "North Carolina",
+
+		"ND": "North Dakota",
+
+		"OH": "Ohio",
+
+		"OK": "Oklahoma",
+
+		"OR": "Oregon",
+
+		"PA": "Pennsylvania",
+
+		"RI": "Rhode Island",
+
+		"SC": "South Carolina",
+
+		"SD": "South Dakota",
+
+		"TN": "Tennessee",
+
+		"TX": "Texas",
+
+		"UT": "Utah",
+
+		"VT": "Vermont",
+
+		"VA": "Virginia",
+
+		"WA": "Washington",
+
+		"WV": "West Virginia",
+
+		"WI": "Wisconsin",
+
+		"WY": "Wyoming",
+
+		"PR": "Puerto Rico",
+
+		"GU": "Guam",
+
+		"VI": "Virgin Islands",
+
+		"MP": "Northern Marianas",
+
+		"DC": "District of Columbia",
+
+		"AS": "American Samoa"}
+
 	file, err := os.Open(geoJSONFile)
 	if err != nil {
 		return err
@@ -80,10 +193,15 @@ func ImportUSBoundary(client *mongo.Client, dbName, geoJSONFile string) error {
 			return fmt.Errorf("invalid state value, %+v", b.Properties["stusab"])
 		}
 
+		statename, ok := stateAbbrToName[state]
+		if !ok {
+			return fmt.Errorf("missing state abbreviation, %+v", state)
+		}
+
 		boundaries = append(boundaries, schema.Boundary{
 			Country:  "United States",
 			Island:   "",
-			State:    state,
+			State:    statename,
 			County:   county,
 			Geometry: b.Geometry,
 		})
